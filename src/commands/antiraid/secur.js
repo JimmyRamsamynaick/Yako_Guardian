@@ -1,0 +1,94 @@
+const { 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    StringSelectMenuBuilder, 
+    ComponentType 
+} = require('discord.js');
+const { db } = require('../../database');
+
+module.exports = {
+    name: 'secur',
+    aliases: ['security', 'panel'],
+    run: async (client, message, args) => {
+        // Only whitelisted users should access this (to be implemented)
+        
+        // Initial State
+        const settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(message.guild.id) || {
+            guild_id: message.guild.id,
+            raid_log_channel: null,
+            antitoken_level: 'off',
+            antiupdate: 'off',
+            antichannel: 'off',
+            antirole: 'off',
+            antiwebhook: 'off',
+            antiunban: 'off',
+            antibot: 'off',
+            antiban: 'off',
+            antieveryone: 'off',
+            antideco: 'off'
+        };
+
+        // If no settings exist, create them
+        if (!db.prepare('SELECT guild_id FROM guild_settings WHERE guild_id = ?').get(message.guild.id)) {
+            db.prepare('INSERT INTO guild_settings (guild_id) VALUES (?)').run(message.guild.id);
+        }
+
+        const generateStatusText = (s) => {
+            return `**YAKO GUARDIAN - PANNEAU DE SÉCURITÉ**
+            
+**🛡️ Modules Antiraid**
+\`Anti-Token\` : ${s.antitoken_level}
+\`Anti-Update\` : ${s.antiupdate}
+\`Anti-Channel\` : ${s.antichannel}
+\`Anti-Role\` : ${s.antirole}
+\`Anti-Webhook\` : ${s.antiwebhook}
+\`Anti-Unban\` : ${s.antiunban}
+\`Anti-Bot\` : ${s.antibot}
+\`Anti-Ban\` : ${s.antiban}
+\`Anti-Everyone\` : ${s.antieveryone}
+\`Anti-Deco\` : ${s.antideco}
+
+_Utilisez le menu ci-dessous pour configurer un module._`;
+        };
+
+        const rowSelect = new ActionRowBuilder()
+            .addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId('secur_select_module')
+                    .setPlaceholder('Choisir un module à configurer')
+                    .addOptions([
+                        { label: 'Anti-Token', value: 'antitoken_level', description: 'Protection contre les tokens/selfbots', emoji: '🚪' },
+                        { label: 'Anti-Bot', value: 'antibot', description: 'Empêche l\'ajout de bots non vérifiés', emoji: '🤖' },
+                        { label: 'Anti-Ban', value: 'antiban', description: 'Limite les bannissements massifs', emoji: '🔨' },
+                        { label: 'Anti-Channel', value: 'antichannel', description: 'Protection des salons', emoji: '📺' },
+                        { label: 'Anti-Role', value: 'antirole', description: 'Protection des rôles', emoji: '🎭' },
+                        { label: 'Anti-Webhook', value: 'antiwebhook', description: 'Protection des webhooks', emoji: '🔗' },
+                        { label: 'Anti-Everyone', value: 'antieveryone', description: 'Anti @everyone / @here', emoji: '📢' },
+                        { label: 'Anti-Update', value: 'antiupdate', description: 'Anti modification serveur', emoji: '⚙️' },
+                        { label: 'Anti-Deco', value: 'antideco', description: 'Anti déconnexion', emoji: '🔌' },
+                    ])
+            );
+
+        const rowButtons = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('secur_toggle_all_on')
+                    .setLabel('Tout Activer')
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId('secur_toggle_all_off')
+                    .setLabel('Tout Désactiver')
+                    .setStyle(ButtonStyle.Danger),
+                new ButtonBuilder()
+                    .setCustomId('secur_refresh')
+                    .setLabel('Rafraîchir')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        await message.channel.send({
+            content: generateStatusText(settings),
+            components: [rowSelect, rowButtons]
+        });
+    }
+};

@@ -1,0 +1,26 @@
+{
+  "name": "yako_guardian",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JimmyRamsamynaick/Yako_Guardian.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JimmyRamsamynaick/Yako_Guardian/issues"
+  },
+  "homepage": "https://github.com/JimmyRamsamynaick/Yako_Guardian#readme",
+  "description": "",
+  "dependencies": {
+    "better-sqlite3": "^12.5.0",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3",
+    "ms": "^2.1.3"
+  }
+}
