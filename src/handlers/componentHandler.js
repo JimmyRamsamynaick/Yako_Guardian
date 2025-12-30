@@ -24,9 +24,55 @@ module.exports = (client) => {
 
         if (customId.startsWith('secur_')) {
             await handleSecurPanel(client, interaction);
+        } else if (customId.startsWith('help_')) {
+            await handleHelpMenu(client, interaction);
         }
     });
 };
+
+async function handleHelpMenu(client, interaction) {
+    const { customId } = interaction;
+
+    if (customId === 'help_close') {
+        await interaction.message.delete();
+        return;
+    }
+
+    if (interaction.isStringSelectMenu() && customId === 'help_select_category') {
+        const value = interaction.values[0];
+        let content = '';
+
+        if (value === 'help_antiraid') {
+            content = `**🛡️ SÉCURITÉ & ANTIRAID**
+            
+\`+secur\` : Ouvre le panneau de sécurité principal.
+\`+raidlog <on/off> [salon]\` : Active/Désactive les logs antiraid.
+\`+raidping <rôle>\` : Définit le rôle à mentionner en cas de raid.
+
+_Les modules antiraid se configurent via le panneau \`+secur\`._`;
+        } else if (value === 'help_config') {
+            content = `**⚙️ CONFIGURATION**
+
+\`+antitoken <on/off/lock>\` : Protection anti-token.
+\`+antitoken <nombre>/<durée>\` : Limite de join (ex: 5/10s).
+\`+creation limit <durée>\` : Limite d'âge de compte.
+\`+punition <antiraid/all> <kick/ban/derank>\` : Type de sanction.
+\`+blrank <on/off/max>\` : Active le Blacklist Rank.`;
+        } else if (value === 'help_whitelist') {
+            content = `**👥 WHITELIST & GESTION**
+
+\`+wl <@membre/ID>\` : Ajoute un membre à la whitelist.
+\`+unwl <@membre/ID>\` : Retire un membre de la whitelist.
+\`+wl\` : Affiche la liste des whitelisted.
+\`+blrank <add/del> <membre>\` : Ajoute/Retire manuellement de la blacklist.`;
+        }
+
+        await interaction.update({
+            content: content + '\n\n_Sélectionnez une autre catégorie ci-dessous pour changer._',
+            components: interaction.message.components // Keep the existing menu
+        });
+    }
+}
 
 async function handleSecurPanel(client, interaction) {
     const guildId = interaction.guild.id;
