@@ -152,9 +152,17 @@ async function handleHelpMenu(client, interaction) {
 \`+massiverole <add/remove> <rôle>\` : Ajoute/Retire un rôle à tout le serveur.
 \`+temprole <@user> <rôle> <temps>\` : Donne un rôle temporairement.
 \`+voicekick <@user>\` : Déconnecte un utilisateur du vocal.
-\`+voicemove <@user> <salon>\` : Déplace un utilisateur.
+\`+voicemove <@user> <salon>\` : Déplace un utilisateur vers un autre salon.
 \`+bringall <salon>\` : Déplace tous les membres vocaux vers un salon (ID requis).
-\`+cleanup\` : Supprime les salons vocaux vides (si configuré).`;
+\`+cleanup\` : Supprime les salons vocaux vides (si configuré).
+\`+changelogs\` : Notes de mise à jour.
+\`+serverinfo\`, \`+vocinfo\`, \`+user\`, \`+role\`, \`+channel\` : Infos détaillées.
+\`+pic\`, \`+banner\`, \`+server pic/banner\`, \`+emoji\` : Récupération d'images.
+\`+snipe\` : Affiche le dernier message supprimé.
+\`+allbots\`, \`+alladmins\`, \`+botadmins\`, \`+boosters\`, \`+rolemembers\` : Listes.
+\`+image\`, \`+wiki\`, \`+calc\` : Outils de recherche et calcul.
+\`+suggestion\`, \`+lb suggestions\` : Système de suggestions.
+\`+yako\` : Serveur de support.`;
         } else if (value === 'help_admin') {
             content = `**💾 ADMINISTRATION & BACKUPS**
 
