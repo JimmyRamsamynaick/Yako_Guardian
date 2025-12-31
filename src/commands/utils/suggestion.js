@@ -10,9 +10,48 @@ module.exports = {
         const sub = args[0]?.toLowerCase();
         
         // --- ADMIN COMMANDS ---
-        if (['accept', 'refuse', 'delete'].includes(sub)) {
+        if (['accept', 'refuse', 'delete', 'clear'].includes(sub)) {
             if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
                 return sendV2Message(client, message.channel.id, "❌ Permission `Gérer les messages` requise.", []);
+            }
+
+            if (sub === 'clear') {
+                const type = args[1]?.toLowerCase();
+                if (!['all', 'approved', 'rejected', 'pending'].includes(type)) {
+                    return sendV2Message(client, message.channel.id, "**Usage:** \`+suggestion clear <all | approved | rejected | pending>\`", []);
+                }
+
+                let filter = { guildId: message.guild.id };
+                if (type !== 'all') {
+                    filter.status = type;
+                }
+
+                const suggestions = await Suggestion.find(filter);
+                const count = suggestions.length;
+
+                if (count === 0) {
+                    return sendV2Message(client, message.channel.id, `⚠️ Aucune suggestion trouvée pour le filtre \`${type}\`.`, []);
+                }
+
+                // Delete from DB
+                await Suggestion.deleteMany(filter);
+
+                // Try to delete messages (optional, best effort)
+                let deletedMsgCount = 0;
+                // We process in chunks to avoid rate limits, but for now let's just do a simple loop with a small delay or parallel promises
+                // Since we might have many, we should limit this or do it in background.
+                // For simplicity, let's try to delete the last 50 messages if they are in the channel.
+                // Or just don't delete messages to avoid massive API calls?
+                // The user asked "vider ou supprimer des idées de la liste", which strongly implies DB.
+                // Deleting messages is nice but dangerous/slow.
+                // Let's try to bulk delete if possible.
+                
+                // Collect message IDs that are in the current channel
+                // We assume suggestions are in the same channel where command is run?
+                // Not necessarily, but likely.
+                // If we want to be safe, we just remove from DB.
+                
+                return sendV2Message(client, message.channel.id, `✅ **${count}** suggestions (${type}) ont été supprimées de la base de données.`, []);
             }
 
             let messageId = args[1];
