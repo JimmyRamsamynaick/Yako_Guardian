@@ -13,6 +13,7 @@ const { updateV2Interaction, replyV2Interaction, extractActionRows } = require('
 const { loadBackup } = require('../utils/backupHandler');
 const { handleEmbedInteraction } = require('../commands/utils/embed');
 const Backup = require('../database/models/Backup');
+const Suggestion = require('../database/models/Suggestion');
 
 module.exports = (client) => {
     client.on('interactionCreate', async (interaction) => {
@@ -35,9 +36,67 @@ module.exports = (client) => {
             await handleEmbedInteraction(client, interaction);
         } else if (customId.startsWith('btn_role_')) {
             await handleRoleButton(client, interaction);
+        } else if (customId.startsWith('suggestion_')) {
+            await handleSuggestionButton(client, interaction);
         }
     });
 };
+
+async function handleSuggestionButton(client, interaction) {
+    const { customId, user } = interaction;
+    const parts = customId.split('_'); // suggestion, up/down, ID
+    const action = parts[1];
+    const suggestionId = parts[2];
+
+    const suggestion = await Suggestion.findById(suggestionId);
+    if (!suggestion) {
+        return interaction.reply({ content: "❌ Cette suggestion n'existe plus.", ephemeral: true });
+    }
+
+    const existingVote = suggestion.voters.find(v => v.userId === user.id);
+
+    if (existingVote) {
+        if (existingVote.vote === action) {
+            // Remove vote
+            suggestion.voters = suggestion.voters.filter(v => v.userId !== user.id);
+            if (action === 'up') suggestion.upvotes = Math.max(0, suggestion.upvotes - 1);
+            else suggestion.downvotes = Math.max(0, suggestion.downvotes - 1);
+        } else {
+            // Switch vote
+            existingVote.vote = action;
+            if (action === 'up') {
+                suggestion.upvotes++;
+                suggestion.downvotes = Math.max(0, suggestion.downvotes - 1);
+            } else {
+                suggestion.downvotes++;
+                suggestion.upvotes = Math.max(0, suggestion.upvotes - 1);
+            }
+        }
+    } else {
+        // New vote
+        suggestion.voters.push({ userId: user.id, vote: action });
+        if (action === 'up') suggestion.upvotes++;
+        else suggestion.downvotes++;
+    }
+
+    await suggestion.save();
+
+    // Update buttons
+    const row = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId(`suggestion_up_${suggestionId}`)
+                .setLabel(`👍 ${suggestion.upvotes}`)
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId(`suggestion_down_${suggestionId}`)
+                .setLabel(`👎 ${suggestion.downvotes}`)
+                .setStyle(ButtonStyle.Danger)
+        );
+
+    // We reuse the current message content
+    await updateV2Interaction(client, interaction, interaction.message.content, [row]);
+}
 
 async function handleRoleButton(client, interaction) {
     const { customId } = interaction;
