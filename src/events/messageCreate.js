@@ -1,5 +1,5 @@
 // src/events/messageCreate.js
-const { ChannelType } = require('discord.js');
+const { ChannelType, PermissionsBitField } = require('discord.js');
 const logger = require('../utils/logger');
 const { db } = require('../database');
 const AutoReact = require('../database/models/AutoReact');
@@ -72,16 +72,40 @@ module.exports = {
         const { checkSubscription } = require('../utils/subscription');
         const freeCommands = ['activate', 'subscription', 'help', 'genkey'];
         
-        // If it's the owner (bot owner), bypass check (optional, but good for debug)
-        const isBotOwner = message.author.id === process.env.OWNER_ID;
+        const { isBotOwner } = require('../utils/ownerUtils');
+        const isOwner = await isBotOwner(message.author.id);
 
-        if (!isBotOwner && !freeCommands.includes(command.name) && !checkSubscription(message.guild.id)) {
+        if (!isOwner && !freeCommands.includes(command.name) && !checkSubscription(message.guild.id)) {
              return message.reply("🔒 **Ce serveur n'a pas de licence active.**\nLa protection et la configuration sont désactivées.\nUtilisez `+activate <clé>` pour activer Yako Guardian Premium.\n*(Coût: 5€/mois/serveur)*");
         }
 
         try {
             // Check whitelist if necessary (for sensitive commands)
-            // This logic can be inside the command itself or a middleware
+            // Custom Permission Check (SQLite)
+            const permSettings = db.prepare('SELECT permission FROM command_permissions WHERE guild_id = ? AND command_name = ?').get(message.guild.id, command.name);
+            
+            if (permSettings) {
+                const reqPerm = permSettings.permission;
+                
+                // Disabled
+                if (reqPerm === '-1') {
+                     // Check if owner to bypass? Usually owners bypass everything.
+                     // But if explicitly disabled, maybe not? Let's allow owner bypass.
+                     if (message.author.id !== message.guild.ownerId && !isOwner) {
+                         return; // Silent fail or reply? Usually silent for disabled.
+                     }
+                }
+                // Everyone
+                else if (reqPerm === '0') {
+                    // Pass
+                }
+                // Specific Permission
+                else {
+                    if (!message.member.permissions.has(PermissionsBitField.Flags[reqPerm]) && message.author.id !== message.guild.ownerId && !isOwner) {
+                         return message.reply(`❌ Vous avez besoin de la permission \`${reqPerm}\` pour utiliser cette commande.`);
+                    }
+                }
+            }
             
             command.run(client, message, args);
         } catch (error) {

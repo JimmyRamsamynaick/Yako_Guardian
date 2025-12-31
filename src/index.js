@@ -22,7 +22,8 @@ const client = new Client({
         GatewayIntentBits.GuildBans,
         GatewayIntentBits.GuildWebhooks,
         GatewayIntentBits.GuildInvites,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.DirectMessages
     ],
     partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User, Partials.GuildMember]
 });
@@ -39,6 +40,9 @@ const handlers = ['commandHandler', 'eventHandler', 'componentHandler', 'formHan
 handlers.forEach(handler => {
     require(`./handlers/${handler}`)(client);
 });
+
+// Load Presence Handler (Rotation System)
+require('./handlers/presenceHandler')(client);
 
 const { checkTempRoles } = require('./utils/tempRoleSystem');
 const { checkAutoBackups } = require('./utils/backupSystem');

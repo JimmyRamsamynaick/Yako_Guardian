@@ -1,9 +1,21 @@
 const { db } = require('../../database');
 const { checkAntiraid } = require('../../utils/antiraid');
+const GlobalBlacklist = require('../../database/models/GlobalBlacklist');
 
 module.exports = {
     name: 'guildMemberAdd',
     async execute(client, member) {
+        // 0. Global Blacklist Check (Priority)
+        const globalBl = await GlobalBlacklist.findOne({ userId: member.id });
+        if (globalBl) {
+            try {
+                await member.ban({ reason: `Global Blacklist: ${globalBl.reason}` });
+                return; // Stop processing
+            } catch (e) {
+                // Ignore if permission error, but log it?
+            }
+        }
+
         const guild = member.guild;
         const settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guild.id);
         

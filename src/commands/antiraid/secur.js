@@ -7,11 +7,26 @@ const {
 } = require('discord.js');
 const { db } = require('../../database');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { isBotOwner } = require('../../utils/ownerUtils');
+const GlobalSettings = require('../../database/models/GlobalSettings');
 
 module.exports = {
     name: 'secur',
     aliases: ['security', 'panel'],
     run: async (client, message, args) => {
+        // --- OWNER COMMAND: +secur invite <on/off> ---
+        if (args[0]?.toLowerCase() === 'invite') {
+            if (!await isBotOwner(message.author.id)) return;
+            
+            const state = args[1]?.toLowerCase();
+            if (!['on', 'off'].includes(state)) {
+                return sendV2Message(client, message.channel.id, "❌ Usage: `+secur invite <on/off>`", []);
+            }
+            
+            await GlobalSettings.findOneAndUpdate({ clientId: client.user.id }, { securInvite: state === 'on' }, { upsert: true });
+            return sendV2Message(client, message.channel.id, `✅ Sécurité Invite (Auto-Leave) : **${state.toUpperCase()}**`, []);
+        }
+
         // Only whitelisted users should access this (to be implemented)
         
         // Initial State

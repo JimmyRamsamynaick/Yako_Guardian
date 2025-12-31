@@ -5,7 +5,8 @@ const {
     StringSelectMenuBuilder, 
     ModalBuilder, 
     TextInputBuilder, 
-    TextInputStyle 
+    TextInputStyle,
+    PermissionsBitField
 } = require('discord.js');
 const { db } = require('../database');
 const logger = require('../utils/logger');
@@ -14,6 +15,7 @@ const { loadBackup } = require('../utils/backupHandler');
 const { handleEmbedInteraction } = require('../commands/utils/embed');
 const Backup = require('../database/models/Backup');
 const Suggestion = require('../database/models/Suggestion');
+const { createTicket } = require('../utils/modmailUtils');
 
 module.exports = (client) => {
     client.on('interactionCreate', async (interaction) => {
@@ -38,9 +40,217 @@ module.exports = (client) => {
             await handleRoleButton(client, interaction);
         } else if (customId.startsWith('suggestion_')) {
             await handleSuggestionButton(client, interaction);
+        } else if (customId.startsWith('modmail_')) {
+            await handleModmailInteraction(client, interaction);
+        } else if (customId === 'btn_set_profil') {
+            await handleSetProfilButton(client, interaction);
+        }
+    // --- RESET HANDLERS ---
+    if (customId === 'confirm_reset_server') {
+        if (interaction.user.id !== interaction.guild.ownerId) {
+             const { isBotOwner } = require('../utils/ownerUtils');
+             if (!(await isBotOwner(interaction.user.id))) {
+                 return interaction.reply({ content: "❌ Seul le propriétaire peut confirmer.", ephemeral: true });
+             }
+        }
+        
+        const { db } = require('../database');
+        try {
+            db.prepare('DELETE FROM guild_settings WHERE guild_id = ?').run(interaction.guild.id);
+            db.prepare('DELETE FROM whitelists WHERE guild_id = ?').run(interaction.guild.id);
+            db.prepare('DELETE FROM blacklists WHERE guild_id = ?').run(interaction.guild.id);
+            db.prepare('DELETE FROM forms WHERE guild_id = ?').run(interaction.guild.id);
+            db.prepare('DELETE FROM command_permissions WHERE guild_id = ?').run(interaction.guild.id);
+            db.prepare('DELETE FROM backups WHERE guild_id = ?').run(interaction.guild.id);
+            
+            await interaction.update({ content: "✅ Serveur réinitialisé avec succès.", components: [] });
+        } catch (e) {
+            await interaction.update({ content: `❌ Erreur: ${e.message}`, components: [] });
+        }
+    }
+
+    if (customId === 'confirm_reset_all') {
+        const { isBotOwner } = require('../utils/ownerUtils');
+        if (!(await isBotOwner(interaction.user.id))) return interaction.reply({ content: "❌ Owner Only.", ephemeral: true });
+
+        const { db } = require('../database');
+        try {
+            db.prepare('DELETE FROM guild_settings').run();
+            db.prepare('DELETE FROM whitelists').run();
+            db.prepare('DELETE FROM blacklists').run();
+            db.prepare('DELETE FROM forms').run();
+            db.prepare('DELETE FROM command_permissions').run();
+            db.prepare('DELETE FROM backups').run();
+            db.prepare('DELETE FROM active_tickets').run();
+            
+            await interaction.update({ content: "✅ **TOUTES** les données ont été effacées.", components: [] });
+        } catch (e) {
+            await interaction.update({ content: `❌ Erreur: ${e.message}`, components: [] });
+        }
+    }
+    
+    if (customId === 'cancel_reset') {
+        await interaction.update({ content: "❌ Opération annulée.", components: [] });
+    }
+
+    });
+
+    client.on('interactionCreate', async (interaction) => {
+        if (!interaction.isModalSubmit()) return;
+        
+        if (interaction.customId === 'modal_set_profil') {
+            await handleSetProfilModal(client, interaction);
         }
     });
 };
+
+
+
+async function handleSetProfilButton(client, interaction) {
+    // Permission check: Administrator
+    if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+        return interaction.reply({ content: "❌ Vous devez être administrateur.", ephemeral: true });
+    }
+
+    const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+    
+    const modal = new ModalBuilder()
+        .setCustomId('modal_set_profil')
+        .setTitle('Modifier le profil du bot');
+
+    const nameInput = new TextInputBuilder()
+        .setCustomId('profil_name')
+        .setLabel("Nouveau Pseudo")
+        .setPlaceholder("Laisser vide pour ne pas changer")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false);
+
+    const picInput = new TextInputBuilder()
+        .setCustomId('profil_pic')
+        .setLabel("URL de l'Avatar")
+        .setPlaceholder("https://... (Laisser vide pour ignorer)")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false);
+
+    const bannerInput = new TextInputBuilder()
+        .setCustomId('profil_banner')
+        .setLabel("URL de la Bannière")
+        .setPlaceholder("https://... (Laisser vide pour ignorer)")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false);
+
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(nameInput),
+        new ActionRowBuilder().addComponents(picInput),
+        new ActionRowBuilder().addComponents(bannerInput)
+    );
+
+    await interaction.showModal(modal);
+}
+
+async function handleSetProfilModal(client, interaction) {
+    const name = interaction.fields.getTextInputValue('profil_name');
+    const pic = interaction.fields.getTextInputValue('profil_pic');
+    const banner = interaction.fields.getTextInputValue('profil_banner');
+    
+    await interaction.deferReply({ ephemeral: true });
+    
+    let logs = [];
+    const { Routes } = require('discord.js');
+    const axios = require('axios');
+    
+    // Helper
+    const getBase64FromUrl = async (url) => {
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(response.data, 'binary');
+        const mime = response.headers['content-type'];
+        return `data:${mime};base64,${buffer.toString('base64')}`;
+    };
+
+    if (name) {
+        try {
+            await interaction.guild.members.me.setNickname(name);
+            logs.push("✅ Pseudo modifié.");
+        } catch (e) {
+            logs.push(`❌ Erreur Pseudo: ${e.message}`);
+        }
+    }
+
+    if (pic) {
+        try {
+            const dataUri = await getBase64FromUrl(pic);
+            await client.rest.patch(Routes.guildMember(interaction.guild.id, '@me'), {
+                body: { avatar: dataUri }
+            });
+            logs.push("✅ Avatar modifié.");
+        } catch (e) {
+            logs.push(`❌ Erreur Avatar: ${e.message}`);
+        }
+    }
+
+    if (banner) {
+        try {
+            const dataUri = await getBase64FromUrl(banner);
+            await client.rest.patch(Routes.guildMember(interaction.guild.id, '@me'), {
+                body: { banner: dataUri }
+            });
+            logs.push("✅ Bannière modifiée.");
+        } catch (e) {
+            logs.push(`❌ Erreur Bannière: ${e.message}`);
+        }
+    }
+
+    if (logs.length === 0) logs.push("ℹ️ Aucune modification demandée.");
+    
+    await interaction.editReply({ content: logs.join('\n') });
+}
+
+async function handleModmailInteraction(client, interaction) {
+    if (interaction.customId === 'modmail_select_guild') {
+        const guildId = interaction.values[0];
+        const guild = client.guilds.cache.get(guildId);
+        
+        if (!guild) {
+            return interaction.reply({ content: "❌ Serveur inaccessible.", ephemeral: true });
+        }
+
+        try {
+            await interaction.deferUpdate(); // Acknowledge
+            await createTicket(client, interaction.user, guild, "Ticket créé via sélection.");
+            await interaction.editReply({ content: `✅ **Ticket ouvert sur ${guild.name} !**\nUn membre du staff vous répondra bientôt.`, components: [] });
+        } catch (e) {
+            await interaction.followUp({ content: `❌ Erreur: ${e.message}`, ephemeral: true });
+        }
+    } else if (interaction.customId === 'modmail_close') {
+        // Permission check
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages) && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return interaction.reply({ content: "❌ Vous n'avez pas la permission de fermer ce ticket.", ephemeral: true });
+        }
+
+        const userId = interaction.channel.topic;
+        if (!userId) {
+            return interaction.reply({ content: "❌ Impossible d'identifier l'utilisateur de ce ticket (Topic vide).", ephemeral: true });
+        }
+
+        await interaction.reply({ content: "🔒 Fermeture du ticket en cours..." });
+
+        // Notify user
+        try {
+            const user = await client.users.fetch(userId);
+            await user.send(`🔒 **Votre ticket sur ${interaction.guild.name} a été fermé par le staff.**`);
+        } catch (e) {
+            // Ignore if DM closed
+        }
+
+        // Clean DB
+        db.prepare('DELETE FROM active_tickets WHERE channel_id = ?').run(interaction.channel.id);
+
+        // Delete channel after 3 seconds
+        setTimeout(() => {
+            interaction.channel.delete().catch(() => {});
+        }, 3000);
+    }
+}
 
 async function handleSuggestionButton(client, interaction) {
     const { customId, user } = interaction;
@@ -184,8 +394,11 @@ async function handleHelpMenu(client, interaction) {
         return;
     }
 
-    if (interaction.isStringSelectMenu() && customId === 'help_select_category') {
-        const value = interaction.values[0];
+    const isSelect = interaction.isStringSelectMenu() && customId === 'help_select_category';
+    const isButton = interaction.isButton() && customId.startsWith('help_btn_');
+
+    if (isSelect || isButton) {
+        const value = isSelect ? interaction.values[0] : customId.replace('help_btn_', 'help_');
         let content = '';
 
         if (value === 'help_antiraid') {
@@ -198,47 +411,53 @@ async function handleHelpMenu(client, interaction) {
         } else if (value === 'help_config') {
             content = `**⚙️ CONFIGURATION**
 
-\`+antitoken <on/off/lock>\` : Protection anti-token.
-\`+antitoken <nombre>/<durée>\` : Limite de join (ex: 5/10s).
-\`+creation limit <durée>\` : Limite d'âge de compte minimum.
-\`+punition <antiraid/all> <kick/ban/derank>\` : Type de sanction automatique.
-\`+blrank <on/off/max>\` : Active le Blacklist Rank (ban auto des blacklistés).
-\`+autoreact <add/remove/list>\` : Gestion des réactions automatiques.
-\`+button\` : Créateur de boutons personnalisés (rôles, messages).`;
+\`+set profil\` : **Menu Interactif** pour changer Nom, Avatar et Bannière.
+\`+set name <pseudo>\` : Changer le pseudo du bot sur ce serveur.
+\`+set pic <url>\` : Changer l'avatar du bot sur ce serveur.
+\`+set banner <url>\` : Changer la bannière de profil du bot sur ce serveur.
+\`+set vocal <on/off/ID>\` : Connecter le bot en vocal 24/7.
+\`+set lang <fr/en>\` : Changer la langue du bot.
+\`+playto / watch / listen / stream <texte>\` : Change l'activité.
+\`+online / idle / dnd / invisible\` : Change le statut du bot.
+\`+theme <couleur>\` : Changer la couleur des embeds (#HEX).
+\`+creation <temps>\` : Limite l'âge du compte pour rejoindre (ex: 7d).
+\`+blrank <on/off>\` : Active/Désactive le blacklist rank (auto-ban des blacklistés).
+\`+punition <kick/ban>\` : Définit la sanction par défaut.
+\`+wl <add/del/list> <user>\` : Gérer la whitelist.
+\`+change <cmd> <perm>\` : Changer les permissions des commandes.`;
         } else if (value === 'help_utils') {
             content = `**🔧 UTILITAIRES & RÔLES**
-            
-\`+embed\` : Créateur d'embed avancé (Titre, Image, Footer...).
-\`+massiverole <add/remove> <rôle>\` : Ajoute/Retire un rôle à tout le serveur.
-\`+temprole <@user> <rôle> <temps>\` : Donne un rôle temporairement.
-\`+voicekick <@user>\` : Déconnecte un utilisateur du vocal.
-\`+voicemove <@user> <salon>\` : Déplace un utilisateur vers un autre salon.
-\`+bringall <salon>\` : Déplace tous les membres vocaux vers un salon (ID requis).
-\`+cleanup\` : Supprime les salons vocaux vides (si configuré).
-\`+changelogs\` : Notes de mise à jour.
-\`+serverinfo\`, \`+vocinfo\`, \`+user\`, \`+role\`, \`+channel\` : Infos détaillées.
-\`+pic\`, \`+banner\`, \`+server pic/banner\`, \`+emoji\` : Récupération d'images.
-\`+snipe\` : Affiche le dernier message supprimé.
-\`+allbots\`, \`+alladmins\`, \`+botadmins\`, \`+boosters\`, \`+rolemembers\` : Listes.
-\`+image\`, \`+wiki\`, \`+calc\` : Outils de recherche et calcul.
+
 \`+suggestion\` : Poster une suggestion.
-\`+suggestion accept/refuse/delete <ID>\` : Gérer une suggestion.
-\`+suggestion clear <all/approved/rejected/pending>\` : Vider les suggestions.
+\`+suggestion <accept/refuse/delete> <ID>\` : Gérer une suggestion.
 \`+lb suggestions\` : Classement des suggestions.
-\`+yako\` : Serveur de support.`;
+\`+embed\` : Créer un embed personnalisé.
+\`+say <message>\` : Fait parler le bot.
+\`+vocinfo\` : Affiche les stats vocales.`;
         } else if (value === 'help_admin') {
             content = `**💾 ADMINISTRATION & BACKUPS**
 
-\`+wl <@membre/ID>\` : Ajoute un membre à la whitelist (Permission max).
-\`+unwl <@membre/ID>\` : Retire un membre de la whitelist.
-\`+wl list\` : Affiche la liste des membres whitelistés.
-\`+blrank <add/del> <membre>\` : Ajoute/Retire manuellement de la blacklist.
-\`+backup create <nom>\` : Crée une sauvegarde du serveur.
-\`+backup load <nom>\` : Charge une sauvegarde (Attention: écrase tout).
-\`+autobackup <on/off>\` : Active les sauvegardes automatiques.
-\`+sync\` : Synchronise les permissions des salons avec les catégories.
-\`+renew\` : Recrée le salon actuel.
-\`+formulaire\` : Configure le système de Modmail.`;
+\`+backup create <nom>\` : Créer une backup.
+\`+backup load <nom>\` : Charger une backup.
+\`+backup list\` : Lister les backups.
+\`+sync\` : Synchroniser les permissions des salons.
+\`+renew <salon>\` : Recréer un salon à neuf.
+\`+modmail <on/off/close>\` : Activer/Désactiver le modmail ou fermer un ticket.
+\`+lang custom <on/off>\` : Gérer la langue personnalisée.`;
+        } else if (value === 'help_owner') {
+            content = `**👑 ESPACE OWNER**
+
+\`+owner <add/del/list>\` : Gérer les owners du bot.
+\`+bl <add/del/list> <user>\` : Gérer la blacklist globale.
+\`+clear <owners/bl>\` : Vider entièrement une liste (Root Only).
+\`+globalset <name/pic> <valeur>\` : Changer le profil **GLOBAL**.
+\`+secur invite <on/off>\` : Activer l'anti-add (leave si ajouté par non-owner).
+\`+server list\` : Liste des serveurs.
+\`+server invite/leave <ID>\` : Rejoindre/Quitter un serveur.
+\`+mp <ID> <msg>\` : Envoyer un MP.
+\`+discussion <ID>\` : Ouvrir un chat avec un utilisateur.
+\`+reset server\` : Réinitialiser la configuration de **CE** serveur.
+\`+resetall\` : Réinitialiser **TOUS** les serveurs (Emergency).`;
         }
 
         const components = extractActionRows(interaction.message.components);

@@ -4,26 +4,45 @@ const { Routes } = require('discord.js');
  * Wraps content and components into a V2 Container (Type 17) payload.
  * @param {string} content - The text content (will be converted to Type 10 Text Display).
  * @param {Array} componentRows - Array of ActionRowBuilders or raw component objects.
+ * @param {string|null} imageUrl - Optional URL for an image (Type 11 Media Display).
  * @returns {Object} The raw message body compatible with Discord API.
  */
-function createV2Payload(content, componentRows) {
+function createV2Payload(content, componentRows, imageUrl = null) {
     // Convert builders to JSON if necessary
     const rawComponents = componentRows.map(row => 
         typeof row.toJSON === 'function' ? row.toJSON() : row
     );
+
+    const containerComponents = [
+        {
+            type: 10, // Text Display
+            content: content
+        }
+    ];
+
+    // Add Image if provided
+    if (imageUrl) {
+        containerComponents.push({
+            type: 12, // Media Gallery
+            items: [
+                {
+                    media: {
+                        url: imageUrl
+                    }
+                }
+            ]
+        });
+    }
+
+    // Add Action Rows (Buttons/Selects)
+    containerComponents.push(...rawComponents);
 
     return {
         flags: 1 << 15, // IS_COMPONENTS_V2
         components: [
             {
                 type: 17, // Container
-                components: [
-                    {
-                        type: 10, // Text Display
-                        content: content
-                    },
-                    ...rawComponents
-                ]
+                components: containerComponents
             }
         ]
     };
@@ -35,9 +54,10 @@ function createV2Payload(content, componentRows) {
  * @param {string} channelId - Target Channel ID.
  * @param {string} content - Text content.
  * @param {Array} components - Array of ActionRowBuilders.
+ * @param {string|null} imageUrl - Optional Image URL.
  */
-async function sendV2Message(client, channelId, content, components) {
-    const body = createV2Payload(content, components);
+async function sendV2Message(client, channelId, content, components, imageUrl = null) {
+    const body = createV2Payload(content, components, imageUrl);
     return client.rest.post(Routes.channelMessages(channelId), { body });
 }
 

@@ -43,7 +43,21 @@ function initDatabase() {
             punition_antiraid TEXT DEFAULT 'kick', -- derank, kick, ban
             punition_all TEXT DEFAULT 'kick', -- derank, kick, ban
 
-            creation_limit_time INTEGER DEFAULT 0 -- 0 = disabled
+            creation_limit_time INTEGER DEFAULT 0, -- 0 = disabled
+
+            -- Modmail
+            modmail_enabled TEXT DEFAULT 'off', -- off, on
+            modmail_category TEXT -- Category ID
+        )
+    `);
+
+    // Active Modmail Tickets
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS active_tickets (
+            user_id TEXT,
+            guild_id TEXT,
+            channel_id TEXT,
+            PRIMARY KEY (user_id, guild_id)
         )
     `);
 
@@ -68,18 +82,13 @@ function initDatabase() {
         )
     `);
 
-    // Global Blacklist (Bot-wide or Server-specific? Prompt implies bot features but usually BL is global or per server. 
-    // "Blacklist Rank" suggests a feature to blacklist users based on rank? Or a global blacklist.
-    // Given "+blrank <on/off/max>" it seems to be a module that checks against a blacklist.
-    // I'll assume a local blacklist table for now, or a global one if intended.
-    // Let's make it per guild for now unless specified otherwise, but "Blacklist Rank" sounds like "Blacklist Managers". 
-    // Wait, "+blrank <add/del> <membre>" -> This likely adds people to the blacklist.
+    // Command Permissions Overrides
     db.exec(`
-        CREATE TABLE IF NOT EXISTS blacklists (
+        CREATE TABLE IF NOT EXISTS command_permissions (
             guild_id TEXT,
-            user_id TEXT,
-            reason TEXT,
-            PRIMARY KEY (guild_id, user_id)
+            command_name TEXT,
+            permission TEXT, -- Administrator, ManageMessages, etc. OR '0' (Everyone), '-1' (Disabled)
+            PRIMARY KEY (guild_id, command_name)
         )
     `);
 
@@ -97,35 +106,67 @@ function initDatabase() {
             key_code TEXT PRIMARY KEY,
             duration_days INTEGER,
             created_at INTEGER,
-            used_by TEXT,
+            used_by TEXT, -- guild_id
             used_at INTEGER
         )
     `);
 
-    // Purchase Requests
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS purchase_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT,
-            paypal_username TEXT,
-            discord_id TEXT,
-            server_id TEXT,
-            status TEXT DEFAULT 'pending', -- pending, completed
-            created_at INTEGER
-        )
-    `);
+    const columns = db.prepare(`PRAGMA table_info(guild_settings)`).all();
+    const hasModmail = columns.some(c => c.name === 'modmail_enabled');
+    const hasModmailCategory = columns.some(c => c.name === 'modmail_category');
+    const hasTheme = columns.some(c => c.name === 'theme_color');
+    const hasEmbedBanner = columns.some(c => c.name === 'embed_banner');
+    const hasVoiceChannel = columns.some(c => c.name === 'voice_channel');
+    const hasLanguage = columns.some(c => c.name === 'language');
+    const hasCustomLang = columns.some(c => c.name === 'custom_lang_url');
+    const hasHelpAlias = columns.some(c => c.name === 'help_alias_enabled');
+    const hasHelpType = columns.some(c => c.name === 'help_type');
 
-    // Migration for existing tables (safe to run every time)
-    try {
-        db.prepare("ALTER TABLE purchase_requests ADD COLUMN paypal_username TEXT").run();
-    } catch (error) {
-        // Column likely exists, ignore
+    if (!hasModmail) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN modmail_enabled TEXT DEFAULT 'off'`);
     }
-    
-    console.log('Database initialized successfully.');
+    if (!hasModmailCategory) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN modmail_category TEXT`);
+    }
+    if (!hasTheme) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN theme_color TEXT DEFAULT '#2b2d31'`);
+    }
+    if (!hasEmbedBanner) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN embed_banner TEXT`);
+    }
+    if (!hasVoiceChannel) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN voice_channel TEXT`);
+    }
+    if (!hasLanguage) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN language TEXT DEFAULT 'fr'`);
+    }
+    if (!hasCustomLang) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN custom_lang_url TEXT`);
+    }
+    if (!hasHelpAlias) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN help_alias_enabled TEXT DEFAULT 'on'`);
+    }
+    if (!hasHelpType) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN help_type TEXT DEFAULT 'select'`);
+    }
+
+    const hasBotStatus = columns.some(c => c.name === 'bot_status');
+    const hasBotActivityType = columns.some(c => c.name === 'bot_activity_type');
+    const hasBotActivityText = columns.some(c => c.name === 'bot_activity_text');
+    const hasBotActivityUrl = columns.some(c => c.name === 'bot_activity_url');
+
+    if (!hasBotStatus) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN bot_status TEXT`);
+    }
+    if (!hasBotActivityType) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN bot_activity_type TEXT`);
+    }
+    if (!hasBotActivityText) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN bot_activity_text TEXT`);
+    }
+    if (!hasBotActivityUrl) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN bot_activity_url TEXT`);
+    }
 }
 
-module.exports = {
-    db,
-    initDatabase
-};
+module.exports = { initDatabase, db };
