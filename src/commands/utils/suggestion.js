@@ -15,12 +15,23 @@ module.exports = {
                 return sendV2Message(client, message.channel.id, "❌ Permission `Gérer les messages` requise.", []);
             }
 
-            const messageId = args[1];
+            let messageId = args[1];
             if (!messageId) {
-                return sendV2Message(client, message.channel.id, `**Usage:** \`+suggestion ${sub} <ID Message>\``, []);
+                return sendV2Message(client, message.channel.id, `**Usage:** \`+suggestion ${sub} <ID Message | last>\``, []);
             }
 
-            const suggestion = await Suggestion.findOne({ messageId: messageId });
+            let suggestion;
+            if (messageId.toLowerCase() === 'last') {
+                suggestion = await Suggestion.findOne({ guildId: message.guild.id }).sort({ createdAt: -1 });
+                if (suggestion) messageId = suggestion.messageId;
+            } else {
+                // Try to find by messageId first, then by _id
+                suggestion = await Suggestion.findOne({ messageId: messageId });
+                if (!suggestion && messageId.match(/^[0-9a-fA-F]{24}$/)) {
+                     suggestion = await Suggestion.findById(messageId);
+                }
+            }
+
             if (!suggestion) {
                 return sendV2Message(client, message.channel.id, "❌ Suggestion introuvable dans la base de données.", []);
             }
@@ -82,7 +93,7 @@ module.exports = {
                     .setStyle(ButtonStyle.Danger)
             );
 
-        const msgContent = `**📢 Nouvelle Suggestion**\nProposée par <@${message.author.id}>\n\n> ${content}`;
+        const msgContent = `**📢 Nouvelle Suggestion**\nProposée par <@${message.author.id}>\n\n> ${content}\n\nID: \`${savedSuggestion._id}\``;
         const sentMsg = await sendV2Message(client, message.channel.id, msgContent, [row]);
 
         savedSuggestion.messageId = sentMsg.id;
