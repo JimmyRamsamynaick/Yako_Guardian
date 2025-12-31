@@ -33,9 +33,40 @@ module.exports = (client) => {
             await handleBackup(client, interaction);
         } else if (customId.startsWith('embed_') || customId.startsWith('modal_embed_')) {
             await handleEmbedInteraction(client, interaction);
+        } else if (customId.startsWith('btn_role_')) {
+            await handleRoleButton(client, interaction);
         }
     });
 };
+
+async function handleRoleButton(client, interaction) {
+    const { customId } = interaction;
+    const roleId = customId.replace('btn_role_', '');
+    const role = interaction.guild.roles.cache.get(roleId);
+
+    if (!role) {
+        return interaction.reply({ content: "❌ Ce rôle n'existe plus.", ephemeral: true });
+    }
+
+    if (role.position >= interaction.guild.members.me.roles.highest.position) {
+        return interaction.reply({ content: "❌ Je ne peux pas gérer ce rôle (il est au-dessus de moi).", ephemeral: true });
+    }
+
+    const member = interaction.member;
+
+    try {
+        if (member.roles.cache.has(roleId)) {
+            await member.roles.remove(role);
+            return interaction.reply({ content: `❌ Rôle **${role.name}** retiré.`, ephemeral: true });
+        } else {
+            await member.roles.add(role);
+            return interaction.reply({ content: `✅ Rôle **${role.name}** ajouté.`, ephemeral: true });
+        }
+    } catch (e) {
+        console.error(e);
+        return interaction.reply({ content: "❌ Erreur lors de la modification du rôle.", ephemeral: true });
+    }
+}
 
 async function handleBackup(client, interaction) {
     if (interaction.customId === 'backup_cancel') {
@@ -91,34 +122,6 @@ async function handleHelpMenu(client, interaction) {
     if (customId === 'help_close') {
         await interaction.message.delete();
         return;
-    }
-
-    // === BUTTON ROLES ===
-    if (interaction.isButton() && customId.startsWith('btn_role_')) {
-        const roleId = customId.replace('btn_role_', '');
-        const role = interaction.guild.roles.cache.get(roleId);
-
-        if (!role) {
-            return interaction.reply({ content: "❌ Ce rôle n'existe plus.", ephemeral: true });
-        }
-
-        if (role.position >= interaction.guild.members.me.roles.highest.position) {
-            return interaction.reply({ content: "❌ Je ne peux pas gérer ce rôle (il est au-dessus de moi).", ephemeral: true });
-        }
-
-        const member = interaction.member;
-
-        try {
-            if (member.roles.cache.has(roleId)) {
-                await member.roles.remove(role);
-                return interaction.reply({ content: `❌ Rôle **${role.name}** retiré.`, ephemeral: true });
-            } else {
-                await member.roles.add(role);
-                return interaction.reply({ content: `✅ Rôle **${role.name}** ajouté.`, ephemeral: true });
-            }
-        } catch (e) {
-            return interaction.reply({ content: "❌ Erreur lors de la modification du rôle.", ephemeral: true });
-        }
     }
 
     if (interaction.isStringSelectMenu() && customId === 'help_select_category') {

@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes } = require('discord.js');
 const { sendV2Message } = require('../../utils/componentUtils');
 
 module.exports = {
@@ -56,9 +56,21 @@ module.exports = {
             try {
                 await targetMsg.edit({ components: [] });
                 await message.delete().catch(() => {});
-                sendV2Message(client, message.channel.id, "🗑️ Boutons supprimés.", [], true);
+                
+                // Note: Ephemeral messages are not possible with text commands (+button).
+                // We simulate it by deleting the confirmation after 3 seconds.
+                const confirmMsg = await sendV2Message(client, message.channel.id, "🗑️ Boutons supprimés.", []);
+                setTimeout(() => {
+                    client.rest.delete(Routes.channelMessage(message.channel.id, confirmMsg.id)).catch(() => {});
+                }, 3000);
+                
+                return;
             } catch (e) {
-                 return sendV2Message(client, message.channel.id, "❌ Erreur lors de la suppression.", []);
+                 const errorMsg = await sendV2Message(client, message.channel.id, "❌ Erreur lors de la suppression.", []);
+                 setTimeout(() => {
+                    client.rest.delete(Routes.channelMessage(message.channel.id, errorMsg.id)).catch(() => {});
+                }, 5000);
+                return;
             }
         }
     }
