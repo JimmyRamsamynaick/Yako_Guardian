@@ -14,7 +14,9 @@ module.exports = {
 
             try {
                 const url = `https://fr.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=5&namespace=0&format=json`;
-                const res = await axios.get(url);
+                const res = await axios.get(url, {
+                    headers: { 'User-Agent': 'YakoGuardian/1.0 (jimmyramsamynaick@gmail.com)' }
+                });
                 const [searchTerm, titles, descriptions, urls] = res.data;
 
                 if (!titles || titles.length === 0) {
