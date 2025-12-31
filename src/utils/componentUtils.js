@@ -42,6 +42,19 @@ async function sendV2Message(client, channelId, content, components) {
 }
 
 /**
+ * Edits a V2 message in a channel via REST API.
+ * @param {Client} client - Discord Client.
+ * @param {string} channelId - Target Channel ID.
+ * @param {string} messageId - Target Message ID.
+ * @param {string} content - New text content.
+ * @param {Array} components - New components.
+ */
+async function editV2Message(client, channelId, messageId, content, components) {
+    const body = createV2Payload(content, components);
+    return client.rest.patch(Routes.channelMessage(channelId, messageId), { body });
+}
+
+/**
  * Updates a message interaction with V2 components via REST API.
  * @param {Client} client - Discord Client.
  * @param {Interaction} interaction - The interaction object.
@@ -113,4 +126,4 @@ function extractActionRows(components) {
     return rows;
 }
 
-module.exports = { createV2Payload, sendV2Message, updateV2Interaction, replyV2Interaction, extractActionRows };
+module.exports = { createV2Payload, sendV2Message, editV2Message, updateV2Interaction, replyV2Interaction, extractActionRows };

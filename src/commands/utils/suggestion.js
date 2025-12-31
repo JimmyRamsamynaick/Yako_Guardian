@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { sendV2Message, editV2Message } = require('../../utils/componentUtils');
 const Suggestion = require('../../database/models/Suggestion');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
 
@@ -55,7 +55,15 @@ module.exports = {
                 await suggestion.save();
                 
                 const newContent = `**✅ Suggestion Approuvée**\nProposée par <@${suggestion.authorId}>\n\n> ${suggestion.content}\n\n_Validée par ${message.author.tag}_`;
-                if (targetMsg) await targetMsg.edit({ content: newContent, components: [] }); // Remove buttons
+                if (targetMsg) {
+                    try {
+                        // Use editV2Message to avoid legacy field errors with V2 messages
+                        await editV2Message(client, message.channel.id, targetMsg.id, newContent, []);
+                    } catch (e) {
+                         // Fallback if not V2 (shouldn't happen for suggestions but just in case)
+                         await targetMsg.edit({ content: newContent, components: [] }).catch(() => {});
+                    }
+                }
                 return sendV2Message(client, message.channel.id, "✅ Suggestion validée.", []);
             }
 
@@ -64,7 +72,14 @@ module.exports = {
                 await suggestion.save();
                 
                 const newContent = `**❌ Suggestion Refusée**\nProposée par <@${suggestion.authorId}>\n\n> ${suggestion.content}\n\n_Refusée par ${message.author.tag}_`;
-                if (targetMsg) await targetMsg.edit({ content: newContent, components: [] }); // Remove buttons
+                if (targetMsg) {
+                    try {
+                        // Use editV2Message to avoid legacy field errors with V2 messages
+                        await editV2Message(client, message.channel.id, targetMsg.id, newContent, []);
+                    } catch (e) {
+                         await targetMsg.edit({ content: newContent, components: [] }).catch(() => {});
+                    }
+                }
                 return sendV2Message(client, message.channel.id, "❌ Suggestion refusée.", []);
             }
             return;
