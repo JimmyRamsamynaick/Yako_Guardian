@@ -29,6 +29,7 @@ const client = new Client({
 
 client.commands = new Collection();
 client.aliases = new Collection();
+client.snipes = new Collection();
 client.config = {
     prefix: '+' // Default prefix
 };
