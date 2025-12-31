@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yako Guardian - Boutique</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background-color: #2b2b2b;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-width: 400px;
+        }
+        h1 { margin-bottom: 10px; color: #7289da; }
+        .price { font-size: 2em; font-weight: bold; margin: 20px 0; }
+        .paypal-btn {
+            background-color: #0070ba;
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .paypal-btn:hover { background-color: #005ea6; }
+        
+        input[type="email"] {
+            padding: 10px;
+            width: 80%;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #40444b;
+            color: white;
+        }
+        
+        button.confirm-btn {
+            background-color: #5865F2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button.confirm-btn:hover { background-color: #4752c4; }
+
+        .note { margin-top: 20px; font-size: 0.8em; color: #aaa; text-align: left; }
+        .step { margin: 10px 0; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Yako Guardian Premium</h1>
+        <p>Protégez votre serveur avec la meilleure sécurité.</p>
+        <div class="price">5.00€ <span style="font-size:0.5em">/mois</span></div>
+        
+        <div class="step">
+            <strong>Étape 1 :</strong> Payer via PayPal
+        </div>
+        <!-- Replace YOUR_PAYPAL_ME_LINK with actual link or just keep generic for now -->
+        <a href="https://paypal.me/JimmyRamsamynaick" target="_blank" class="paypal-btn">Payer avec PayPal</a>
+
+        <div class="step">
+            <strong>Étape 2 :</strong> Confirmer votre demande
+        </div>
+        <form action="/request-license" method="POST">
+            <input type="text" name="paypal_username" placeholder="Votre pseudo PayPal" required style="
+                padding: 10px;
+                width: 80%;
+                margin-bottom: 10px;
+                border-radius: 5px;
+                border: 1px solid #555;
+                background-color: #40444b;
+                color: white;
+            ">
+            <input type="email" name="email" placeholder="Votre adresse email" required>
+            <button type="submit" class="confirm-btn">J'ai effectué le paiement</button>
+        </form>
+
+        <p class="note">
+            ⚠️ <strong>Important :</strong><br>
+            Après vérification de votre paiement, votre clé d'activation vous sera envoyée par email sous <strong>24 à 48 heures</strong>.
+        </p>
+    </div>
+</body>
+</html>

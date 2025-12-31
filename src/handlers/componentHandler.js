@@ -1,15 +1,18 @@
-// src/handlers/componentHandler.js
 const { 
     ActionRowBuilder, 
     ButtonBuilder, 
     ButtonStyle, 
-    StringSelectMenuBuilder,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle
+    StringSelectMenuBuilder, 
+    ModalBuilder, 
+    TextInputBuilder, 
+    TextInputStyle 
 } = require('discord.js');
 const { db } = require('../database');
 const logger = require('../utils/logger');
+const { updateV2Interaction, replyV2Interaction, extractActionRows } = require('../utils/componentUtils');
+const { loadBackup } = require('../utils/backupHandler');
+const { handleEmbedInteraction } = require('../commands/utils/embed');
+const Backup = require('../database/models/Backup');
 
 module.exports = (client) => {
     client.on('interactionCreate', async (interaction) => {
@@ -26,9 +29,61 @@ module.exports = (client) => {
             await handleSecurPanel(client, interaction);
         } else if (customId.startsWith('help_')) {
             await handleHelpMenu(client, interaction);
+        } else if (customId.startsWith('backup_')) {
+            await handleBackup(client, interaction);
+        } else if (customId.startsWith('embed_') || customId.startsWith('modal_embed_')) {
+            await handleEmbedInteraction(client, interaction);
         }
     });
 };
+
+async function handleBackup(client, interaction) {
+    if (interaction.customId === 'backup_cancel') {
+        await interaction.message.delete().catch(() => {});
+        return;
+    }
+
+    const loadMatch = interaction.customId.match(/^backup_confirm_load_(.+)$/);
+    if (loadMatch) {
+        const name = loadMatch[1];
+        
+        // Check perms
+        if (!interaction.member.permissions.has('Administrator') && interaction.member.id !== interaction.guild.ownerId) {
+             return replyV2Interaction(client, interaction, "❌ Permission refusée.", [], true);
+        }
+
+        try {
+            await replyV2Interaction(client, interaction, "⏳ Chargement de la backup en cours... Patientez.", [], true);
+            await loadBackup(interaction.guild, name);
+            await replyV2Interaction(client, interaction, `✅ Backup \`${name}\` chargée avec succès !`, [], true);
+            await interaction.message.delete().catch(() => {});
+        } catch (error) {
+            console.error(error);
+            await replyV2Interaction(client, interaction, `❌ Erreur lors du chargement : ${error.message}`, [], true);
+        }
+        return;
+    }
+
+    const delMatch = interaction.customId.match(/^backup_confirm_delete_(.+)$/);
+    if (delMatch) {
+        const name = delMatch[1];
+        
+        // Check perms
+        if (!interaction.member.permissions.has('Administrator') && interaction.member.id !== interaction.guild.ownerId) {
+             return replyV2Interaction(client, interaction, "❌ Permission refusée.", [], true);
+        }
+
+        try {
+            await Backup.deleteOne({ guild_id: interaction.guild.id, name: name });
+            await replyV2Interaction(client, interaction, `✅ Backup \`${name}\` supprimée avec succès.`, [], true);
+            await interaction.message.delete().catch(() => {});
+        } catch (error) {
+            console.error(error);
+            await replyV2Interaction(client, interaction, `❌ Erreur : ${error.message}`, [], true);
+        }
+        return;
+    }
+}
 
 async function handleHelpMenu(client, interaction) {
     const { customId } = interaction;
@@ -38,6 +93,34 @@ async function handleHelpMenu(client, interaction) {
         return;
     }
 
+    // === BUTTON ROLES ===
+    if (interaction.isButton() && customId.startsWith('btn_role_')) {
+        const roleId = customId.replace('btn_role_', '');
+        const role = interaction.guild.roles.cache.get(roleId);
+
+        if (!role) {
+            return interaction.reply({ content: "❌ Ce rôle n'existe plus.", ephemeral: true });
+        }
+
+        if (role.position >= interaction.guild.members.me.roles.highest.position) {
+            return interaction.reply({ content: "❌ Je ne peux pas gérer ce rôle (il est au-dessus de moi).", ephemeral: true });
+        }
+
+        const member = interaction.member;
+
+        try {
+            if (member.roles.cache.has(roleId)) {
+                await member.roles.remove(role);
+                return interaction.reply({ content: `❌ Rôle **${role.name}** retiré.`, ephemeral: true });
+            } else {
+                await member.roles.add(role);
+                return interaction.reply({ content: `✅ Rôle **${role.name}** ajouté.`, ephemeral: true });
+            }
+        } catch (e) {
+            return interaction.reply({ content: "❌ Erreur lors de la modification du rôle.", ephemeral: true });
+        }
+    }
+
     if (interaction.isStringSelectMenu() && customId === 'help_select_category') {
         const value = interaction.values[0];
         let content = '';
@@ -45,38 +128,70 @@ async function handleHelpMenu(client, interaction) {
         if (value === 'help_antiraid') {
             content = `**🛡️ SÉCURITÉ & ANTIRAID**
             
-\`+secur\` : Ouvre le panneau de sécurité principal.
-\`+raidlog <on/off> [salon]\` : Active/Désactive les logs antiraid.
-\`+raidping <rôle>\` : Définit le rôle à mentionner en cas de raid.
-
-_Les modules antiraid se configurent via le panneau \`+secur\`._`;
+\`+secur\` : Ouvre le panneau de sécurité principal (Anti-Bot, Anti-Webook, etc.).
+\`+raidlog <on/off> [salon]\` : Active/Désactive les logs de sécurité.
+\`+raidping <rôle>\` : Définit le rôle à mentionner en cas d'alerte.
+\`+unbanall\` : Débannir tous les utilisateurs bannis du serveur.`;
         } else if (value === 'help_config') {
             content = `**⚙️ CONFIGURATION**
 
 \`+antitoken <on/off/lock>\` : Protection anti-token.
 \`+antitoken <nombre>/<durée>\` : Limite de join (ex: 5/10s).
-\`+creation limit <durée>\` : Limite d'âge de compte.
-\`+punition <antiraid/all> <kick/ban/derank>\` : Type de sanction.
-\`+blrank <on/off/max>\` : Active le Blacklist Rank.`;
-        } else if (value === 'help_whitelist') {
-            content = `**👥 WHITELIST & GESTION**
+\`+creation limit <durée>\` : Limite d'âge de compte minimum.
+\`+punition <antiraid/all> <kick/ban/derank>\` : Type de sanction automatique.
+\`+blrank <on/off/max>\` : Active le Blacklist Rank (ban auto des blacklistés).
+\`+autoreact <add/remove/list>\` : Gestion des réactions automatiques.
+\`+button\` : Créateur de boutons personnalisés (rôles, messages).`;
+        } else if (value === 'help_utils') {
+            content = `**🔧 UTILITAIRES & RÔLES**
+            
+\`+embed\` : Créateur d'embed avancé (Titre, Image, Footer...).
+\`+massiverole <add/remove> <rôle>\` : Ajoute/Retire un rôle à tout le serveur.
+\`+temprole <@user> <rôle> <temps>\` : Donne un rôle temporairement.
+\`+voicekick <@user>\` : Déconnecte un utilisateur du vocal.
+\`+voicemove <@user> <salon>\` : Déplace un utilisateur.
+\`+bringall <salon>\` : Déplace tous les membres vocaux vers un salon.
+\`+cleanup\` : Supprime les salons vocaux vides (si configuré).`;
+        } else if (value === 'help_admin') {
+            content = `**💾 ADMINISTRATION & BACKUPS**
 
-\`+wl <@membre/ID>\` : Ajoute un membre à la whitelist.
+\`+wl <@membre/ID>\` : Ajoute un membre à la whitelist (Permission max).
 \`+unwl <@membre/ID>\` : Retire un membre de la whitelist.
-\`+wl\` : Affiche la liste des whitelisted.
-\`+blrank <add/del> <membre>\` : Ajoute/Retire manuellement de la blacklist.`;
+\`+wl list\` : Affiche la liste des membres whitelistés.
+\`+blrank <add/del> <membre>\` : Ajoute/Retire manuellement de la blacklist.
+\`+backup create <nom>\` : Crée une sauvegarde du serveur.
+\`+backup load <nom>\` : Charge une sauvegarde (Attention: écrase tout).
+\`+autobackup <on/off>\` : Active les sauvegardes automatiques.
+\`+sync\` : Synchronise les permissions des salons avec les catégories.
+\`+renew\` : Recrée le salon actuel.
+\`+formulaire\` : Configure le système de Modmail.`;
         }
 
-        await interaction.update({
-            content: content + '\n\n_Sélectionnez une autre catégorie ci-dessous pour changer._',
-            components: interaction.message.components // Keep the existing menu
-        });
+        const components = extractActionRows(interaction.message.components);
+        
+        try {
+            await updateV2Interaction(
+                client, 
+                interaction, 
+                content + '\n\n_Sélectionnez une autre catégorie ci-dessous pour changer._', 
+                components
+            );
+        } catch (error) {
+            console.error("Error updating V2 help:", error);
+        }
     }
 }
 
 async function handleSecurPanel(client, interaction) {
     const guildId = interaction.guild.id;
     let settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    
+    if (!settings) {
+        try {
+            await replyV2Interaction(client, interaction, "❌ Erreur : Paramètres introuvables. Veuillez refaire +secur.", [], true);
+        } catch (e) { console.error("Error replying no settings:", e); }
+        return;
+    }
     
     // Helper to regenerate the panel
     const generateStatusText = (s) => {
@@ -121,6 +236,10 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                     .setCustomId('secur_toggle_all_on')
                     .setLabel('Tout Activer')
                     .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId('secur_toggle_all_max')
+                    .setLabel('Tout Max')
+                    .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId('secur_toggle_all_off')
                     .setLabel('Tout Désactiver')
@@ -167,10 +286,16 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        await interaction.update({
-            content: `**Configuration : ${module.toUpperCase()}**\nÉtat actuel : ${settings[module]}\n\nChoisissez une action :`,
-            components: [rowModuleActions, rowBack]
-        });
+        try {
+            await updateV2Interaction(
+                client,
+                interaction,
+                `**Configuration : ${module.toUpperCase()}**\nÉtat actuel : ${settings[module]}\n\nChoisissez une action :`,
+                [rowModuleActions, rowBack]
+            );
+        } catch (error) {
+            console.error("Error updating V2 secur panel (module select):", error);
+        }
         return;
     }
 
@@ -179,10 +304,16 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
     if (interaction.isButton()) {
         if (interaction.customId === 'secur_back_main' || interaction.customId === 'secur_refresh') {
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
-            await interaction.update({
-                content: generateStatusText(settings),
-                components: [getRowSelect(), getRowButtons()]
-            });
+            try {
+                await updateV2Interaction(
+                    client,
+                    interaction,
+                    generateStatusText(settings),
+                    [getRowSelect(), getRowButtons()]
+                );
+            } catch (error) {
+                console.error("Error updating V2 secur panel (back/refresh):", error);
+            }
             return;
         }
 
@@ -195,10 +326,38 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                 WHERE guild_id = ?`).run(guildId);
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
-            await interaction.update({
-                content: generateStatusText(settings),
-                components: [getRowSelect(), getRowButtons()]
-            });
+            try {
+                await updateV2Interaction(
+                    client,
+                    interaction,
+                    generateStatusText(settings),
+                    [getRowSelect(), getRowButtons()]
+                );
+            } catch (error) {
+                console.error("Error updating V2 secur panel (all on):", error);
+            }
+            return;
+        }
+
+        if (interaction.customId === 'secur_toggle_all_max') {
+            // Update all to MAX
+            db.prepare(`UPDATE guild_settings SET 
+                antitoken_level='max', antiupdate='max', antichannel='max', antirole='max', 
+                antiwebhook='max', antiunban='max', antibot='max', antiban='max', 
+                antieveryone='max', antideco='max' 
+                WHERE guild_id = ?`).run(guildId);
+            
+            settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+            try {
+                await updateV2Interaction(
+                    client,
+                    interaction,
+                    generateStatusText(settings),
+                    [getRowSelect(), getRowButtons()]
+                );
+            } catch (error) {
+                console.error("Error updating V2 secur panel (all max):", error);
+            }
             return;
         }
 
@@ -211,10 +370,16 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                 WHERE guild_id = ?`).run(guildId);
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
-            await interaction.update({
-                content: generateStatusText(settings),
-                components: [getRowSelect(), getRowButtons()]
-            });
+            try {
+                await updateV2Interaction(
+                    client,
+                    interaction,
+                    generateStatusText(settings),
+                    [getRowSelect(), getRowButtons()]
+                );
+            } catch (error) {
+                console.error("Error updating V2 secur panel (all off):", error);
+            }
             return;
         }
 
@@ -242,9 +407,6 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                     .setStyle(TextInputStyle.Short)
                     .setRequired(false);
 
-                // Fetch existing limit to pre-fill? (Optional, requires extra DB query logic)
-                // For now, let's keep it empty or simple.
-                
                 const firstActionRow = new ActionRowBuilder().addComponents(limitInput);
                 const secondActionRow = new ActionRowBuilder().addComponents(timeInput);
 
@@ -268,10 +430,16 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                 );
                 const rowBack = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('secur_back_main').setLabel('Retour').setStyle(ButtonStyle.Secondary));
 
-                await interaction.update({
-                    content: `**Configuration : ${moduleName.toUpperCase()}**\nÉtat actuel : ${settings[moduleName]}\n\nChoisissez une action :`,
-                    components: [rowModuleActions, rowBack]
-                });
+                try {
+                    await updateV2Interaction(
+                        client,
+                        interaction,
+                        `**Configuration : ${moduleName.toUpperCase()}**\nÉtat actuel : ${settings[moduleName]}\n\nChoisissez une action :`,
+                        [rowModuleActions, rowBack]
+                    );
+                } catch (error) {
+                    console.error("Error updating V2 secur panel (action):", error);
+                }
             }
         }
     }
@@ -287,9 +455,17 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
             // Save to DB
             if (limitCount && limitTime) {
                 db.prepare(`INSERT OR REPLACE INTO module_limits (guild_id, module, limit_count, limit_time) VALUES (?, ?, ?, ?)`).run(guildId, moduleName, parseInt(limitCount), parseInt(limitTime));
-                await interaction.reply({ content: `✅ Configuration sauvegardée pour ${moduleName} : ${limitCount} actions en ${limitTime}ms.`, ephemeral: true });
+                try {
+                    await replyV2Interaction(client, interaction, `✅ Configuration sauvegardée pour ${moduleName} : ${limitCount} actions en ${limitTime}ms.`, [], true);
+                } catch (error) {
+                    console.error("Error replying V2 modal:", error);
+                }
             } else {
-                await interaction.reply({ content: `⚠️ Configuration ignorée (champs vides).`, ephemeral: true });
+                try {
+                    await replyV2Interaction(client, interaction, `⚠️ Configuration ignorée (champs vides).`, [], true);
+                } catch (error) {
+                    console.error("Error replying V2 modal (empty):", error);
+                }
             }
         }
     }

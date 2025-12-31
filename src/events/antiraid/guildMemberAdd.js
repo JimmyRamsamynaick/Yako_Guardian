@@ -25,7 +25,7 @@ module.exports = {
             // Audit Log: BotAdd
             const { getExecutor } = require('../../utils/audit');
             const { AuditLogEvent } = require('discord.js');
-            const executor = await getExecutor(guild, AuditLogEvent.BotAdd);
+            const executor = await getExecutor(guild, AuditLogEvent.BotAdd, member.id);
             
             if (executor) {
                 const adder = await guild.members.fetch(executor.id).catch(() => null);
@@ -63,6 +63,37 @@ module.exports = {
                 await member.kick('Yako Guardian | Compte trop récent');
                 return;
             }
+        }
+
+        // 3. Anti-Token (Rate Limit)
+        if (settings.antitoken_level !== 'off') {
+             // We need a global cache for joins. 
+             if (!client.joinRateCache) client.joinRateCache = new Map();
+             
+             const key = `joins_${guild.id}`;
+             const now = Date.now();
+             
+             // Custom limits 
+             const customLimit = db.prepare('SELECT * FROM module_limits WHERE guild_id = ? AND module = ?').get(guild.id, 'antitoken_level');
+             const maxJoins = customLimit ? customLimit.limit_count : 5;     // Default 5
+             const windowMs = customLimit ? customLimit.limit_time : 10000; // Default 10s
+             
+             let guildJoins = client.joinRateCache.get(key) || [];
+             // Filter out old joins
+             guildJoins = guildJoins.filter(t => now - t < windowMs);
+             
+             guildJoins.push(now);
+             client.joinRateCache.set(key, guildJoins);
+             
+             if (guildJoins.length > maxJoins) {
+                 // Trigger Anti-Token
+                 try {
+                    await member.kick('Yako Guardian | Anti-Token (Rate Limit)');
+                 } catch (e) {
+                     // console.error("Failed to kick anti-token:", e);
+                 }
+                 return;
+             }
         }
     }
 };

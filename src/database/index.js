@@ -82,6 +82,45 @@ function initDatabase() {
             PRIMARY KEY (guild_id, user_id)
         )
     `);
+
+    // Subscriptions
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            guild_id TEXT PRIMARY KEY,
+            expires_at INTEGER
+        )
+    `);
+
+    // License Keys
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS license_keys (
+            key_code TEXT PRIMARY KEY,
+            duration_days INTEGER,
+            created_at INTEGER,
+            used_by TEXT,
+            used_at INTEGER
+        )
+    `);
+
+    // Purchase Requests
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS purchase_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            paypal_username TEXT,
+            discord_id TEXT,
+            server_id TEXT,
+            status TEXT DEFAULT 'pending', -- pending, completed
+            created_at INTEGER
+        )
+    `);
+
+    // Migration for existing tables (safe to run every time)
+    try {
+        db.prepare("ALTER TABLE purchase_requests ADD COLUMN paypal_username TEXT").run();
+    } catch (error) {
+        // Column likely exists, ignore
+    }
     
     console.log('Database initialized successfully.');
 }

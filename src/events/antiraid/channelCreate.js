@@ -7,7 +7,7 @@ module.exports = {
     async execute(client, channel) {
         if (!channel.guild) return;
         
-        const executor = await getExecutor(channel.guild, AuditLogEvent.ChannelCreate);
+        const executor = await getExecutor(channel.guild, AuditLogEvent.ChannelCreate, channel.id);
         if (!executor) return;
 
         const member = await channel.guild.members.fetch(executor.id).catch(() => null);

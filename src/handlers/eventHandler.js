@@ -6,24 +6,34 @@ const logger = require('../utils/logger');
 module.exports = (client) => {
     const eventsPath = path.join(__dirname, '../events');
     
-    if (!fs.existsSync(eventsPath)) return;
-
-    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-    for (const file of eventFiles) {
-        try {
-            const event = require(path.join(eventsPath, file));
-            const eventName = file.split('.')[0];
+    const loadEvents = (dir) => {
+        const files = fs.readdirSync(dir);
+        
+        for (const file of files) {
+            const filePath = path.join(dir, file);
+            const stat = fs.statSync(filePath);
             
-            if (event.once) {
-                client.once(eventName, (...args) => event.execute(client, ...args));
-            } else {
-                client.on(eventName, (...args) => event.execute(client, ...args));
+            if (stat.isDirectory()) {
+                loadEvents(filePath);
+            } else if (file.endsWith('.js')) {
+                try {
+                    const event = require(filePath);
+                    if (event.name && event.execute) {
+                        if (event.once) {
+                            client.once(event.name, (...args) => event.execute(client, ...args));
+                        } else {
+                            client.on(event.name, (...args) => event.execute(client, ...args));
+                        }
+                        logger.info(`Event loaded: ${event.name} (${file})`);
+                    }
+                } catch (error) {
+                    logger.error(`Error loading event ${file}:`, error);
+                }
             }
-            
-            logger.info(`Event loaded: ${eventName}`);
-        } catch (error) {
-            logger.error(`Error loading event ${file}:`, error);
         }
+    };
+
+    if (fs.existsSync(eventsPath)) {
+        loadEvents(eventsPath);
     }
 };

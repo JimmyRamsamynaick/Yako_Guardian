@@ -6,6 +6,7 @@ const {
     ComponentType 
 } = require('discord.js');
 const { db } = require('../../database');
+const { sendV2Message } = require('../../utils/componentUtils');
 
 module.exports = {
     name: 'secur',
@@ -77,6 +78,10 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                     .setLabel('Tout Activer')
                     .setStyle(ButtonStyle.Success),
                 new ButtonBuilder()
+                    .setCustomId('secur_toggle_all_max')
+                    .setLabel('Tout Max')
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
                     .setCustomId('secur_toggle_all_off')
                     .setLabel('Tout Désactiver')
                     .setStyle(ButtonStyle.Danger),
@@ -86,9 +91,11 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        await message.channel.send({
-            content: generateStatusText(settings),
-            components: [rowSelect, rowButtons]
-        });
+        try {
+            await sendV2Message(client, message.channel.id, generateStatusText(settings), [rowSelect, rowButtons]);
+        } catch (error) {
+            console.error("Error sending V2 secur panel:", error);
+            message.reply("Erreur lors de l'affichage du panneau V2.");
+        }
     }
 };

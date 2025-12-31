@@ -5,7 +5,7 @@ const { getExecutor } = require('../../utils/audit');
 module.exports = {
     name: 'roleCreate',
     async execute(client, role) {
-        const executor = await getExecutor(role.guild, AuditLogEvent.RoleCreate);
+        const executor = await getExecutor(role.guild, AuditLogEvent.RoleCreate, role.id);
         if (!executor) return;
 
         const member = await role.guild.members.fetch(executor.id).catch(() => null);

@@ -4,6 +4,7 @@ const {
     ButtonBuilder, 
     ButtonStyle 
 } = require('discord.js');
+const { sendV2Message } = require('../../utils/componentUtils');
 
 module.exports = {
     name: 'help',
@@ -28,10 +29,16 @@ module.exports = {
                             emoji: '⚙️' 
                         },
                         { 
-                            label: 'Whitelist & Gestion', 
-                            value: 'help_whitelist', 
-                            description: 'Gestion des permissions et blacklist', 
-                            emoji: '👥' 
+                            label: 'Utilitaires & Rôles', 
+                            value: 'help_utils', 
+                            description: 'Embeds, rôles, vocal, autoreact...', 
+                            emoji: '🔧' 
+                        },
+                        { 
+                            label: 'Administration & Backups', 
+                            value: 'help_admin', 
+                            description: 'Whitelist, sauvegardes, sync, modmail...', 
+                            emoji: '💾' 
                         }
                     ])
             );
@@ -44,14 +51,18 @@ module.exports = {
                     .setStyle(ButtonStyle.Danger)
             );
 
-        await message.channel.send({
-            content: `**YAKO GUARDIAN - AIDE**
+        const content = `**YAKO GUARDIAN - AIDE**
             
 Bienvenue sur le système d'aide interactif.
 Veuillez sélectionner une catégorie dans le menu ci-dessous pour voir les commandes disponibles.
 
-_Prefixe actuel :_ \`${client.config.prefix}\``,
-            components: [rowSelect, rowButtons]
-        });
+_Prefixe actuel :_ \`${client.config.prefix}\``;
+
+        try {
+            await sendV2Message(client, message.channel.id, content, [rowSelect, rowButtons]);
+        } catch (error) {
+            console.error("Error sending V2 help:", error);
+            message.reply("Erreur lors de l'affichage du menu d'aide V2.");
+        }
     }
 };

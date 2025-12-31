@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiement Réussi</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background-color: #2b2b2b;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-width: 500px;
+        }
+        h1 { color: #43b581; }
+        .key-box {
+            background-color: #202225;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #43b581;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 1.5em;
+            letter-spacing: 2px;
+            user-select: all;
+        }
+        .instructions { text-align: left; margin-top: 20px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>✅ Paiement Réussi !</h1>
+        <p>Merci pour votre achat. Voici votre clé d'activation :</p>
+        
+        <div id="keyDisplay" class="key-box">Chargement...</div>
+
+        <div class="instructions">
+            <strong>Comment activer ?</strong><br>
+            1. Copiez la clé ci-dessus.<br>
+            2. Allez sur votre serveur Discord.<br>
+            3. Tapez la commande : <br>
+            <code>+activate <span id="keyText">...</span></code>
+        </div>
+        
+        <br>
+        <a href="/" style="color: #7289da">Retour à l'accueil</a>
+    </div>
+
+    <script>
+        // Get key from URL query params
+        const urlParams = new URLSearchParams(window.location.search);
+        const key = urlParams.get('key');
+        
+        if (key) {
+            document.getElementById('keyDisplay').innerText = key;
+            document.getElementById('keyText').innerText = key;
+        } else {
+            document.getElementById('keyDisplay').innerText = "Erreur : Clé introuvable.";
+        }
+    </script>
+</body>
+</html>

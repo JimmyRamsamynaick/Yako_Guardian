@@ -6,7 +6,7 @@ module.exports = {
     name: 'guildBanAdd',
     async execute(client, ban) {
         const guild = ban.guild;
-        const executor = await getExecutor(guild, AuditLogEvent.MemberBanAdd);
+        const executor = await getExecutor(guild, AuditLogEvent.MemberBanAdd, ban.user.id);
         if (!executor) return;
 
         const member = await guild.members.fetch(executor.id).catch(() => null);
