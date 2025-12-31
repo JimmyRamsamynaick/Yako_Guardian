@@ -95,7 +95,8 @@ async function handleSuggestionButton(client, interaction) {
         );
 
     // We reuse the current message content
-    await updateV2Interaction(client, interaction, interaction.message.content, [row]);
+    const msgContent = `**📢 Nouvelle Suggestion**\nProposée par <@${suggestion.authorId}>\n\n> ${suggestion.content}`;
+    await updateV2Interaction(client, interaction, msgContent, [row]);
 }
 
 async function handleRoleButton(client, interaction) {
