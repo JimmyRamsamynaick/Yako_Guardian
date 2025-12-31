@@ -221,7 +221,10 @@ async function handleHelpMenu(client, interaction) {
 \`+snipe\` : Affiche le dernier message supprimé.
 \`+allbots\`, \`+alladmins\`, \`+botadmins\`, \`+boosters\`, \`+rolemembers\` : Listes.
 \`+image\`, \`+wiki\`, \`+calc\` : Outils de recherche et calcul.
-\`+suggestion\`, \`+lb suggestions\` : Système de suggestions.
+\`+suggestion\` : Poster une suggestion.
+\`+suggestion accept/refuse/delete <ID>\` : Gérer une suggestion.
+\`+suggestion clear <all/approved/rejected/pending>\` : Vider les suggestions.
+\`+lb suggestions\` : Classement des suggestions.
 \`+yako\` : Serveur de support.`;
         } else if (value === 'help_admin') {
             content = `**💾 ADMINISTRATION & BACKUPS**
