@@ -153,7 +153,7 @@ async function handleHelpMenu(client, interaction) {
 \`+temprole <@user> <rôle> <temps>\` : Donne un rôle temporairement.
 \`+voicekick <@user>\` : Déconnecte un utilisateur du vocal.
 \`+voicemove <@user> <salon>\` : Déplace un utilisateur.
-\`+bringall <salon>\` : Déplace tous les membres vocaux vers un salon.
+\`+bringall <salon>\` : Déplace tous les membres vocaux vers un salon (ID requis).
 \`+cleanup\` : Supprime les salons vocaux vides (si configuré).`;
         } else if (value === 'help_admin') {
             content = `**💾 ADMINISTRATION & BACKUPS**
