@@ -23,6 +23,7 @@ const client = new Client({
         GatewayIntentBits.GuildWebhooks,
         GatewayIntentBits.GuildInvites,
         GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildPresences,
         GatewayIntentBits.DirectMessages
     ],
     partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User, Partials.GuildMember]
@@ -46,17 +47,32 @@ require('./handlers/presenceHandler')(client);
 
 const { checkTempRoles } = require('./utils/tempRoleSystem');
 const { checkAutoBackups } = require('./utils/backupSystem');
+const { checkReminders } = require('./utils/reminderSystem');
+const { checkTwitch } = require('./utils/twitchSystem');
+const { checkPfp } = require('./utils/pfpSystem');
+const { registerGlobalCommands } = require('./utils/registerCommands');
 
 // Ready Event
 client.once('ready', () => {
     logger.info(`Logged in as ${client.user.tag}`);
     
+    // Register Application Commands (Context Menus, Slash)
+    registerGlobalCommands(client);
+    
     // Start TempRole checker loop (every 60s)
     setInterval(() => checkTempRoles(client), 60 * 1000);
 
-    // Start AutoBackup checker loop (every 1 hour? or 10 mins?)
-    // 10 minutes seems reasonable.
+    // Start AutoBackup checker loop (every 10 mins)
     setInterval(() => checkAutoBackups(client), 10 * 60 * 1000);
+
+    // Start Reminder checker loop (every 30s)
+    setInterval(() => checkReminders(client), 30 * 1000);
+
+    // Start Twitch checker loop (every 60s)
+    setInterval(() => checkTwitch(client), 60 * 1000);
+
+    // Start PFP checker loop (every 60 mins)
+    setInterval(() => checkPfp(client), 60 * 60 * 1000);
 });
 
 client.login(process.env.TOKEN).catch(err => {

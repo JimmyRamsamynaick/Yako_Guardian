@@ -1,15 +1,16 @@
-const { ChannelType, EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { db } = require('../database');
+const { ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
+const ActiveTicket = require('../database/models/ActiveTicket');
+const GuildConfig = require('../database/models/GuildConfig');
 
 async function createTicket(client, user, guild, initialContent) {
-    const settings = db.prepare('SELECT modmail_category FROM guild_settings WHERE guild_id = ?').get(guild.id);
-    if (!settings || !settings.modmail_category) {
-        throw new Error("Configuration modmail invalide sur ce serveur.");
+    const config = await GuildConfig.findOne({ guildId: guild.id });
+    if (!config || !config.modmail || !config.modmail.enabled || !config.modmail.categoryId) {
+        throw new Error("Le système Modmail n'est pas configuré sur ce serveur.");
     }
 
-    const category = guild.channels.cache.get(settings.modmail_category);
+    const category = guild.channels.cache.get(config.modmail.categoryId);
     if (!category) {
-        throw new Error("La catégorie modmail n'existe plus sur ce serveur.");
+        throw new Error("La catégorie Modmail est introuvable.");
     }
 
     const channel = await guild.channels.create({
@@ -25,19 +26,26 @@ async function createTicket(client, user, guild, initialContent) {
             {
                 id: guild.members.me.id,
                 allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.ManageChannels, PermissionsBitField.Flags.ManageMessages],
+            },
+            {
+                id: config.modmail.staffRoleId || guild.id, // If no staff role, allow everyone? No, better to default to just bot if undefined, but user wants staff.
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
             }
         ]
     });
 
-    db.prepare('INSERT INTO active_tickets (user_id, guild_id, channel_id) VALUES (?, ?, ?)')
-      .run(user.id, guild.id, channel.id);
+    // Create DB Entry
+    await ActiveTicket.create({
+        guildId: guild.id,
+        channelId: channel.id,
+        userId: user.id
+    });
 
-    const embed = new EmbedBuilder()
-        .setTitle(`Nouveau Ticket : ${user.tag}`)
-        .setDescription(`**Message Initial:**\n${initialContent || "*Aucun message*"}`)
-        .setThumbnail(user.displayAvatarURL())
-        .setColor('Gold')
-        .setFooter({ text: `ID: ${user.id}` });
+    // Send Initial Message (No Embeds)
+    const content = `📨 **Nouveau Ticket**\n` +
+                    `Utilisateur: <@${user.id}> (${user.tag})\n` +
+                    `ID: ${user.id}\n\n` +
+                    `**Message:**\n${initialContent || "*Aucun message*"}`;
 
     const row = new ActionRowBuilder()
         .addComponents(
@@ -48,7 +56,9 @@ async function createTicket(client, user, guild, initialContent) {
                 .setStyle(ButtonStyle.Danger)
         );
     
-    await channel.send({ content: "@here", embeds: [embed], components: [row] });
+    await channel.send({ content: "@here", components: [row] }); // Notify staff
+    await channel.send({ content: content });
+
     return channel;
 }
 

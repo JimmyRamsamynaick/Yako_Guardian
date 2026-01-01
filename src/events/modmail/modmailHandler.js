@@ -1,7 +1,9 @@
-const { ChannelType, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, PermissionsBitField } = require('discord.js');
-const { db } = require('../../database');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { ChannelType, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const ActiveTicket = require('../../database/models/ActiveTicket');
+const GuildConfig = require('../../database/models/GuildConfig');
 const { createTicket } = require('../../utils/modmailUtils');
+const { getGuildConfig } = require('../../utils/mongoUtils');
+const { sendV2Message } = require('../../utils/componentUtils');
 
 module.exports = {
     name: 'messageCreate',
@@ -11,35 +13,31 @@ module.exports = {
         // --- DM HANDLING (User -> Bot) ---
         if (message.channel.type === ChannelType.DM) {
             // Check for existing active ticket
-            const activeTicket = db.prepare('SELECT * FROM active_tickets WHERE user_id = ?').get(message.author.id);
+            const activeTicket = await ActiveTicket.findOne({ userId: message.author.id, closed: false });
 
             if (activeTicket) {
                 // Forward to guild channel
-                const guild = client.guilds.cache.get(activeTicket.guild_id);
-                if (!guild) return message.reply("❌ Le serveur semble inaccessible.");
+                const guild = client.guilds.cache.get(activeTicket.guildId);
+                if (!guild) return sendV2Message(client, message.channel.id, "❌ Le serveur semble inaccessible.", []);
 
-                const channel = guild.channels.cache.get(activeTicket.channel_id);
+                const channel = guild.channels.cache.get(activeTicket.channelId);
                 if (!channel) {
                     // Channel deleted? Clean up
-                    db.prepare('DELETE FROM active_tickets WHERE user_id = ? AND guild_id = ?').run(message.author.id, activeTicket.guild_id);
-                    return message.reply("❌ Le ticket semble avoir été supprimé.");
+                    activeTicket.closed = true;
+                    await activeTicket.save();
+                    return sendV2Message(client, message.channel.id, "❌ Le ticket semble avoir été fermé.", []);
                 }
 
-                const embed = new EmbedBuilder()
-                    .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
-                    .setDescription(message.content || "*Fichier/Image*")
-                    .setColor('#0099ff')
-                    .setTimestamp();
-
+                let content = `**${message.author.tag}**: ${message.content}`;
                 if (message.attachments.size > 0) {
-                    embed.setImage(message.attachments.first().url);
+                    content += `\n[Pièce jointe](${message.attachments.first().url})`;
                 }
 
                 try {
-                    await channel.send({ embeds: [embed] });
+                    await channel.send({ content });
                     await message.react('✅');
                 } catch (e) {
-                    message.reply("❌ Impossible d'envoyer le message.");
+                    sendV2Message(client, message.channel.id, "❌ Impossible d'envoyer le message.", []);
                 }
                 return;
             }
@@ -49,24 +47,24 @@ module.exports = {
             for (const [id, guild] of client.guilds.cache) {
                 const member = await guild.members.fetch(message.author.id).catch(() => null);
                 if (member) {
-                    const settings = db.prepare('SELECT modmail_enabled FROM guild_settings WHERE guild_id = ?').get(id);
-                    if (settings && settings.modmail_enabled === 'on') {
+                    const config = await getGuildConfig(id);
+                    if (config && config.modmail && config.modmail.enabled) {
                         mutualGuilds.push(guild);
                     }
                 }
             }
 
             if (mutualGuilds.length === 0) {
-                return message.reply("❌ Aucun serveur commun n'a le modmail activé.");
+                return sendV2Message(client, message.channel.id, "❌ Aucun serveur commun n'a le modmail activé.", []);
             }
 
             if (mutualGuilds.length === 1) {
                 // Create ticket directly
                 try {
                     await createTicket(client, message.author, mutualGuilds[0], message.content);
-                    await message.reply(`✅ **Ticket ouvert sur ${mutualGuilds[0].name} !**\nUn membre du staff vous répondra bientôt.`);
+                    sendV2Message(client, message.channel.id, `✅ **Ticket ouvert sur ${mutualGuilds[0].name} !**\nUn membre du staff vous répondra bientôt.`, []);
                 } catch (e) {
-                    message.reply(`❌ Erreur: ${e.message}`);
+                    sendV2Message(client, message.channel.id, `❌ Erreur: ${e.message}`, []);
                 }
             } else {
                 // Ask to choose
@@ -79,13 +77,10 @@ module.exports = {
                                 label: g.name,
                                 value: g.id,
                                 description: `Ouvrir un ticket sur ${g.name}`
-                            })).slice(0, 25)) // Max 25 options
+                            })).slice(0, 25))
                     );
 
-                await message.reply({ 
-                    content: "📨 **Choisissez le serveur à contacter :**", 
-                    components: [row] 
-                });
+                await sendV2Message(client, message.channel.id, "📨 **Choisissez le serveur à contacter :**", [row]);
             }
             return;
         }
@@ -93,33 +88,28 @@ module.exports = {
         // --- GUILD CHANNEL HANDLING (Staff -> User) ---
         if (message.guild) {
             // Check if this channel is an active ticket
-            const ticket = db.prepare('SELECT * FROM active_tickets WHERE channel_id = ?').get(message.channel.id);
+            const ticket = await ActiveTicket.findOne({ channelId: message.channel.id, closed: false });
             if (!ticket) return;
 
-            // Ignore commands (starting with +)
-            if (message.content.startsWith('+')) return;
+            // Ignore commands
+            if (message.content.startsWith('+')) return; // Simple check, ideally check actual prefix
 
-            const user = await client.users.fetch(ticket.user_id).catch(() => null);
+            // Forward to User
+            const user = await client.users.fetch(ticket.userId).catch(() => null);
             if (!user) {
-                return message.reply("❌ Utilisateur introuvable (a quitté Discord ?).");
+                return message.channel.send("❌ Utilisateur introuvable (a quitté le serveur ?).");
             }
 
-            const embed = new EmbedBuilder()
-                .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
-                .setDescription(message.content || "*Fichier/Image*")
-                .setColor('#00ff00') // Green for staff
-                .setTimestamp()
-                .setFooter({ text: message.guild.name });
-
+            let content = `**Staff (${message.guild.name})**: ${message.content}`;
             if (message.attachments.size > 0) {
-                embed.setImage(message.attachments.first().url);
+                content += `\n[Pièce jointe](${message.attachments.first().url})`;
             }
 
             try {
-                await user.send({ embeds: [embed] });
+                await user.send(content);
                 await message.react('✅');
             } catch (e) {
-                message.reply("❌ Impossible d'envoyer le MP (Bloqué ?).");
+                message.channel.send("❌ Impossible d'envoyer le message en DM (Bloqué ?).");
             }
         }
     }

@@ -26,7 +26,7 @@ module.exports = {
             const dmListener = async (msg) => {
                 // Check if message is from target user AND is in DM
                 if (msg.author.id === user.id && msg.channel.type === ChannelType.DM) {
-                     message.channel.send(`📩 **${user.tag}:** ${msg.content}`);
+                     sendV2Message(client, message.channel.id, `📩 **${user.tag}:** ${msg.content}`, []);
                 }
             };
             client.on('messageCreate', dmListener);
@@ -39,7 +39,7 @@ module.exports = {
                         await user.send(m.content);
                         m.react('✅').catch(() => {});
                     } catch (e) {
-                        m.reply("❌ Échec de l'envoi.");
+                        sendV2Message(client, m.channel.id, "❌ Échec de l'envoi.", []);
                     }
                 }
             });

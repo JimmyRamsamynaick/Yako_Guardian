@@ -30,7 +30,7 @@ module.exports = (client) => {
                 const formId = interaction.customId.replace('form_start_', '');
                 const form = await Form.findOne({ guild_id: interaction.guild.id, form_id: formId });
 
-                if (!form) return interaction.reply({ content: "❌ Ce formulaire n'existe plus.", ephemeral: true });
+                if (!form) return replyV2Interaction(client, interaction, "❌ Ce formulaire n'existe plus.", [], true);
 
                 // We can only show 5 inputs in a modal. 
                 // If more than 5 questions, we need pagination or limit it. 
@@ -64,7 +64,7 @@ module.exports = (client) => {
 
                 const questions = questionsRaw.split('|').map(q => q.trim()).filter(q => q.length > 0);
 
-                if (questions.length === 0) return interaction.reply({ content: "❌ Au moins une question est requise.", ephemeral: true });
+                if (questions.length === 0) return replyV2Interaction(client, interaction, "❌ Au moins une question est requise.", [], true);
 
                 const newForm = new Form({
                     guild_id: interaction.guild.id,
@@ -75,7 +75,7 @@ module.exports = (client) => {
                 });
 
                 await newForm.save();
-                await interaction.reply({ content: `✅ Formulaire **${title}** créé avec succès !`, ephemeral: true });
+                await replyV2Interaction(client, interaction, `✅ Formulaire **${title}** créé avec succès !`, [], true);
                 await interaction.message.delete().catch(() => {});
             }
 
@@ -84,10 +84,10 @@ module.exports = (client) => {
                 const formId = interaction.customId.replace('form_submit_', '');
                 const form = await Form.findOne({ guild_id: interaction.guild.id, form_id: formId });
 
-                if (!form) return interaction.reply({ content: "❌ Erreur: Formulaire introuvable.", ephemeral: true });
+                if (!form) return replyV2Interaction(client, interaction, "❌ Erreur: Formulaire introuvable.", [], true);
 
                 const logChannel = interaction.guild.channels.cache.get(form.log_channel_id);
-                if (!logChannel) return interaction.reply({ content: "❌ Erreur: Salon de logs introuvable. Contactez un admin.", ephemeral: true });
+                if (!logChannel) return replyV2Interaction(client, interaction, "❌ Erreur: Salon de logs introuvable. Contactez un admin.", [], true);
 
                 const embed = new EmbedBuilder()
                     .setTitle(`📝 Nouveau Formulaire: ${form.title}`)
@@ -102,7 +102,7 @@ module.exports = (client) => {
                 });
 
                 await logChannel.send({ embeds: [embed] });
-                await interaction.reply({ content: "✅ Votre formulaire a été envoyé avec succès !", ephemeral: true });
+                await replyV2Interaction(client, interaction, "✅ Votre formulaire a été envoyé avec succès !", [], true);
             }
         }
     });

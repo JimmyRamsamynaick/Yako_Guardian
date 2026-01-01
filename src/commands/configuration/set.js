@@ -1,12 +1,13 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField, Routes } = require('discord.js');
 const { db } = require('../../database');
+const { getGuildConfig } = require('../../utils/mongoUtils');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const axios = require('axios');
 
 module.exports = {
     name: 'set',
-    description: 'Modifie le profil du bot sur ce serveur (Pseudo, Vocal, Bannière, Avatar)',
+    description: 'Modifie le profil du bot ou les permissions',
     category: 'Configuration',
     aliases: ['botset'],
     async run(client, message, args) {
@@ -20,7 +21,7 @@ module.exports = {
 
         if (!type || !value) {
             return sendV2Message(client, message.channel.id, 
-                "**Usage:** `+set <option> <valeur>`\n\n`name <pseudo>` : Change le pseudo du bot.\n`vocal <ID/on/off>` : Connecte le bot en vocal.\n`pic <url>` : Change l'avatar du bot sur ce serveur.\n`banner <url>` : Change la bannière du bot sur ce serveur.", 
+                "**Usage:** `+set <option> <valeur>`\n\n`name <pseudo>` : Change le pseudo du bot.\n`vocal <ID/on/off>` : Connecte le bot en vocal.\n`pic <url>` : Change l'avatar du bot.\n`banner <url>` : Change la bannière du bot.\n`perm <commande> <rôle/membre>` : Autorise une commande.", 
             []);
         }
 
@@ -32,7 +33,52 @@ module.exports = {
             return `data:${mime};base64,${buffer.toString('base64')}`;
         };
 
-        if (type === 'name') {
+        if (type === 'perm' || type === 'permission') {
+            const cmdName = args[1]?.toLowerCase();
+            const targetStr = args[2];
+
+            if (!cmdName || !targetStr) {
+                return sendV2Message(client, message.channel.id, "**Usage:** `+set perm <commande> <@rôle/@membre>`", []);
+            }
+
+            // Resolve target
+            let roleId = null;
+            let userId = null;
+
+            if (message.mentions.roles.size > 0) roleId = message.mentions.roles.first().id;
+            else if (message.mentions.users.size > 0) userId = message.mentions.users.first().id;
+            else {
+                // Try ID
+                const id = targetStr.replace(/[<@&>]/g, '');
+                if (message.guild.roles.cache.has(id)) roleId = id;
+                else if (await client.users.fetch(id).catch(() => null)) userId = id;
+                else return sendV2Message(client, message.channel.id, "❌ Rôle ou membre introuvable.", []);
+            }
+
+            try {
+                const config = await getGuildConfig(message.guild.id);
+                
+                // Remove existing perm for this command/target to avoid duplicates
+                config.customPermissions = config.customPermissions.filter(p => 
+                    !(p.command === cmdName && (p.roleId === roleId || p.userId === userId))
+                );
+
+                config.customPermissions.push({
+                    command: cmdName,
+                    roleId: roleId,
+                    userId: userId,
+                    allowed: true
+                });
+
+                await config.save();
+                return sendV2Message(client, message.channel.id, `✅ Permission ajoutée : La commande \`${cmdName}\` est maintenant autorisée pour ${roleId ? `<@&${roleId}>` : `<@${userId}>`}.`, []);
+
+            } catch (e) {
+                console.error(e);
+                return sendV2Message(client, message.channel.id, "❌ Erreur lors de l'enregistrement de la permission.", []);
+            }
+        }
+        else if (type === 'name') {
             try {
                 await message.guild.members.me.setNickname(value);
                 return sendV2Message(client, message.channel.id, `✅ Pseudo du bot modifié en **${value}** sur ce serveur.`, []);

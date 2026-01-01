@@ -5,15 +5,15 @@ const {
     ButtonStyle 
 } = require('discord.js');
 const { sendV2Message } = require('../../utils/componentUtils');
-const { db } = require('../../database');
+const { getGuildConfig } = require('../../utils/mongoUtils');
 
 module.exports = {
     name: 'help',
     aliases: ['aide', 'h'],
     run: async (client, message, args) => {
         // Get help type configuration
-        const settings = db.prepare('SELECT help_type, help_alias_enabled FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
-        const helpType = settings?.help_type || 'select'; // select, button, hybrid
+        const config = await getGuildConfig(message.guild.id);
+        const helpType = config.helpType || 'select'; // select, button, hybrid
 
         const components = [];
 
@@ -61,13 +61,15 @@ module.exports = {
 Bienvenue sur le système d'aide interactif.
 Mode d'affichage: **${helpType.toUpperCase()}**
 
-_Prefixe actuel :_ \`${client.config.prefix}\``;
+_Prefixe actuel :_ \`${config.prefix || client.config.prefix}\``;
 
         try {
             await sendV2Message(client, message.channel.id, content, components);
         } catch (error) {
             console.error("Error sending V2 help:", error);
-            message.reply("Erreur lors de l'affichage du menu d'aide V2.");
+            // Fallback if V2 fails (though sendV2Message should handle it)
+            // Using sendV2Message with minimal content as error report
+            await sendV2Message(client, message.channel.id, "❌ Erreur lors de l'affichage du menu d'aide V2.", []);
         }
     }
 };

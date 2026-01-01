@@ -1,5 +1,5 @@
-const { ChannelType, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { createTicket } = require('../../utils/modmailUtils');
 
 module.exports = {
     name: 'openmodmail',
@@ -15,54 +15,16 @@ module.exports = {
             return sendV2Message(client, message.channel.id, "**Utilisation:** `+openmodmail <@membre>`", []);
         }
 
-        // Check if category exists or create one
-        let category = message.guild.channels.cache.find(c => c.name === 'Modmail' && c.type === ChannelType.GuildCategory);
-        if (!category) {
-            category = await message.guild.channels.create({
-                name: 'Modmail',
-                type: ChannelType.GuildCategory,
-                permissionOverwrites: [
-                    {
-                        id: message.guild.id,
-                        deny: [PermissionFlagsBits.ViewChannel],
-                    },
-                    {
-                        id: message.member.roles.highest.id, // Better logic needed for Staff role
-                        allow: [PermissionFlagsBits.ViewChannel],
-                    }
-                ]
-            });
+        try {
+            // Use standard createTicket function to ensure DB consistency
+            const channel = await createTicket(client, member.user, message.guild, `Ticket ouvert manuellement par le staff ${message.author}`);
+            
+            // Notify staff in the channel
+            await channel.send(`${message.author} a ouvert ce ticket avec ${member}.`);
+            
+            sendV2Message(client, message.channel.id, `✅ Modmail ouvert : ${channel}`, []);
+        } catch (error) {
+            sendV2Message(client, message.channel.id, `❌ Erreur : ${error.message}`, []);
         }
-
-        // Create channel
-        const channel = await message.guild.channels.create({
-            name: `ticket-${member.user.username}`,
-            type: ChannelType.GuildText,
-            parent: category.id,
-            permissionOverwrites: [
-                {
-                    id: message.guild.id,
-                    deny: [PermissionFlagsBits.ViewChannel],
-                },
-                {
-                    id: message.author.id,
-                    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-                },
-                {
-                    id: member.id,
-                    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-                }
-            ]
-        });
-
-        const embed = new EmbedBuilder()
-            .setTitle('Modmail Ouvert')
-            .setDescription(`Ticket ouvert avec ${member} par ${message.author}.\n\nVous pouvez discuter ici.`)
-            .setColor('#5865F2')
-            .setTimestamp();
-
-        await channel.send({ content: `${member} ${message.author}`, embeds: [embed] });
-        
-        sendV2Message(client, message.channel.id, `✅ Modmail ouvert : ${channel}`, []);
     }
 };

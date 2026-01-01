@@ -12,6 +12,7 @@ module.exports = {
         if (!content) return sendV2Message(client, message.channel.id, "**Usage:** `+say <message>`", []);
 
         message.delete().catch(() => {});
-        message.channel.send(content);
+        // message.channel.send(content);
+        await sendV2Message(client, message.channel.id, content, []);
     }
 };

@@ -6,20 +6,37 @@ const {
     ModalBuilder, 
     TextInputBuilder, 
     TextInputStyle,
-    PermissionsBitField
+    Routes
 } = require('discord.js');
 const { db } = require('../database');
 const logger = require('../utils/logger');
-const { updateV2Interaction, replyV2Interaction, extractActionRows } = require('../utils/componentUtils');
+const { updateV2Interaction, replyV2Interaction, extractActionRows, createV2Payload } = require('../utils/componentUtils');
 const { loadBackup } = require('../utils/backupHandler');
 const { handleEmbedInteraction } = require('../commands/utils/embed');
 const Backup = require('../database/models/Backup');
 const Suggestion = require('../database/models/Suggestion');
 const { createTicket } = require('../utils/modmailUtils');
+const { handleRoleMenuInteraction } = require('./roleMenuHandler');
+const { handleHelpMenu } = require('./helpHandler');
+const { handleTicketSettings, handleTicketModal, handleTicketCreate, handleTicketClaim, handleTicketClose } = require('./ticketHandler');
+const { handleTempVocInteraction } = require('./tempVocHandler');
+const { handleNotificationInteraction } = require('./notificationHandler');
+const { handleModmailInteraction } = require('./modmailInteractionHandler');
+const { handleAutoInteraction } = require('./autoInteractionHandler');
+const { handleSuggestionButton } = require('./suggestionHandler');
 
 module.exports = (client) => {
     client.on('interactionCreate', async (interaction) => {
-        if (!interaction.isButton() && !interaction.isStringSelectMenu() && !interaction.isModalSubmit()) return;
+        // --- CONTEXT MENU HANDLING ---
+        if (interaction.isMessageContextMenuCommand()) {
+            if (interaction.commandName === 'Signaler' || interaction.commandName === 'Report Message') {
+                const { handleReportContext } = require('./modmailInteractionHandler');
+                await handleReportContext(client, interaction);
+                return;
+            }
+        }
+
+        if (!interaction.isButton() && !interaction.isAnySelectMenu() && !interaction.isModalSubmit()) return;
 
         // Basic permission check (Owner/Whitelist only - to be refined)
         // For now, allow anyone with Administrator or Owner for testing
@@ -32,6 +49,30 @@ module.exports = (client) => {
             await handleSecurPanel(client, interaction);
         } else if (customId.startsWith('help_')) {
             await handleHelpMenu(client, interaction);
+        } else if (customId.startsWith('rolemenu_') || customId.startsWith('rm_user_')) {
+            await handleRoleMenuInteraction(client, interaction);
+        } else if (customId.startsWith('ticket_')) {
+            if (customId.startsWith('ticket_settings_')) await handleTicketSettings(client, interaction);
+            else if (customId.startsWith('ticket_modal_')) await handleTicketModal(client, interaction);
+            else if (customId === 'ticket_create') await handleTicketCreate(client, interaction);
+            else if (customId === 'ticket_claim') await handleTicketClaim(client, interaction);
+            else if (customId === 'ticket_close_confirm') await handleTicketClose(client, interaction);
+        } else if (customId.startsWith('tempvoc_')) {
+            await handleTempVocInteraction(client, interaction);
+        } else if (customId.startsWith('twitch_') || customId.startsWith('join_') || customId.startsWith('leave_')) {
+            try {
+                await handleNotificationInteraction(client, interaction);
+            } catch (error) {
+                logger.error(`Error in notification interaction ${customId}:`, error);
+                if (!interaction.replied && !interaction.deferred) {
+                    await replyV2Interaction(client, interaction, "❌ Une erreur est survenue lors du traitement de l'interaction.", [], true).catch(() => {});
+                } else {
+                    // FollowUp V2 is basically a webhook post
+                     // checking if we can use sendV2Message but with interaction webhook? 
+                     // For simplicity, standard followUp might be okay if it accepts V2 payload structure in body, but djs handles it.
+                     // Let's just use console log or ignore for now as it's error handling.
+                }
+            }
         } else if (customId.startsWith('backup_')) {
             await handleBackup(client, interaction);
         } else if (customId.startsWith('embed_') || customId.startsWith('modal_embed_')) {
@@ -40,8 +81,10 @@ module.exports = (client) => {
             await handleRoleButton(client, interaction);
         } else if (customId.startsWith('suggestion_')) {
             await handleSuggestionButton(client, interaction);
-        } else if (customId.startsWith('modmail_')) {
+        } else if (customId.startsWith('modmail_') || customId.startsWith('report_')) {
             await handleModmailInteraction(client, interaction);
+        } else if (customId.startsWith('pfp_')) {
+            await handleAutoInteraction(client, interaction);
         } else if (customId === 'btn_set_profil') {
             await handleSetProfilButton(client, interaction);
         }
@@ -50,7 +93,7 @@ module.exports = (client) => {
         if (interaction.user.id !== interaction.guild.ownerId) {
              const { isBotOwner } = require('../utils/ownerUtils');
              if (!(await isBotOwner(interaction.user.id))) {
-                 return interaction.reply({ content: "❌ Seul le propriétaire peut confirmer.", ephemeral: true });
+                 return replyV2Interaction(client, interaction, "❌ Seul le propriétaire peut confirmer.", [], true);
              }
         }
         
@@ -63,15 +106,15 @@ module.exports = (client) => {
             db.prepare('DELETE FROM command_permissions WHERE guild_id = ?').run(interaction.guild.id);
             db.prepare('DELETE FROM backups WHERE guild_id = ?').run(interaction.guild.id);
             
-            await interaction.update({ content: "✅ Serveur réinitialisé avec succès.", components: [] });
+            await updateV2Interaction(client, interaction, "✅ Serveur réinitialisé avec succès.", []);
         } catch (e) {
-            await interaction.update({ content: `❌ Erreur: ${e.message}`, components: [] });
+            await updateV2Interaction(client, interaction, `❌ Erreur: ${e.message}`, []);
         }
     }
 
     if (customId === 'confirm_reset_all') {
         const { isBotOwner } = require('../utils/ownerUtils');
-        if (!(await isBotOwner(interaction.user.id))) return interaction.reply({ content: "❌ Owner Only.", ephemeral: true });
+        if (!(await isBotOwner(interaction.user.id))) return replyV2Interaction(client, interaction, "❌ Owner Only.", [], true);
 
         const { db } = require('../database');
         try {
@@ -83,14 +126,14 @@ module.exports = (client) => {
             db.prepare('DELETE FROM backups').run();
             db.prepare('DELETE FROM active_tickets').run();
             
-            await interaction.update({ content: "✅ **TOUTES** les données ont été effacées.", components: [] });
+            await updateV2Interaction(client, interaction, "✅ **TOUTES** les données ont été effacées.", []);
         } catch (e) {
-            await interaction.update({ content: `❌ Erreur: ${e.message}`, components: [] });
+            await updateV2Interaction(client, interaction, `❌ Erreur: ${e.message}`, []);
         }
     }
     
     if (customId === 'cancel_reset') {
-        await interaction.update({ content: "❌ Opération annulée.", components: [] });
+        await updateV2Interaction(client, interaction, "❌ Opération annulée.", []);
     }
 
     });
@@ -109,7 +152,7 @@ module.exports = (client) => {
 async function handleSetProfilButton(client, interaction) {
     // Permission check: Administrator
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return interaction.reply({ content: "❌ Vous devez être administrateur.", ephemeral: true });
+        return replyV2Interaction(client, interaction, "❌ Vous devez être administrateur.", [], true);
     }
 
     const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
@@ -156,7 +199,6 @@ async function handleSetProfilModal(client, interaction) {
     await interaction.deferReply({ ephemeral: true });
     
     let logs = [];
-    const { Routes } = require('discord.js');
     const axios = require('axios');
     
     // Helper
@@ -202,111 +244,8 @@ async function handleSetProfilModal(client, interaction) {
 
     if (logs.length === 0) logs.push("ℹ️ Aucune modification demandée.");
     
-    await interaction.editReply({ content: logs.join('\n') });
-}
-
-async function handleModmailInteraction(client, interaction) {
-    if (interaction.customId === 'modmail_select_guild') {
-        const guildId = interaction.values[0];
-        const guild = client.guilds.cache.get(guildId);
-        
-        if (!guild) {
-            return interaction.reply({ content: "❌ Serveur inaccessible.", ephemeral: true });
-        }
-
-        try {
-            await interaction.deferUpdate(); // Acknowledge
-            await createTicket(client, interaction.user, guild, "Ticket créé via sélection.");
-            await interaction.editReply({ content: `✅ **Ticket ouvert sur ${guild.name} !**\nUn membre du staff vous répondra bientôt.`, components: [] });
-        } catch (e) {
-            await interaction.followUp({ content: `❌ Erreur: ${e.message}`, ephemeral: true });
-        }
-    } else if (interaction.customId === 'modmail_close') {
-        // Permission check
-        if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages) && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return interaction.reply({ content: "❌ Vous n'avez pas la permission de fermer ce ticket.", ephemeral: true });
-        }
-
-        const userId = interaction.channel.topic;
-        if (!userId) {
-            return interaction.reply({ content: "❌ Impossible d'identifier l'utilisateur de ce ticket (Topic vide).", ephemeral: true });
-        }
-
-        await interaction.reply({ content: "🔒 Fermeture du ticket en cours..." });
-
-        // Notify user
-        try {
-            const user = await client.users.fetch(userId);
-            await user.send(`🔒 **Votre ticket sur ${interaction.guild.name} a été fermé par le staff.**`);
-        } catch (e) {
-            // Ignore if DM closed
-        }
-
-        // Clean DB
-        db.prepare('DELETE FROM active_tickets WHERE channel_id = ?').run(interaction.channel.id);
-
-        // Delete channel after 3 seconds
-        setTimeout(() => {
-            interaction.channel.delete().catch(() => {});
-        }, 3000);
-    }
-}
-
-async function handleSuggestionButton(client, interaction) {
-    const { customId, user } = interaction;
-    const parts = customId.split('_'); // suggestion, up/down, ID
-    const action = parts[1];
-    const suggestionId = parts[2];
-
-    const suggestion = await Suggestion.findById(suggestionId);
-    if (!suggestion) {
-        return interaction.reply({ content: "❌ Cette suggestion n'existe plus.", ephemeral: true });
-    }
-
-    const existingVote = suggestion.voters.find(v => v.userId === user.id);
-
-    if (existingVote) {
-        if (existingVote.vote === action) {
-            // Remove vote
-            suggestion.voters = suggestion.voters.filter(v => v.userId !== user.id);
-            if (action === 'up') suggestion.upvotes = Math.max(0, suggestion.upvotes - 1);
-            else suggestion.downvotes = Math.max(0, suggestion.downvotes - 1);
-        } else {
-            // Switch vote
-            existingVote.vote = action;
-            if (action === 'up') {
-                suggestion.upvotes++;
-                suggestion.downvotes = Math.max(0, suggestion.downvotes - 1);
-            } else {
-                suggestion.downvotes++;
-                suggestion.upvotes = Math.max(0, suggestion.upvotes - 1);
-            }
-        }
-    } else {
-        // New vote
-        suggestion.voters.push({ userId: user.id, vote: action });
-        if (action === 'up') suggestion.upvotes++;
-        else suggestion.downvotes++;
-    }
-
-    await suggestion.save();
-
-    // Update buttons
-    const row = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId(`suggestion_up_${suggestionId}`)
-                .setLabel(`👍 ${suggestion.upvotes}`)
-                .setStyle(ButtonStyle.Success),
-            new ButtonBuilder()
-                .setCustomId(`suggestion_down_${suggestionId}`)
-                .setLabel(`👎 ${suggestion.downvotes}`)
-                .setStyle(ButtonStyle.Danger)
-        );
-
-    // We reuse the current message content
-    const msgContent = `**📢 Nouvelle Suggestion**\nProposée par <@${suggestion.authorId}>\n\n> ${suggestion.content}`;
-    await updateV2Interaction(client, interaction, msgContent, [row]);
+    const payload = createV2Payload(logs.join('\n'), []);
+    await client.rest.patch(Routes.webhookMessage(client.application.id, interaction.token, '@original'), { body: payload });
 }
 
 async function handleRoleButton(client, interaction) {
@@ -315,11 +254,11 @@ async function handleRoleButton(client, interaction) {
     const role = interaction.guild.roles.cache.get(roleId);
 
     if (!role) {
-        return interaction.reply({ content: "❌ Ce rôle n'existe plus.", ephemeral: true });
+        return replyV2Interaction(client, interaction, "❌ Ce rôle n'existe plus.", [], true);
     }
 
     if (role.position >= interaction.guild.members.me.roles.highest.position) {
-        return interaction.reply({ content: "❌ Je ne peux pas gérer ce rôle (il est au-dessus de moi).", ephemeral: true });
+        return replyV2Interaction(client, interaction, "❌ Je ne peux pas gérer ce rôle (il est au-dessus de moi).", [], true);
     }
 
     const member = interaction.member;
@@ -327,14 +266,14 @@ async function handleRoleButton(client, interaction) {
     try {
         if (member.roles.cache.has(roleId)) {
             await member.roles.remove(role);
-            return interaction.reply({ content: `❌ Rôle **${role.name}** retiré.`, ephemeral: true });
+            return replyV2Interaction(client, interaction, `❌ Rôle **${role.name}** retiré.`, [], true);
         } else {
             await member.roles.add(role);
-            return interaction.reply({ content: `✅ Rôle **${role.name}** ajouté.`, ephemeral: true });
+            return replyV2Interaction(client, interaction, `✅ Rôle **${role.name}** ajouté.`, [], true);
         }
     } catch (e) {
         console.error(e);
-        return interaction.reply({ content: "❌ Erreur lors de la modification du rôle.", ephemeral: true });
+        return replyV2Interaction(client, interaction, "❌ Erreur lors de la modification du rôle.", [], true);
     }
 }
 
@@ -386,94 +325,7 @@ async function handleBackup(client, interaction) {
     }
 }
 
-async function handleHelpMenu(client, interaction) {
-    const { customId } = interaction;
 
-    if (customId === 'help_close') {
-        await interaction.message.delete();
-        return;
-    }
-
-    const isSelect = interaction.isStringSelectMenu() && customId === 'help_select_category';
-    const isButton = interaction.isButton() && customId.startsWith('help_btn_');
-
-    if (isSelect || isButton) {
-        const value = isSelect ? interaction.values[0] : customId.replace('help_btn_', 'help_');
-        let content = '';
-
-        if (value === 'help_antiraid') {
-            content = `**🛡️ SÉCURITÉ & ANTIRAID**
-            
-\`+secur\` : Ouvre le panneau de sécurité principal (Anti-Bot, Anti-Webook, etc.).
-\`+raidlog <on/off> [salon]\` : Active/Désactive les logs de sécurité.
-\`+raidping <rôle>\` : Définit le rôle à mentionner en cas d'alerte.
-\`+unbanall\` : Débannir tous les utilisateurs bannis du serveur.`;
-        } else if (value === 'help_config') {
-            content = `**⚙️ CONFIGURATION**
-
-\`+set profil\` : **Menu Interactif** pour changer Nom, Avatar et Bannière.
-\`+set name <pseudo>\` : Changer le pseudo du bot sur ce serveur.
-\`+set pic <url>\` : Changer l'avatar du bot sur ce serveur.
-\`+set banner <url>\` : Changer la bannière de profil du bot sur ce serveur.
-\`+set vocal <on/off/ID>\` : Connecter le bot en vocal 24/7.
-\`+set lang <fr/en>\` : Changer la langue du bot.
-\`+playto / watch / listen / stream <texte>\` : Change l'activité.
-\`+online / idle / dnd / invisible\` : Change le statut du bot.
-\`+theme <couleur>\` : Changer la couleur des embeds (#HEX).
-\`+creation <temps>\` : Limite l'âge du compte pour rejoindre (ex: 7d).
-\`+blrank <on/off>\` : Active/Désactive le blacklist rank (auto-ban des blacklistés).
-\`+punition <kick/ban>\` : Définit la sanction par défaut.
-\`+wl <add/del/list> <user>\` : Gérer la whitelist.
-\`+change <cmd> <perm>\` : Changer les permissions des commandes.`;
-        } else if (value === 'help_utils') {
-            content = `**🔧 UTILITAIRES & RÔLES**
-
-\`+suggestion\` : Poster une suggestion.
-\`+suggestion <accept/refuse/delete> <ID>\` : Gérer une suggestion.
-\`+lb suggestions\` : Classement des suggestions.
-\`+embed\` : Créer un embed personnalisé.
-\`+say <message>\` : Fait parler le bot.
-\`+vocinfo\` : Affiche les stats vocales.`;
-        } else if (value === 'help_admin') {
-            content = `**💾 ADMINISTRATION & BACKUPS**
-
-\`+backup create <nom>\` : Créer une backup.
-\`+backup load <nom>\` : Charger une backup.
-\`+backup list\` : Lister les backups.
-\`+sync\` : Synchroniser les permissions des salons.
-\`+renew <salon>\` : Recréer un salon à neuf.
-\`+modmail <on/off/close>\` : Activer/Désactiver le modmail ou fermer un ticket.
-\`+lang custom <on/off>\` : Gérer la langue personnalisée.`;
-        } else if (value === 'help_owner') {
-            content = `**👑 ESPACE OWNER**
-
-\`+owner <add/del/list>\` : Gérer les owners du bot.
-\`+bl <add/del/list> <user>\` : Gérer la blacklist globale.
-\`+clear <owners/bl>\` : Vider entièrement une liste (Root Only).
-\`+globalset <name/pic> <valeur>\` : Changer le profil **GLOBAL**.
-\`+secur invite <on/off>\` : Activer l'anti-add (leave si ajouté par non-owner).
-\`+server list\` : Liste des serveurs.
-\`+server invite/leave <ID>\` : Rejoindre/Quitter un serveur.
-\`+mp <ID> <msg>\` : Envoyer un MP.
-\`+discussion <ID>\` : Ouvrir un chat avec un utilisateur.
-\`+reset server\` : Réinitialiser la configuration de **CE** serveur.
-\`+resetall\` : Réinitialiser **TOUS** les serveurs (Emergency).`;
-        }
-
-        const components = extractActionRows(interaction.message.components);
-        
-        try {
-            await updateV2Interaction(
-                client, 
-                interaction, 
-                content + '\n\n_Sélectionnez une autre catégorie ci-dessous pour changer._', 
-                components
-            );
-        } catch (error) {
-            console.error("Error updating V2 help:", error);
-        }
-    }
-}
 
 async function handleSecurPanel(client, interaction) {
     const guildId = interaction.guild.id;

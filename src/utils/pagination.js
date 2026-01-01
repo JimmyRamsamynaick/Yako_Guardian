@@ -1,5 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
-const { sendV2Message, updateV2Interaction } = require('./componentUtils');
+const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('./componentUtils');
 
 async function createPagination(client, message, items, itemsPerPage = 10, title = 'Liste', formatter = (i) => i) {
     if (!items || items.length === 0) {
@@ -61,7 +61,7 @@ async function createPagination(client, message, items, itemsPerPage = 10, title
         if (i.message.id !== sentMsg.id) return; 
         
         if (i.user.id !== message.author.id) {
-            return i.reply({ content: '❌ Vous ne pouvez pas utiliser ces boutons.', ephemeral: true });
+            return replyV2Interaction(client, i, '❌ Vous ne pouvez pas utiliser ces boutons.', [], true);
         }
 
         if (i.customId === 'prev_page') {

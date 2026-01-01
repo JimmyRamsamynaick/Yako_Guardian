@@ -1,4 +1,5 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { sendV2Message } = require('../../utils/componentUtils');
 
 module.exports = {
     name: 'buy',
@@ -9,16 +10,15 @@ module.exports = {
         // Note: localhost ne fonctionnera que pour vous. Il faudra mettre votre IP publique ou nom de domaine plus tard.
         const websiteUrl = process.env.WEBSITE_URL || 'http://localhost:3002';
         
-        const embed = new EmbedBuilder()
-            .setTitle('💎 Yako Guardian Premium')
-            .setDescription('Débloquez la puissance totale de Yako Guardian pour protéger votre serveur efficacement.')
-            .addFields(
-                { name: '💸 Prix', value: '`5.00€ / mois`', inline: true },
-                { name: '🚀 Inclus', value: '• Anti-Raid Complet\n• Anti-Token & Mass Mention\n• Protection des Salons & Rôles\n• Support Prioritaire', inline: false }
-            )
-            .setColor('#FFD700') // Or
-            .setThumbnail(client.user.displayAvatarURL())
-            .setFooter({ text: 'Cliquez sur le bouton ci-dessous pour accéder à la boutique' });
+        const content = `**💎 Yako Guardian Premium**\n\n` +
+            `Débloquez la puissance totale de Yako Guardian pour protéger votre serveur efficacement.\n\n` +
+            `**💸 Prix:** \`5.00€ / mois\`\n\n` +
+            `**🚀 Inclus:**\n` +
+            `• Anti-Raid Complet\n` +
+            `• Anti-Token & Mass Mention\n` +
+            `• Protection des Salons & Rôles\n` +
+            `• Support Prioritaire\n\n` +
+            `_Cliquez sur le bouton ci-dessous pour accéder à la boutique_`;
 
         const row = new ActionRowBuilder()
             .addComponents(
@@ -28,6 +28,6 @@ module.exports = {
                     .setURL(websiteUrl)
             );
 
-        message.reply({ embeds: [embed], components: [row] });
+        sendV2Message(client, message.channel.id, content, [row]);
     }
 };

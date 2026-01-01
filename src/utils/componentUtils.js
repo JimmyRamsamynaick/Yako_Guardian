@@ -83,26 +83,45 @@ async function editV2Message(client, channelId, messageId, content, components) 
  * @param {Array} embeds - Array of embeds (optional) - WARNING: V2 (Type 17) does NOT support embeds directly in the same message container usually.
  */
 async function updateV2Interaction(client, interaction, content, components, embeds = []) {
-    const payload = createV2Payload(content, components);
-    const body = {
-        type: 7, // UPDATE_MESSAGE
-        data: payload
-    };
+    // Strategy: Defer Update (Type 6) then Edit Message (PATCH)
+    // Using Webhook endpoint is safer and supports Ephemeral messages.
     
-    // If embeds are provided, we cannot include them in V2 payload directly as "embeds" field if IS_COMPONENTS_V2 flag is set.
-    // However, Components V2 (Container) allows nested components but NOT legacy embeds alongside it easily.
-    // The error "The 'embeds' field cannot be used when using MessageFlags.IS_COMPONENTS_V2" confirms this.
-    // We must send embeds as a separate follow-up or try to convert them (not possible for full embeds).
-    // For now, we will IGNORE embeds in the V2 update payload to fix the crash.
-    // If we need to show the embed, we should send it as a follow-up message.
-    
-    // BUT, the user wants a preview.
-    // Strategy: Update the V2 message (Components) AND send/edit a separate Follow-up message with the embed.
-    // Since this function is "updateV2Interaction", it only handles the interaction response.
-    // We cannot "side-effect" a follow-up easily here without changing the contract.
-    // So we will just strip 'embeds' from here to prevent the crash.
-    
-    return client.rest.post(Routes.interactionCallback(interaction.id, interaction.token), { body });
+    try {
+        // 1. Defer Update (only if not already deferred/replied)
+        if (!interaction.deferred && !interaction.replied) {
+            await client.rest.post(Routes.interactionCallback(interaction.id, interaction.token), {
+                body: { type: 6 } // DEFERRED_UPDATE_MESSAGE
+            });
+        }
+
+        // 2. Edit Message via Webhook
+        const payload = createV2Payload(content, components);
+        return client.rest.patch(Routes.webhookMessage(client.application.id, interaction.token, '@original'), { body: payload });
+    } catch (error) {
+        console.error('Error in updateV2Interaction:', error); // Ensure this logs
+        // Check for Legacy Content conflict error
+        if (error.code === 50035 || (error.rawError && error.rawError.code === 50035)) {
+             // Specific check for MESSAGE_CANNOT_USE_LEGACY_FIELDS_WITH_COMPONENTS_V2
+             const isLegacyError = JSON.stringify(error).includes('MESSAGE_CANNOT_USE_LEGACY_FIELDS_WITH_COMPONENTS_V2');
+             
+             if (isLegacyError) {
+                 console.log("Detected Legacy to V2 conversion failure. Re-creating message.");
+                 // Delete the original message (if possible/owned)
+                 try {
+                     // We can't delete via webhook easily if it's the original response, but we can try channelMessage delete
+                     if (interaction.message) {
+                        await client.rest.delete(Routes.channelMessage(interaction.channelId, interaction.message.id)).catch(() => {});
+                     }
+                 } catch (e) {}
+                 
+                 // Send a new V2 message
+                 return sendV2Message(client, interaction.channelId, content, components);
+             }
+        }
+
+        console.error('Error in updateV2Interaction:', error);
+        throw error;
+    }
 }
 
 /**
@@ -120,12 +139,28 @@ async function replyV2Interaction(client, interaction, content, components = [],
         payload.flags = (payload.flags || 0) | 64; // Add EPHEMERAL flag
     }
     
-    const body = {
-        type: 4, // CHANNEL_MESSAGE_WITH_SOURCE
-        data: payload
-    };
-    
-    return client.rest.post(Routes.interactionCallback(interaction.id, interaction.token), { body });
+    try {
+        // If already deferred, we must EDIT the original response
+        if (interaction.deferred) {
+            return client.rest.patch(Routes.webhookMessage(client.application.id, interaction.token, '@original'), { body: payload });
+        }
+        
+        // If already replied, we must send a FOLLOW-UP
+        if (interaction.replied) {
+            return client.rest.post(Routes.webhook(client.application.id, interaction.token), { body: payload });
+        }
+
+        // Otherwise, send initial response
+        const body = {
+            type: 4, // CHANNEL_MESSAGE_WITH_SOURCE
+            data: payload
+        };
+        
+        return client.rest.post(Routes.interactionCallback(interaction.id, interaction.token), { body });
+    } catch (error) {
+        console.error("Error in replyV2Interaction:", error);
+        throw error;
+    }
 }
 
 /**

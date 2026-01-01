@@ -121,6 +121,9 @@ function initDatabase() {
     const hasCustomLang = columns.some(c => c.name === 'custom_lang_url');
     const hasHelpAlias = columns.some(c => c.name === 'help_alias_enabled');
     const hasHelpType = columns.some(c => c.name === 'help_type');
+    const hasPunitionAntiraid = columns.some(c => c.name === 'punition_antiraid');
+    const hasPunitionAll = columns.some(c => c.name === 'punition_all');
+    const hasCreationLimit = columns.some(c => c.name === 'creation_limit_time');
 
     if (!hasModmail) {
         db.exec(`ALTER TABLE guild_settings ADD COLUMN modmail_enabled TEXT DEFAULT 'off'`);
@@ -149,11 +152,41 @@ function initDatabase() {
     if (!hasHelpType) {
         db.exec(`ALTER TABLE guild_settings ADD COLUMN help_type TEXT DEFAULT 'select'`);
     }
+    if (!hasPunitionAntiraid) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN punition_antiraid TEXT DEFAULT 'kick'`);
+    }
+    if (!hasPunitionAll) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN punition_all TEXT DEFAULT 'kick'`);
+    }
+    if (!hasCreationLimit) {
+        db.exec(`ALTER TABLE guild_settings ADD COLUMN creation_limit_time INTEGER DEFAULT 0`);
+    }
 
     const hasBotStatus = columns.some(c => c.name === 'bot_status');
     const hasBotActivityType = columns.some(c => c.name === 'bot_activity_type');
     const hasBotActivityText = columns.some(c => c.name === 'bot_activity_text');
     const hasBotActivityUrl = columns.some(c => c.name === 'bot_activity_url');
+
+    // Missing Antiraid Columns Migration
+    const hasRaidLogChannel = columns.some(c => c.name === 'raid_log_channel');
+    const hasRaidPingRole = columns.some(c => c.name === 'raid_ping_role');
+    const hasAntiTokenLevel = columns.some(c => c.name === 'antitoken_level');
+    const hasAntiTokenLimit = columns.some(c => c.name === 'antitoken_limit');
+    const hasAntiTokenTime = columns.some(c => c.name === 'antitoken_time');
+    
+    const hasAntiUpdate = columns.some(c => c.name === 'antiupdate');
+    const hasAntiChannel = columns.some(c => c.name === 'antichannel');
+    const hasAntiRole = columns.some(c => c.name === 'antirole');
+    const hasAntiWebhook = columns.some(c => c.name === 'antiwebhook');
+    const hasAntiUnban = columns.some(c => c.name === 'antiunban');
+    const hasAntiBot = columns.some(c => c.name === 'antibot');
+    const hasAntiBan = columns.some(c => c.name === 'antiban');
+    const hasAntiEveryone = columns.some(c => c.name === 'antieveryone');
+    const hasAntiDeco = columns.some(c => c.name === 'antideco');
+    
+    const hasAntiRoleDanger = columns.some(c => c.name === 'antirole_danger');
+    const hasBlRankState = columns.some(c => c.name === 'blrank_state');
+    const hasBlRankType = columns.some(c => c.name === 'blrank_type');
 
     if (!hasBotStatus) {
         db.exec(`ALTER TABLE guild_settings ADD COLUMN bot_status TEXT`);
@@ -167,6 +200,27 @@ function initDatabase() {
     if (!hasBotActivityUrl) {
         db.exec(`ALTER TABLE guild_settings ADD COLUMN bot_activity_url TEXT`);
     }
+
+    // Apply Antiraid Migrations
+    if (!hasRaidLogChannel) db.exec(`ALTER TABLE guild_settings ADD COLUMN raid_log_channel TEXT`);
+    if (!hasRaidPingRole) db.exec(`ALTER TABLE guild_settings ADD COLUMN raid_ping_role TEXT`);
+    if (!hasAntiTokenLevel) db.exec(`ALTER TABLE guild_settings ADD COLUMN antitoken_level TEXT DEFAULT 'off'`);
+    if (!hasAntiTokenLimit) db.exec(`ALTER TABLE guild_settings ADD COLUMN antitoken_limit INTEGER DEFAULT 5`);
+    if (!hasAntiTokenTime) db.exec(`ALTER TABLE guild_settings ADD COLUMN antitoken_time INTEGER DEFAULT 10000`);
+
+    if (!hasAntiUpdate) db.exec(`ALTER TABLE guild_settings ADD COLUMN antiupdate TEXT DEFAULT 'off'`);
+    if (!hasAntiChannel) db.exec(`ALTER TABLE guild_settings ADD COLUMN antichannel TEXT DEFAULT 'off'`);
+    if (!hasAntiRole) db.exec(`ALTER TABLE guild_settings ADD COLUMN antirole TEXT DEFAULT 'off'`);
+    if (!hasAntiWebhook) db.exec(`ALTER TABLE guild_settings ADD COLUMN antiwebhook TEXT DEFAULT 'off'`);
+    if (!hasAntiUnban) db.exec(`ALTER TABLE guild_settings ADD COLUMN antiunban TEXT DEFAULT 'off'`);
+    if (!hasAntiBot) db.exec(`ALTER TABLE guild_settings ADD COLUMN antibot TEXT DEFAULT 'off'`);
+    if (!hasAntiBan) db.exec(`ALTER TABLE guild_settings ADD COLUMN antiban TEXT DEFAULT 'off'`);
+    if (!hasAntiEveryone) db.exec(`ALTER TABLE guild_settings ADD COLUMN antieveryone TEXT DEFAULT 'off'`);
+    if (!hasAntiDeco) db.exec(`ALTER TABLE guild_settings ADD COLUMN antideco TEXT DEFAULT 'off'`);
+
+    if (!hasAntiRoleDanger) db.exec(`ALTER TABLE guild_settings ADD COLUMN antirole_danger TEXT DEFAULT 'all'`);
+    if (!hasBlRankState) db.exec(`ALTER TABLE guild_settings ADD COLUMN blrank_state TEXT DEFAULT 'off'`);
+    if (!hasBlRankType) db.exec(`ALTER TABLE guild_settings ADD COLUMN blrank_type TEXT DEFAULT 'all'`);
 }
 
 module.exports = { initDatabase, db };

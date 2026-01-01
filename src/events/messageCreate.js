@@ -3,6 +3,8 @@ const { ChannelType, PermissionsBitField } = require('discord.js');
 const logger = require('../utils/logger');
 const { db } = require('../database');
 const AutoReact = require('../database/models/AutoReact');
+const { getGuildConfig } = require('../utils/mongoUtils');
+const CustomCommand = require('../database/models/CustomCommand');
 
 module.exports = {
     name: 'messageCreate',
@@ -54,10 +56,16 @@ module.exports = {
         // --- End Anti-Raid Check ---
 
         // Get guild settings (prefix)
-        let prefix = client.config.prefix;
-        // In a real scenario, we would fetch the custom prefix from DB here
-        // const settings = db.prepare('SELECT prefix FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
-        // if (settings && settings.prefix) prefix = settings.prefix;
+        const config = await getGuildConfig(message.guild.id);
+        let prefix = config.prefix || client.config.prefix;
+
+        // Auto Publish
+        if (config.autoPublish && message.channel.type === ChannelType.GuildAnnouncement) {
+            const allowedChannels = config.autoPublishChannels || [];
+            if (allowedChannels.length === 0 || allowedChannels.includes(message.channel.id)) {
+                message.crosspost().catch(() => {});
+            }
+        }
 
         if (!message.content.startsWith(prefix)) return;
 
@@ -65,52 +73,127 @@ module.exports = {
         const commandName = args.shift().toLowerCase();
 
         const command = client.commands.get(commandName) || client.commands.get(client.aliases.get(commandName));
-
-        if (!command) return;
-
-        // Check Subscription
-        const { checkSubscription } = require('../utils/subscription');
-        const freeCommands = ['activate', 'subscription', 'help', 'genkey'];
         
+        // Check Subscription Helper
+        const { checkSubscription } = require('../utils/subscription');
         const { isBotOwner } = require('../utils/ownerUtils');
         const isOwner = await isBotOwner(message.author.id);
+        const freeCommands = ['activate', 'subscription', 'help', 'genkey'];
 
-        if (!isOwner && !freeCommands.includes(command.name) && !checkSubscription(message.guild.id)) {
-             return message.reply("🔒 **Ce serveur n'a pas de licence active.**\nLa protection et la configuration sont désactivées.\nUtilisez `+activate <clé>` pour activer Yako Guardian Premium.\n*(Coût: 5€/mois/serveur)*");
-        }
+        // 1. Standard Command
+        if (command) {
+            const { sendV2Message } = require('../utils/componentUtils');
+            if (!isOwner && !freeCommands.includes(command.name) && !checkSubscription(message.guild.id)) {
+                return sendV2Message(client, message.channel.id, "🔒 **Ce serveur n'a pas de licence active.**\nLa protection et la configuration sont désactivées.\nUtilisez `+activate <clé>` pour activer Yako Guardian Premium.\n*(Coût: 5€/mois/serveur)*", []);
+            }
 
-        try {
-            // Check whitelist if necessary (for sensitive commands)
-            // Custom Permission Check (SQLite)
-            const permSettings = db.prepare('SELECT permission FROM command_permissions WHERE guild_id = ? AND command_name = ?').get(message.guild.id, command.name);
+            // --- PERMISSION LEVEL SYSTEM (1-5) ---
+            let userLevel = 0;
+            if (message.author.id === message.guild.ownerId) userLevel = 5;
+            else if (isOwner) userLevel = 10; // Bot Owner
+            else if (message.member.permissions.has(PermissionsBitField.Flags.Administrator)) userLevel = 4; // Admins default to Level 4 (can be overridden by Perm 5 assignment?)
+            // Actually, let's keep Admins at 0/4? 
+            // Better: If they have Admin perm, they should have high access. Let's say Level 4.
+            // But if they are assigned specific level, that might be higher/lower.
+            // Let's rely on configured levels first, then fallback to Admin=4 if not set?
+            // User request: "Level 5 c'est all".
             
-            if (permSettings) {
-                const reqPerm = permSettings.permission;
-                
-                // Disabled
-                if (reqPerm === '-1') {
-                     // Check if owner to bypass? Usually owners bypass everything.
-                     // But if explicitly disabled, maybe not? Let's allow owner bypass.
-                     if (message.author.id !== message.guild.ownerId && !isOwner) {
-                         return; // Silent fail or reply? Usually silent for disabled.
-                     }
-                }
-                // Everyone
-                else if (reqPerm === '0') {
-                    // Pass
-                }
-                // Specific Permission
-                else {
-                    if (!message.member.permissions.has(PermissionsBitField.Flags[reqPerm]) && message.author.id !== message.guild.ownerId && !isOwner) {
-                         return message.reply(`❌ Vous avez besoin de la permission \`${reqPerm}\` pour utiliser cette commande.`);
+            if (config.permissionLevels) {
+                for (let i = 5; i >= 1; i--) {
+                    const ids = config.permissionLevels[i.toString()] || [];
+                    if (ids.includes(message.author.id) || (message.member && message.member.roles.cache.hasAny(...ids))) {
+                        if (i > userLevel) userLevel = i;
+                        break;
                     }
                 }
             }
-            
-            command.run(client, message, args);
-        } catch (error) {
-            logger.error(`Error executing command ${commandName}:`, error);
-            message.reply('Une erreur est survenue lors de l\'exécution de cette commande.');
+            // Fallback for Administrator if not explicitly restricted/assigned?
+            // If user has Admin permission but is not in any Level, should they get Level 4?
+            // Let's say yes, to prevent locking out admins.
+            if (userLevel < 4 && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                userLevel = 4;
+            }
+
+            // Determine Required Level
+            let requiredLevel = command.permLevel || 0;
+            if (command.permLevel === undefined) {
+                // Default Categories
+                const cat = command.category ? command.category.toLowerCase() : 'general';
+                if (cat === 'owner') requiredLevel = 10;
+                else if (cat === 'antiraid' || cat === 'secur' || command.name === 'backup') requiredLevel = 4;
+                else if (cat === 'configuration' || cat === 'administration') requiredLevel = 3;
+                else if (cat === 'moderation' || cat === 'modmail') requiredLevel = 2;
+                else if (cat === 'roles' || cat === 'tickets') requiredLevel = 1; // Basic setup
+                else requiredLevel = 0;
+            }
+
+            if (userLevel < requiredLevel) {
+                return sendV2Message(client, message.channel.id, `❌ **Permission refusée.**\nCette commande requiert le **Niveau ${requiredLevel}** (Votre niveau: ${userLevel}).\nUtilisez \`+perms\` pour voir les niveaux.`, []);
+            }
+            // --- END PERMISSION SYSTEM ---
+
+            // --- AUTODELETE CHECK (COMMAND) ---
+            const adConfig = config.autodelete || {};
+            let shouldDeleteCommand = false;
+
+            if (command.name === 'snipe' && adConfig.snipe?.command) {
+                shouldDeleteCommand = true;
+            } else if (command.category === 'Moderation' && adConfig.moderation?.command) {
+                shouldDeleteCommand = true;
+            }
+
+            if (shouldDeleteCommand) {
+                message.delete().catch(() => {});
+            }
+            // ----------------------------------
+
+            try {
+                // Check whitelist if necessary (for sensitive commands)
+                // Custom Permission Check (SQLite)
+                const permSettings = db.prepare('SELECT permission FROM command_permissions WHERE guild_id = ? AND command_name = ?').get(message.guild.id, command.name);
+                
+                if (permSettings) {
+                    const reqPerm = permSettings.permission;
+                    
+                    // Disabled
+                    if (reqPerm === '-1') {
+                        if (message.author.id !== message.guild.ownerId && !isOwner) {
+                            return; 
+                        }
+                    }
+                    // Everyone
+                    else if (reqPerm === '0') {
+                        // Pass
+                    }
+                    // Role ID
+                    else {
+                        if (!message.member.roles.cache.has(reqPerm) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !isOwner) {
+                             return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission requise pour cette commande.", []);
+                        }
+                    }
+                }
+
+                if (command.run) {
+                    await command.run(client, message, args);
+                } else if (command.execute) {
+                    await command.execute(client, message, args);
+                }
+            } catch (error) {
+                logger.error(`Error executing command ${command.name}:`, error);
+                sendV2Message(client, message.channel.id, 'Une erreur est survenue lors de l\'exécution de la commande.', []);
+            }
+        } 
+        // 2. Custom Command
+        else {
+            const customCmd = await CustomCommand.findOne({ guildId: message.guild.id, trigger: commandName });
+            if (customCmd) {
+                const { sendV2Message } = require('../utils/componentUtils');
+                if (!isOwner && !checkSubscription(message.guild.id)) {
+                    return sendV2Message(client, message.channel.id, "🔒 **Licence requise pour les commandes personnalisées.**", []);
+                }
+                // await message.channel.send(customCmd.response);
+                await sendV2Message(client, message.channel.id, customCmd.response, []);
+            }
         }
     },
 };

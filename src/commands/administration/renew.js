@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { sendV2Message, replyV2Interaction, updateV2Interaction } = require('../../utils/componentUtils');
 
 module.exports = {
     name: 'renew',
@@ -33,19 +33,20 @@ module.exports = {
             new ButtonBuilder().setCustomId('renew_cancel').setLabel('Annuler').setStyle(ButtonStyle.Secondary)
         );
 
-        const msg = await message.channel.send({ 
-            content: `⚠️ **ATTENTION** : Vous allez recréer le salon ${channel}. Tous les messages seront perdus.\nConfirmez-vous ?`, 
-            components: [row] 
-        });
+        const msg = await sendV2Message(client, message.channel.id,
+            `⚠️ **ATTENTION** : Vous allez recréer le salon ${channel}. Tous les messages seront perdus.\nConfirmez-vous ?`,
+            [row]
+        );
 
-        const collector = msg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 15000 });
+        const fetchedMsg = await message.channel.messages.fetch(msg.id);
+        const collector = fetchedMsg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 15000 });
 
         collector.on('collect', async i => {
-            if (i.user.id !== message.author.id) return i.reply({ content: "❌ Pas touche !", ephemeral: true });
+            if (i.user.id !== message.author.id) return replyV2Interaction(client, i, "❌ Pas touche !", [], true);
 
             if (i.customId === 'renew_confirm') {
                 try {
-                    await i.reply({ content: "♻️ Renouvellement en cours...", ephemeral: true });
+                    await replyV2Interaction(client, i, "♻️ Renouvellement en cours...", [], true);
                     const position = channel.position;
                     const newChannel = await channel.clone();
                     await channel.delete();
@@ -53,10 +54,16 @@ module.exports = {
                     await newChannel.send(`✅ Salon recréé par ${message.author}.`);
                 } catch (e) {
                     console.error(e);
-                    await i.followUp({ content: "❌ Erreur lors du renew.", ephemeral: true });
+                    // Use sendV2Message because original channel might be gone or interaction failed
+                    // But if channel is gone, we can't send there.
+                    // If channel delete failed, we can reply.
+                    // Try reply first
+                    try {
+                        await replyV2Interaction(client, i, "❌ Erreur lors du renew.", [], true);
+                    } catch (err) {}
                 }
             } else {
-                await i.update({ content: "❌ Action annulée.", components: [] });
+                await updateV2Interaction(client, i, "❌ Action annulée.", []);
             }
         });
     }

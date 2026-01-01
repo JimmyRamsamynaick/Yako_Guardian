@@ -110,7 +110,7 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
             await sendV2Message(client, message.channel.id, generateStatusText(settings), [rowSelect, rowButtons]);
         } catch (error) {
             console.error("Error sending V2 secur panel:", error);
-            message.reply("Erreur lors de l'affichage du panneau V2.");
+            await sendV2Message(client, message.channel.id, "❌ Erreur lors de l'affichage du panneau V2.", []);
         }
     }
 };
