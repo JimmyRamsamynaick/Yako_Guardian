@@ -178,6 +178,32 @@ module.exports = {
             db.prepare('UPDATE guild_settings SET language = ? WHERE guild_id = ?').run(lang, message.guild.id);
             return sendV2Message(client, message.channel.id, await t('set.lang_success', message.guild.id, { lang: lang.toUpperCase() }), []);
         }
+        else if (type === 'boostembed') {
+            // +set boostembed <channel>
+            // We reuse the logic: if args[1] is a channel mention/ID, set it.
+            // But usually +set takes type then value.
+            // If value is missing, prompt? For now, assume usage: +set boostembed <#channel>
+            
+            if (!value) {
+                // Interactive setup could go here, but let's stick to simple channel setting for now
+                return sendV2Message(client, message.channel.id, await t('set.boost_usage', message.guild.id), []);
+            }
+
+            let channelId = value.replace(/[<#>]/g, '');
+            const channel = message.guild.channels.cache.get(channelId);
+
+            if (!channel || !channel.isTextBased()) {
+                return sendV2Message(client, message.channel.id, await t('set.channel_invalid', message.guild.id), []);
+            }
+
+            const config = await getGuildConfig(message.guild.id);
+            if (!config.boost) config.boost = {};
+            config.boost.channelId = channel.id;
+            config.boost.enabled = true; // Auto enable when setting channel
+            await config.save();
+
+            return sendV2Message(client, message.channel.id, await t('set.boost_success', message.guild.id, { channel: channel.toString() }), []);
+        }
         else {
             return sendV2Message(client, message.channel.id, await t('set.invalid_option', message.guild.id), []);
         }

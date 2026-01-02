@@ -85,6 +85,18 @@ const GuildConfigSchema = new mongoose.Schema({
         channelId: String
     },
 
+    // Boost Embed
+    boost: {
+        enabled: { type: Boolean, default: false },
+        channelId: String,
+        message: String, // Custom message content (outside embed)
+        title: String, // Custom embed title
+        description: String, // Custom embed description
+        image: String, // Custom image URL (GIF/PNG...)
+        thumbnail: String, // Custom thumbnail URL
+        embed: { type: Object, default: {} } // Custom embed structure if needed
+    },
+
     // Suggestions
     suggestion: {
         enabled: { type: Boolean, default: false },
