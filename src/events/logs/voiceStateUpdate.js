@@ -1,4 +1,5 @@
 const { sendLog } = require('../../utils/logManager');
+const { t } = require('../../utils/lang');
 
 module.exports = {
     name: 'voiceStateUpdate',
@@ -8,17 +9,20 @@ module.exports = {
         
         // Join
         if (!oldState.channelId && newState.channelId) {
-            sendLog(newState.guild, '🔊 Vocal Rejoint', `${member} a rejoint le salon ${newState.channel}`, '#00FF00', [], member.user);
+            const description = await t('logs.descriptions.voice_join', newState.guild.id, { member: member, channel: newState.channel });
+            sendLog(newState.guild, await t('logs.titles.voice_join', newState.guild.id), description, '#00FF00', [], member.user);
         }
         
         // Leave
         else if (oldState.channelId && !newState.channelId) {
-            sendLog(newState.guild, '🔇 Vocal Quitté', `${member} a quitté le salon ${oldState.channel}`, '#FF0000', [], member.user);
+            const description = await t('logs.descriptions.voice_leave', newState.guild.id, { member: member, channel: oldState.channel });
+            sendLog(newState.guild, await t('logs.titles.voice_leave', newState.guild.id), description, '#FF0000', [], member.user);
         }
         
         // Move
         else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
-            sendLog(newState.guild, '↔️ Vocal Déplacé', `${member} a changé de salon: ${oldState.channel} ➔ ${newState.channel}`, '#FFA500', [], member.user);
+            const description = await t('logs.descriptions.voice_move', newState.guild.id, { member: member, old: oldState.channel, new: newState.channel });
+            sendLog(newState.guild, await t('logs.titles.voice_move', newState.guild.id), description, '#FFA500', [], member.user);
         }
     }
 };

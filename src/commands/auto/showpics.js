@@ -8,7 +8,7 @@ module.exports = {
     description: 'Commandes d\'affichage automatique',
     async execute(client, message, args) {
         if (!args[0]) {
-            return message.reply("Usage: `+show pics`");
+            return sendV2Message(client, message.channel.id, await t('showpics.usage', message.guild.id), []);
         }
         if (args[0] === 'pics') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {

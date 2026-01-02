@@ -29,12 +29,15 @@ module.exports = {
                 { upsert: true, new: true }
             );
 
-            return sendV2Message(client, message.channel.id, await t('servers.secur_status', message.guild.id, { status: isEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉE' }), []);
+            const statusStr = isEnabled ? await t('common.enabled', message.guild.id) : await t('common.disabled', message.guild.id);
+            return sendV2Message(client, message.channel.id, await t('servers.secur_status', message.guild.id, { status: statusStr }), []);
         }
 
         // --- SERVER LIST ---
         if (commandName === 'servers' && (!sub || sub === 'list')) {
-            const guilds = client.guilds.cache.map(g => `• **${g.name}** (\`${g.id}\`) | 👥 ${g.memberCount} | 👑 <@${g.ownerId}>`);
+            const guilds = await Promise.all(client.guilds.cache.map(async g => 
+                await t('servers.server_list_item', message.guild.id, { name: g.name, id: g.id, members: g.memberCount, ownerId: g.ownerId })
+            ));
             
             // Pagination if needed, but for now simple join
             // Split into chunks if too long

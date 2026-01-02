@@ -56,12 +56,12 @@ module.exports = {
                 }
 
                 const category = await message.guild.channels.create({
-                    name: 'VOCAUX TEMPORAIRES',
+                    name: await t('tempvoc.category_name', message.guild.id),
                     type: ChannelType.GuildCategory
                 });
 
                 const hub = await message.guild.channels.create({
-                    name: '➕ Créer un salon',
+                    name: await t('tempvoc.channel_name', message.guild.id),
                     type: ChannelType.GuildVoice,
                     parent: category.id
                 });

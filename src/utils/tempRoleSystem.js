@@ -12,7 +12,7 @@ async function checkTempRoles(client) {
                     if (member) {
                         const role = guild.roles.cache.get(doc.role_id);
                         if (role) {
-                            await member.roles.remove(role, 'Fin du rôle temporaire');
+                            await member.roles.remove(role, await t('temprole.expired', guild.id));
                         }
                     }
                 }

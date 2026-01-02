@@ -21,7 +21,7 @@ module.exports = {
             await t('channel.name', message.guild.id, { name: channel.name }),
             await t('channel.id', message.guild.id, { id: channel.id }),
             await t('channel.type', message.guild.id, { type: typeStr }),
-            await t('channel.category', message.guild.id, { category: channel.parent ? channel.parent.name : 'Aucune' }),
+            await t('channel.category', message.guild.id, { category: channel.parent ? channel.parent.name : await t('common.none', message.guild.id) }),
             await t('channel.created', message.guild.id, { date: createdStr }),
             await t('channel.position', message.guild.id, { position: channel.position })
         ].join('\n');

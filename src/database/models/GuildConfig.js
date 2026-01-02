@@ -105,6 +105,7 @@ const GuildConfigSchema = new mongoose.Schema({
 
     // --- NEW MODERATION SYSTEM ---
     moderation: {
+        logChannel: String,
         muteRole: String,
         timeoutEnabled: { type: Boolean, default: true },
         

@@ -1,23 +1,24 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('./componentUtils');
+const { t } = require('./i18n');
 
 async function createPagination(client, message, items, itemsPerPage = 10, title = 'Liste', formatter = (i) => i) {
     if (!items || items.length === 0) {
-        return sendV2Message(client, message.channel.id, `**${title}**\n\nAucune donnée trouvée.`, []);
+        return sendV2Message(client, message.channel.id, `**${title}**\n\n${await t('common.no_data', message.guild.id)}`, []);
     }
 
     let page = 0;
     const maxPages = Math.ceil(items.length / itemsPerPage);
 
-    const generateContent = (p) => {
+    const generateContent = async (p) => {
         const start = p * itemsPerPage;
         const end = start + itemsPerPage;
         const currentItems = items.slice(start, end);
         const list = currentItems.map((item, i) => formatter(item, start + i + 1)).join('\n');
-        return `**${title}** (Page ${p + 1}/${maxPages})\n\n${list}`;
+        return `**${title}** (${await t('common.page', message.guild.id)} ${p + 1}/${maxPages})\n\n${list}`;
     };
 
-    const generateRows = (p) => {
+    const generateRows = async (p) => {
         const row = new ActionRowBuilder();
         
         if (maxPages > 1) {
@@ -42,14 +43,14 @@ async function createPagination(client, message, items, itemsPerPage = 10, title
              row.addComponents(
                 new ButtonBuilder()
                     .setCustomId('close_page')
-                    .setLabel('Fermer')
+                    .setLabel(await t('common.close', message.guild.id))
                     .setStyle(ButtonStyle.Danger)
             );
             return [row];
         }
     };
 
-    const sentMsg = await sendV2Message(client, message.channel.id, generateContent(page), generateRows(page));
+    const sentMsg = await sendV2Message(client, message.channel.id, await generateContent(page), await generateRows(page));
     
     const channel = message.channel;
     const collector = channel.createMessageComponentCollector({ 
@@ -61,7 +62,7 @@ async function createPagination(client, message, items, itemsPerPage = 10, title
         if (i.message.id !== sentMsg.id) return; 
         
         if (i.user.id !== message.author.id) {
-            return replyV2Interaction(client, i, '❌ Vous ne pouvez pas utiliser ces boutons.', [], true);
+            return replyV2Interaction(client, i, await t('common.button_no_permission', message.guild.id), [], true);
         }
 
         if (i.customId === 'prev_page') {
@@ -74,7 +75,7 @@ async function createPagination(client, message, items, itemsPerPage = 10, title
             return;
         }
 
-        await updateV2Interaction(client, i, generateContent(page), generateRows(page));
+        await updateV2Interaction(client, i, await generateContent(page), await generateRows(page));
     });
 
     collector.on('end', async () => {

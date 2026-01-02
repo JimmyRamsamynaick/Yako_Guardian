@@ -33,10 +33,12 @@ module.exports = {
                         { mpEnabled: newState },
                         { upsert: true, new: true }
                     );
-                    return sendV2Message(client, message.channel.id, await t('mp.mp_settings_success', message.guild.id, { status: newState ? 'ACTIVÉE' : 'DÉSACTIVÉE' }), []);
+                    const statusStr = newState ? (await t('common.state_on', message.guild.id)).toUpperCase() : (await t('common.state_off', message.guild.id)).toUpperCase();
+                    return sendV2Message(client, message.channel.id, await t('mp.mp_settings_success', message.guild.id, { status: statusStr }), []);
                 }
 
-                return sendV2Message(client, message.channel.id, await t('mp.mp_settings_status', message.guild.id, { status: currentStatus ? 'ON' : 'OFF' }), []);
+                const statusStr = currentStatus ? await t('common.on', message.guild.id) : await t('common.off', message.guild.id);
+                return sendV2Message(client, message.channel.id, await t('mp.mp_settings_status', message.guild.id, { status: statusStr }), []);
             }
 
             // +mp <user> <message>

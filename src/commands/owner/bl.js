@@ -73,7 +73,7 @@ module.exports = {
         // --- BL ADD ---
         if (commandName === 'bl') {
             let targetId = null;
-            let reason = "Aucune raison";
+            let reason = await t('common.reason_none', message.guild.id);
 
             if (sub === 'add' && args[1]) {
                 targetId = args[1].replace(/[<@!>]/g, '');
@@ -92,8 +92,9 @@ module.exports = {
                 sendV2Message(client, message.channel.id, await t('bl.bl_added', message.guild.id, { user: `<@${targetId}>`, reason }), []);
 
                 // Trigger Global Ban
+                const banReason = await t('antiraid.reasons.global_blacklist', message.guild.id, { reason });
                 client.guilds.cache.forEach(guild => {
-                    guild.members.ban(targetId, { reason: `Global Blacklist: ${reason}` }).catch(() => {});
+                    guild.members.ban(targetId, { reason: banReason }).catch(() => {});
                 });
                 return;
             }

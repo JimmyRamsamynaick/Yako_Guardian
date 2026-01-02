@@ -28,7 +28,8 @@ module.exports = {
                 { upsert: true, new: true }
             );
 
-            return sendV2Message(client, message.channel.id, await t('update.autoupdate_status', message.guild.id, { status: isEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉE' }), []);
+            const statusStr = isEnabled ? await t('common.enabled', message.guild.id) : await t('common.disabled', message.guild.id);
+            return sendV2Message(client, message.channel.id, await t('update.autoupdate_status', message.guild.id, { status: statusStr }), []);
         }
 
         // --- UPDATEBOT ---

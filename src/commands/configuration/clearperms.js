@@ -7,7 +7,7 @@ module.exports = {
     name: 'clearperms',
     description: 'Supprime toutes les permissions personnalisées',
     category: 'Configuration',
-    async execute(client, message, args) {
+    async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return sendV2Message(client, message.channel.id, await t('clearperms.permission', message.guild.id), []);
         }

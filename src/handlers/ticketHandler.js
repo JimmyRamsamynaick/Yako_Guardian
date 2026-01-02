@@ -222,8 +222,8 @@ async function handleTicketCreate(client, interaction) {
         });
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('ticket_close_confirm').setLabel('Fermer').setStyle(ButtonStyle.Danger).setEmoji('🔒'),
-            new ButtonBuilder().setCustomId('ticket_claim').setLabel('Claim').setStyle(ButtonStyle.Secondary).setEmoji('🙋‍♂️')
+            new ButtonBuilder().setCustomId('ticket_close_confirm').setLabel(await t('tickets.handler.btn_close', guildId)).setStyle(ButtonStyle.Danger).setEmoji('🔒'),
+            new ButtonBuilder().setCustomId('ticket_claim').setLabel(await t('tickets.handler.btn_claim', guildId)).setStyle(ButtonStyle.Secondary).setEmoji('🙋‍♂️')
         );
 
         await sendV2Message(client, channel.id, await t('tickets.handler.ticket_welcome', guildId, { user: `<@${user.id}>` }), [row]);

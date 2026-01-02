@@ -31,30 +31,30 @@ module.exports = {
         }
 
         if (sub === 'list') {
-            const list = config.moderation.badwords.list.join(', ') || "Aucun mot interdit.";
-            return sendV2Message(client, message.channel.id, `**Mots interdits:**\n${list}`, []);
+            const list = config.moderation.badwords.list.join(', ') || await t('badwords.list_empty', message.guild.id);
+            return sendV2Message(client, message.channel.id, await t('badwords.list_title', message.guild.id, { list }), []);
         }
 
         if (sub === 'add') {
             const word = args[1]?.toLowerCase();
-            if (!word) return sendV2Message(client, message.channel.id, "❌ Précisez un mot.", []);
+            if (!word) return sendV2Message(client, message.channel.id, await t('badwords.specify_word', message.guild.id), []);
             
             if (!config.moderation.badwords.list.includes(word)) {
                 config.moderation.badwords.list.push(word);
                 config.markModified('moderation');
                 await config.save();
             }
-            return sendV2Message(client, message.channel.id, `✅ Mot ajouté: **${word}**`, []);
+            return sendV2Message(client, message.channel.id, await t('badwords.added', message.guild.id, { word }), []);
         }
 
         if (sub === 'del' || sub === 'remove') {
             const word = args[1]?.toLowerCase();
-            if (!word) return sendV2Message(client, message.channel.id, "❌ Précisez un mot.", []);
+            if (!word) return sendV2Message(client, message.channel.id, await t('badwords.specify_word', message.guild.id), []);
             
             config.moderation.badwords.list = config.moderation.badwords.list.filter(w => w !== word);
             config.markModified('moderation');
             await config.save();
-            return sendV2Message(client, message.channel.id, `✅ Mot retiré: **${word}**`, []);
+            return sendV2Message(client, message.channel.id, await t('badwords.removed', message.guild.id, { word }), []);
         }
 
         // Clear
@@ -62,7 +62,7 @@ module.exports = {
              config.moderation.badwords.list = [];
              config.markModified('moderation');
              await config.save();
-             return sendV2Message(client, message.channel.id, `✅ Liste vidée.`, []);
+             return sendV2Message(client, message.channel.id, await t('badwords.cleared', message.guild.id), []);
         }
 
         return sendV2Message(client, message.channel.id, await t('badwords.usage', message.guild.id), []);

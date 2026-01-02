@@ -20,7 +20,9 @@ module.exports = {
         if (sub === 'get' || message.content.includes('get lang')) {
             const settings = db.prepare('SELECT language, custom_lang_url FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
             const lang = settings?.language || 'fr';
-            const custom = settings?.custom_lang_url ? `Oui (${settings.custom_lang_url})` : 'Non';
+            const yes = await t('common.yes', message.guild.id);
+            const no = await t('common.no', message.guild.id);
+            const custom = settings?.custom_lang_url ? `${yes} (${settings.custom_lang_url})` : no;
             
             const title = await t('lang.config_title', message.guild.id);
             const current = await t('lang.current_lang', message.guild.id, { lang: lang.toUpperCase() });

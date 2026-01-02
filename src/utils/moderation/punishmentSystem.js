@@ -3,6 +3,8 @@ const { getGuildConfig } = require('../../utils/mongoUtils');
 const UserStrike = require('../../database/models/UserStrike');
 const ms = require('ms');
 
+const { sendV2Message } = require('../componentUtils');
+
 async function applyPunishment(client, message, userId, guildConfig) {
     if (!guildConfig.moderation || !guildConfig.moderation.strikes) return;
 
@@ -22,26 +24,27 @@ async function applyPunishment(client, message, userId, guildConfig) {
     // 3. Execute Action
     try {
         let actionTaken = "";
+        const reasonText = await t('automod.reason_strikes', message.guild.id, { count: strikeCount });
         
         switch (rule.action) {
             case 'kick':
                 if (member.kickable) {
-                    await member.kick(`Automod: ${strikeCount} strikes reached.`);
-                    actionTaken = "Kicked";
+                    await member.kick(reasonText);
+                    actionTaken = await t('automod.action_kicked', message.guild.id);
                 }
                 break;
             
             case 'ban':
                 if (member.bannable) {
-                    await member.ban({ reason: `Automod: ${strikeCount} strikes reached.` });
-                    actionTaken = "Banned";
+                    await member.ban({ reason: reasonText });
+                    actionTaken = await t('automod.action_banned', message.guild.id);
                 }
                 break;
 
             case 'timeout':
                 if (rule.duration && member.moderatable) {
-                    await member.timeout(rule.duration, `Automod: ${strikeCount} strikes reached.`);
-                    actionTaken = `Timed out (${ms(rule.duration)})`;
+                    await member.timeout(rule.duration, reasonText);
+                    actionTaken = await t('automod.action_timeout', message.guild.id, { duration: ms(rule.duration) });
                 }
                 break;
 
@@ -50,20 +53,24 @@ async function applyPunishment(client, message, userId, guildConfig) {
                 if (muteRoleId) {
                     const role = message.guild.roles.cache.get(muteRoleId);
                     if (role && member.manageable) {
-                        await member.roles.add(role, `Automod: ${strikeCount} strikes reached.`);
-                        actionTaken = "Muted (Role)";
+                        await member.roles.add(role, reasonText);
+                        actionTaken = await t('automod.action_muted', message.guild.id);
                     }
                 }
                 break;
             
             case 'warn':
                 // Already warned by the strike system, but maybe send a special DM?
-                actionTaken = "Warned";
+                actionTaken = await t('automod.action_warned', message.guild.id);
                 break;
         }
 
         if (actionTaken) {
-            message.channel.send(`🚨 **Punition Automatique:** ${member} a atteint **${strikeCount}** avertissements -> **${actionTaken}**.`);
+            sendV2Message(client, message.channel.id, await t('automod.punishment_applied', message.guild.id, { 
+                user: member.toString(), 
+                count: strikeCount, 
+                action: actionTaken 
+            }), []);
         }
 
     } catch (err) {

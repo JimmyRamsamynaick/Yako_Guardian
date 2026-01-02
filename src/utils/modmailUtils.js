@@ -2,6 +2,7 @@ const { ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBi
 const ActiveTicket = require('../database/models/ActiveTicket');
 const GuildConfig = require('../database/models/GuildConfig');
 const { t } = require('./i18n');
+const { sendV2Message } = require('./componentUtils');
 
 async function createTicket(client, user, guild, initialContent) {
     const config = await GuildConfig.findOne({ guildId: guild.id });
@@ -50,7 +51,7 @@ async function createTicket(client, user, guild, initialContent) {
         user: user.id, 
         tag: user.tag, 
         id: user.id, 
-        content: initialContent || "*Aucun message*" 
+        content: initialContent || await t('modmail.no_content', guild.id) 
     });
 
     const row = new ActionRowBuilder()
@@ -68,7 +69,7 @@ async function createTicket(client, user, guild, initialContent) {
         );
     
     await channel.send({ content: "@here", components: [row] }); // Notify staff
-    await channel.send({ content: content });
+    await sendV2Message(client, channel.id, content, []);
 
     return channel;
 }

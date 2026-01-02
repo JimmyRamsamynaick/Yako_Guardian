@@ -1,6 +1,7 @@
 const { AuditLogEvent } = require('discord.js');
 const { checkAntiraid } = require('../../utils/antiraid');
 const { getExecutor } = require('../../utils/audit');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'channelCreate',
@@ -17,7 +18,7 @@ module.exports = {
         const triggered = await checkAntiraid(client, channel.guild, member, 'antichannel');
         
         if (triggered) {
-            channel.delete('Yako Guardian | Anti-Channel').catch(() => {});
+            channel.delete(await t('antiraid.reasons.anti_channel', channel.guild.id)).catch(() => {});
         }
     }
 };

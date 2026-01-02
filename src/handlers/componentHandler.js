@@ -66,7 +66,7 @@ module.exports = (client) => {
             } catch (error) {
                 logger.error(`Error in notification interaction ${customId}:`, error);
                 if (!interaction.replied && !interaction.deferred) {
-                    await replyV2Interaction(client, interaction, "❌ Une erreur est survenue lors du traitement de l'interaction.", [], true).catch(() => {});
+                    await replyV2Interaction(client, interaction, "❌ " + await t('common.error_generic', interaction.guild.id), [], true).catch(() => {});
                 } else {
                     // FollowUp V2 is basically a webhook post
                      // checking if we can use sendV2Message but with interaction webhook? 
@@ -179,7 +179,7 @@ async function handleSetProfilButton(client, interaction) {
     const bannerInput = new TextInputBuilder()
         .setCustomId('profil_banner')
         .setLabel(await t('handlers.profil_banner', interaction.guild.id))
-        .setPlaceholder("https://... (Laisser vide pour ignorer)")
+        .setPlaceholder(await t('handlers.profil_banner_placeholder', interaction.guild.id))
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
@@ -375,15 +375,15 @@ ${footer}`;
                     .setCustomId('secur_select_module')
                     .setPlaceholder(await t('secur.placeholder', interaction.guild.id))
                     .addOptions([
-                        { label: 'Anti-Token', value: 'antitoken_level', description: await t('secur.desc_antitoken', interaction.guild.id), emoji: '🚪' },
-                        { label: 'Anti-Bot', value: 'antibot', description: await t('secur.desc_antibot', interaction.guild.id), emoji: '🤖' },
-                        { label: 'Anti-Ban', value: 'antiban', description: await t('secur.desc_antiban', interaction.guild.id), emoji: '🔨' },
-                        { label: 'Anti-Channel', value: 'antichannel', description: await t('secur.desc_antichannel', interaction.guild.id), emoji: '📺' },
-                        { label: 'Anti-Role', value: 'antirole', description: await t('secur.desc_antirole', interaction.guild.id), emoji: '🎭' },
-                        { label: 'Anti-Webhook', value: 'antiwebhook', description: await t('secur.desc_antiwebhook', interaction.guild.id), emoji: '🔗' },
-                        { label: 'Anti-Everyone', value: 'antieveryone', description: await t('secur.desc_antieveryone', interaction.guild.id), emoji: '📢' },
-                        { label: 'Anti-Update', value: 'antiupdate', description: await t('secur.desc_antiupdate', interaction.guild.id), emoji: '⚙️' },
-                        { label: 'Anti-Deco', value: 'antideco', description: await t('secur.desc_antideco', interaction.guild.id), emoji: '🔌' },
+                        { label: await t('secur.module_antitoken', interaction.guild.id), value: 'antitoken_level', description: await t('secur.desc_antitoken', interaction.guild.id), emoji: '🚪' },
+                        { label: await t('secur.module_antibot', interaction.guild.id), value: 'antibot', description: await t('secur.desc_antibot', interaction.guild.id), emoji: '🤖' },
+                        { label: await t('secur.module_antiban', interaction.guild.id), value: 'antiban', description: await t('secur.desc_antiban', interaction.guild.id), emoji: '🔨' },
+                        { label: await t('secur.module_antichannel', interaction.guild.id), value: 'antichannel', description: await t('secur.desc_antichannel', interaction.guild.id), emoji: '📺' },
+                        { label: await t('secur.module_antirole', interaction.guild.id), value: 'antirole', description: await t('secur.desc_antirole', interaction.guild.id), emoji: '🎭' },
+                        { label: await t('secur.module_antiwebhook', interaction.guild.id), value: 'antiwebhook', description: await t('secur.desc_antiwebhook', interaction.guild.id), emoji: '🔗' },
+                        { label: await t('secur.module_antieveryone', interaction.guild.id), value: 'antieveryone', description: await t('secur.desc_antieveryone', interaction.guild.id), emoji: '📢' },
+                        { label: await t('secur.module_antiupdate', interaction.guild.id), value: 'antiupdate', description: await t('secur.desc_antiupdate', interaction.guild.id), emoji: '⚙️' },
+                        { label: await t('secur.module_antideco', interaction.guild.id), value: 'antideco', description: await t('secur.desc_antideco', interaction.guild.id), emoji: '🔌' },
                     ])
             );
 

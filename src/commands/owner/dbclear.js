@@ -8,9 +8,10 @@ const { PermissionsBitField } = require('discord.js');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
-    name: 'clear',
+    name: 'dbclear',
     description: 'Vide des listes globales (Owners, Blacklist) ou locales (Perms, Customs)',
     category: 'Owner',
+    aliases: ['cleardb'],
     async run(client, message, args) {
         const type = args[0]?.toLowerCase();
 

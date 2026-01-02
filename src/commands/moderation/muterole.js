@@ -18,7 +18,7 @@ module.exports = {
 
         // Display current
         if (!args[0]) {
-             const current = config.moderation.muteRole ? `<@&${config.moderation.muteRole}>` : "Non défini";
+             const current = config.moderation.muteRole ? `<@&${config.moderation.muteRole}>` : await t('common.not_defined', message.guild.id);
              return sendV2Message(client, message.channel.id, await t('muterole.current', message.guild.id, { role: current }), []);
         }
 

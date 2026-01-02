@@ -1,6 +1,7 @@
 const { db } = require('../../database');
 const { checkAntiraid } = require('../../utils/antiraid');
 const GlobalBlacklist = require('../../database/models/GlobalBlacklist');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'guildMemberAdd',
@@ -9,7 +10,7 @@ module.exports = {
         const globalBl = await GlobalBlacklist.findOne({ userId: member.id });
         if (globalBl) {
             try {
-                await member.ban({ reason: `Global Blacklist: ${globalBl.reason}` });
+                await member.ban({ reason: await t('antiraid.reasons.global_blacklist', member.guild.id, { reason: globalBl.reason }) });
                 return; // Stop processing
             } catch (e) {
                 // Ignore if permission error, but log it?
@@ -25,7 +26,7 @@ module.exports = {
         if (settings.blrank_state !== 'off') {
             const blacklistEntry = db.prepare('SELECT * FROM blacklists WHERE guild_id = ? AND user_id = ?').get(guild.id, member.id);
             if (blacklistEntry) {
-                await member.ban({ reason: `Yako Guardian | Blacklisted: ${blacklistEntry.reason}` });
+                await member.ban({ reason: await t('antiraid.reasons.blacklisted', guild.id, { reason: blacklistEntry.reason }) });
                 return;
             }
         }
@@ -48,7 +49,7 @@ module.exports = {
                 const isWhitelisted = db.prepare('SELECT level FROM whitelists WHERE guild_id = ? AND user_id = ?').get(guild.id, executor.id);
                 if (!isWhitelisted && executor.id !== guild.ownerId) {
                     // Kick bot
-                    await member.kick('Yako Guardian | Anti-Bot');
+                    await member.kick(await t('antiraid.reasons.anti_bot', guild.id));
                     // Sanction adder
                     await checkAntiraid(client, guild, adder, 'antibot');
                 }
@@ -56,7 +57,7 @@ module.exports = {
                 // If we can't find adder, and antibot is ON, kick the bot to be safe?
                 // Or wait. Safer to kick if strictly ON.
                 if (settings.antibot === 'max') {
-                    await member.kick('Yako Guardian | Anti-Bot (Strict)');
+                    await member.kick(await t('antiraid.reasons.anti_bot_strict', guild.id));
                 }
             }
         }
@@ -72,7 +73,7 @@ module.exports = {
             // Let's assume the command sets it in ms or days converted to ms.
             
             if (age < settings.creation_limit_time) {
-                await member.kick('Yako Guardian | Compte trop récent');
+                await member.kick(await t('antiraid.reasons.account_too_young', guild.id));
                 return;
             }
         }
@@ -98,10 +99,10 @@ module.exports = {
              client.joinRateCache.set(key, guildJoins);
              
              if (guildJoins.length > maxJoins) {
-                 // Trigger Anti-Token
-                 try {
-                    await member.kick('Yako Guardian | Anti-Token (Rate Limit)');
-                 } catch (e) {
+                     // Trigger Anti-Token
+                     try {
+                        await member.kick(await t('antiraid.reasons.anti_token_ratelimit', guild.id));
+                     } catch (e) {
                      // console.error("Failed to kick anti-token:", e);
                  }
                  return;

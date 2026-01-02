@@ -1,6 +1,7 @@
 const UserStrike = require('../../database/models/UserStrike');
 const { isBotOwner } = require('../ownerUtils');
 const { applyPunishment } = require('./punishmentSystem');
+const { t } = require('../i18n');
 
 const spamMap = new Map(); // guildId -> userId -> { count, lastMsgTime }
 
@@ -30,7 +31,7 @@ async function checkAutomod(client, message, config) {
         const content = message.content.toLowerCase();
         if (badwords.list.some(word => content.includes(word.toLowerCase()))) {
             triggered = true;
-            reason = "Badword detected";
+            reason = await t('automod.reason_badwords', message.guild.id);
             type = "badwords";
         }
     }
@@ -42,11 +43,11 @@ async function checkAutomod(client, message, config) {
         
         if (antilink.mode === 'invite' && inviteRegex.test(message.content)) {
             triggered = true;
-            reason = "Invite link detected";
+            reason = await t('automod.reason_invite', message.guild.id);
             type = "antilink";
         } else if (antilink.mode === 'all' && linkRegex.test(message.content)) {
             triggered = true;
-            reason = "Link detected";
+            reason = await t('automod.reason_link', message.guild.id);
             type = "antilink";
         }
     }
@@ -72,7 +73,7 @@ async function checkAutomod(client, message, config) {
 
         if (userData.count > limit) {
             triggered = true;
-            reason = "Spam detected";
+            reason = await t('automod.reason_spam', message.guild.id);
             type = "antispam";
             // Reset count to avoid instant re-trigger
             userData.count = 0;
@@ -82,7 +83,8 @@ async function checkAutomod(client, message, config) {
     if (triggered) {
         if (message.deletable) await message.delete().catch(() => {});
         
-        const warningMsg = await message.channel.send(`⚠️ ${message.author}, ${reason}!`).catch(() => {});
+        const warning = await t('automod.warning', message.guild.id, { user: message.author, reason });
+        const warningMsg = await sendV2Message(client, message.channel.id, warning, []);
         setTimeout(() => warningMsg?.delete().catch(() => {}), 5000);
 
         // Add Strike

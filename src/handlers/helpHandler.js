@@ -43,9 +43,9 @@ async function handleHelpMenu(client, interaction) {
         let content = '';
 
         if (commands.size === 0) {
-            content = await t('help.empty_category', guildId) || "⚠️ Aucune commande dans cette catégorie.";
+            content = await t('help.empty_category', guildId);
         } else {
-            content = `**📂 Catégorie: ${category.toUpperCase()}**\n\n`;
+            content = await t('help.category_title', guildId, { category: category.toUpperCase() }) + "\n\n";
             
             for (const cmd of commands.values()) {
                 // Try to fetch translated description and usage
@@ -54,7 +54,7 @@ async function handleHelpMenu(client, interaction) {
                 let usage = await t(`${cmd.name}.usage`, guildId);
 
                 // Fallbacks
-                if (description === `${cmd.name}.description`) description = cmd.description || 'Aucune description.';
+                if (description === `${cmd.name}.description`) description = cmd.description || await t('common.no_description', guildId);
                 if (usage === `${cmd.name}.usage`) usage = cmd.usage || '';
 
                 content += `> **${prefix}${cmd.name}**\n`;

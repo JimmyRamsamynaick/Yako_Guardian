@@ -22,17 +22,37 @@ module.exports = {
 
         // Build Main Overview Embed
         const embed = new EmbedBuilder()
-            .setTitle(`⚙️ Configuration - ${message.guild.name}`)
+            .setTitle(await t('configuration.dashboard_title', message.guild.id, { guild: message.guild.name }))
             .setColor(client.config.color || '#2b2d31')
             .setThumbnail(message.guild.iconURL({ dynamic: true }))
             .addFields(
-                { name: 'Général', value: `Prefix: \`${prefix}\`\nLang: \`fr\`\nPublic: ${bool(config.public?.enabled)}`, inline: true },
-                { name: 'Moderation', value: `Timeout: ${bool(config.moderation?.timeoutEnabled)}\nMuteRole: ${config.moderation?.muteRole ? `<@&${config.moderation.muteRole}>` : "Non défini"}`, inline: true },
-                { name: 'Automod', value: `Antispam: ${bool(config.moderation?.antispam?.enabled)}\nAntilink: ${bool(config.moderation?.antilink?.enabled)}\nBadwords: ${bool(config.moderation?.badwords?.enabled)}`, inline: true },
-                { name: 'Anti-Raid', value: `Seur: ${bool(config.antiraid?.secur)}\nAntiToken: ${bool(config.antiraid?.antitoken?.enabled)}`, inline: true },
-                { name: 'Logs', value: `RaidLog: ${bool(config.antiraid?.raidlog?.enabled)}\nModLog: ${bool(config.report?.enabled)}`, inline: true }
+                { 
+                    name: await t('configuration.general_title', message.guild.id), 
+                    value: await t('configuration.general_value', message.guild.id, { prefix, public: bool(config.public?.enabled) }), 
+                    inline: true 
+                },
+                { 
+                    name: await t('configuration.moderation_title', message.guild.id), 
+                    value: await t('configuration.moderation_value', message.guild.id, { timeout: bool(config.moderation?.timeoutEnabled), muteRole: config.moderation?.muteRole ? `<@&${config.moderation.muteRole}>` : await t('common.not_defined', message.guild.id) }), 
+                    inline: true 
+                },
+                { 
+                    name: await t('configuration.automod_title', message.guild.id), 
+                    value: await t('configuration.automod_value', message.guild.id, { antispam: bool(config.moderation?.antispam?.enabled), antilink: bool(config.moderation?.antilink?.enabled), badwords: bool(config.moderation?.badwords?.enabled) }), 
+                    inline: true 
+                },
+                { 
+                    name: await t('configuration.antiraid_title', message.guild.id), 
+                    value: await t('configuration.antiraid_value', message.guild.id, { secur: bool(config.antiraid?.secur), antitoken: bool(config.antiraid?.antitoken?.enabled) }), 
+                    inline: true 
+                },
+                { 
+                    name: await t('configuration.logs_title', message.guild.id), 
+                    value: await t('configuration.logs_value', message.guild.id, { raidlog: bool(config.antiraid?.raidlog?.enabled), modlog: bool(config.report?.enabled) }), 
+                    inline: true 
+                }
             )
-            .setFooter({ text: `Demandé par ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
+            .setFooter({ text: await t('common.requested_by', message.guild.id, { user: message.author.tag }), iconURL: message.author.displayAvatarURL() });
 
         // Buttons for categories? Or just display?
         // User asked for "Interactive menus".

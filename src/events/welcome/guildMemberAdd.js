@@ -1,4 +1,6 @@
 const { getGuildConfig } = require('../../utils/mongoUtils');
+const { t } = require('../../utils/i18n');
+const { sendV2Message } = require('../../utils/componentUtils');
 
 module.exports = {
     name: 'guildMemberAdd',
@@ -16,7 +18,7 @@ module.exports = {
             const channel = member.guild.channels.cache.get(config.welcome.channelId);
             if (!channel || !channel.isTextBased()) return;
 
-            let message = config.welcome.message || "Bienvenue {user} sur {server} !";
+            let message = config.welcome.message || await t('welcome.default_message', member.guild.id);
             
             // Replace placeholders
             message = message
@@ -25,7 +27,7 @@ module.exports = {
                 .replace(/{count}/g, member.guild.memberCount.toString());
 
             // Send simple text message (Type 17 requirement: no embeds)
-            await channel.send({ content: message });
+            await sendV2Message(client, channel.id, message, []);
 
         } catch (error) {
             console.error(`Error in welcome event for guild ${member.guild.id}:`, error);

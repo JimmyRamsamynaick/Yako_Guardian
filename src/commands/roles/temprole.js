@@ -1,9 +1,6 @@
 const TempRole = require('../../database/models/TempRole');
 const { sendV2Message } = require('../../utils/componentUtils');
-const ms = require('ms'); // We need to install 'ms' if not present, or use a helper function. 
 const { t } = require('../../utils/i18n');
-// Assuming 'ms' is not installed, I'll write a simple parser or assume it is available. 
-// Usually I should check package.json. If not, I'll use a simple regex parser.
 
 // Simple duration parser function
 function parseDuration(str) {

@@ -120,7 +120,75 @@ ${footer}`;
             );
 
         try {
-            await sendV2Message(client, message.channel.id, await generateStatusText(settings), [rowSelect, rowButtons]);
+            const msg = await sendV2Message(client, message.channel.id, await generateStatusText(settings), [rowSelect, rowButtons]);
+            
+            // Collector for panel interactions
+            const collector = message.channel.createMessageComponentCollector({ 
+                filter: i => i.message.id === msg.id && i.user.id === message.author.id, 
+                time: 600000 // 10 minutes
+            });
+
+            collector.on('collect', async i => {
+                const newSettings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
+                
+                if (i.isStringSelectMenu() && i.customId === 'secur_select_module') {
+                    const module = i.values[0];
+                    // We need to know current state to cycle or just ask? 
+                    // Usually select menu picks the module, then we might need another interaction or just cycle On/Off.
+                    // But here the select menu values are 'antitoken_level', 'antibot', etc.
+                    // Let's implement a simple cycle: Off -> On -> (Max) -> Off
+                    
+                    let current = newSettings[module];
+                    let next = 'on';
+                    if (current === 'on') next = 'off';
+                    if (current === 'off') next = 'on';
+                    
+                    // Special case for antitoken which has 'max'
+                    if (module === 'antitoken_level') {
+                        if (current === 'off') next = 'on';
+                        else if (current === 'on') next = 'max';
+                        else if (current === 'max') next = 'off';
+                    }
+
+                    db.prepare(`UPDATE guild_settings SET ${module} = ? WHERE guild_id = ?`).run(next, message.guild.id);
+                    
+                    const updatedSettings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
+                    await i.update({ content: await generateStatusText(updatedSettings) });
+                }
+                else if (i.isButton()) {
+                    if (i.customId === 'secur_refresh') {
+                        await i.update({ content: await generateStatusText(newSettings) });
+                    }
+                    else if (i.customId === 'secur_toggle_all_on') {
+                        db.prepare(`UPDATE guild_settings SET 
+                            antitoken_level = 'on', antiupdate = 'on', antichannel = 'on', antirole = 'on', 
+                            antiwebhook = 'on', antiunban = 'on', antibot = 'on', antiban = 'on', 
+                            antieveryone = 'on', antideco = 'on' 
+                            WHERE guild_id = ?`).run(message.guild.id);
+                        const updatedSettings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
+                        await i.update({ content: await generateStatusText(updatedSettings) });
+                    }
+                    else if (i.customId === 'secur_toggle_all_off') {
+                        db.prepare(`UPDATE guild_settings SET 
+                            antitoken_level = 'off', antiupdate = 'off', antichannel = 'off', antirole = 'off', 
+                            antiwebhook = 'off', antiunban = 'off', antibot = 'off', antiban = 'off', 
+                            antieveryone = 'off', antideco = 'off' 
+                            WHERE guild_id = ?`).run(message.guild.id);
+                        const updatedSettings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
+                        await i.update({ content: await generateStatusText(updatedSettings) });
+                    }
+                    else if (i.customId === 'secur_toggle_all_max') {
+                         db.prepare(`UPDATE guild_settings SET 
+                            antitoken_level = 'max', antiupdate = 'on', antichannel = 'on', antirole = 'on', 
+                            antiwebhook = 'on', antiunban = 'on', antibot = 'on', antiban = 'on', 
+                            antieveryone = 'on', antideco = 'on' 
+                            WHERE guild_id = ?`).run(message.guild.id);
+                        const updatedSettings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
+                        await i.update({ content: await generateStatusText(updatedSettings) });
+                    }
+                }
+            });
+
         } catch (error) {
             console.error("Error sending V2 secur panel:", error);
             await sendV2Message(client, message.channel.id, await t('secur.error_display', message.guild.id), []);

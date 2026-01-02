@@ -32,8 +32,8 @@ module.exports = {
             menu = await RoleMenu.create({
                 guildId: message.guild.id,
                 name: menuName,
-                title: 'Titre du Menu',
-                description: 'Description du Menu',
+                title: await t('roles.rolemenu.default_title', message.guild.id),
+                description: await t('roles.rolemenu.default_description', message.guild.id),
                 type: 'select',
                 options: []
             });
@@ -51,8 +51,8 @@ module.exports = {
         
         const content = await t('roles.rolemenu.dashboard_content', message.guild.id, {
             name: menu.name,
-            title: menu.title || 'Non défini',
-            description: menu.description ? (menu.description.substring(0, 50) + '...') : 'Non définie',
+            title: menu.title || await t('common.not_defined', message.guild.id),
+            description: menu.description ? (menu.description.substring(0, 50) + '...') : await t('common.not_defined', message.guild.id),
             type: menu.type,
             options_count: menu.options.length,
             options_list: menu.options.map((o, i) => `> ${i+1}. ${o.emoji ? o.emoji + ' ' : ''}${o.label} (<@&${o.roleId}>)`).join('\n')

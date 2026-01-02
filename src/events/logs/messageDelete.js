@@ -1,6 +1,7 @@
 const { AuditLogEvent } = require('discord.js');
 const { sendLog } = require('../../utils/logManager');
 const { getExecutor } = require('../../utils/audit');
+const { t } = require('../../utils/lang');
 
 module.exports = {
     name: 'messageDelete',
@@ -9,20 +10,20 @@ module.exports = {
         
         const executor = await getExecutor(message.guild, AuditLogEvent.MessageDelete, message.id);
         
-        const description = `Un message de ${message.author} a été supprimé dans ${message.channel}.`;
+        const description = await t('logs.descriptions.message_delete', message.guild.id, { user: message.author, channel: message.channel });
         
         const fields = [
-            { name: 'Contenu', value: message.content ? message.content.substring(0, 1024) : '*Contenu vide ou média*' }
+            { name: await t('logs.fields.content', message.guild.id), value: message.content ? message.content.substring(0, 1024) : await t('logs.fields.empty_content', message.guild.id) }
         ];
 
         if (message.attachments.size > 0) {
-            fields.push({ name: 'Fichiers', value: `${message.attachments.size} fichiers` });
+            fields.push({ name: await t('logs.fields.files', message.guild.id), value: `${message.attachments.size} fichiers` });
         }
         
         if (executor) {
-            fields.push({ name: 'Supprimé par', value: `${executor.tag}` });
+            fields.push({ name: await t('logs.fields.deleted_by', message.guild.id), value: `${executor.tag}` });
         }
         
-        sendLog(message.guild, '🗑️ Message Supprimé', description, '#FF0000', fields, message.author);
+        sendLog(message.guild, await t('logs.titles.message_delete', message.guild.id), description, '#FF0000', fields, message.author);
     }
 };

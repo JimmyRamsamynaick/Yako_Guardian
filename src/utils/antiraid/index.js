@@ -74,7 +74,7 @@ async function checkAntiraid(client, guild, member, moduleName, type = 'action')
 
 async function executeSanction(client, guild, member, settings, reasonModule, sanctionOverride = null) {
     const sanctionType = sanctionOverride || settings.punition_antiraid || 'kick';
-    const reason = `Yako Guardian | Anti-Raid: ${reasonModule}`;
+    const reason = await t('antiraid.reason_prefix', guild.id, { module: reasonModule });
 
     try {
         if (sanctionType === 'ban') {
@@ -113,7 +113,7 @@ async function logAction(guild, title, description, color, settings) {
         const channel = guild.channels.cache.get(settings.raid_log_channel);
         if (channel) {
             const embed = new EmbedBuilder()
-                .setTitle(`⚠️ ALERTE SÉCURITÉ | ${title}`)
+                .setTitle(await t('antiraid.log_title', guild.id, { title }))
                 .setDescription(description)
                 .setColor(color)
                 .setTimestamp();
@@ -130,10 +130,11 @@ async function logAction(guild, title, description, color, settings) {
             
             // Ensure iconURL is valid string or null
             const iconURL = guild.iconURL();
+            const footerText = await t('antiraid.footer', guild.id);
             if (iconURL) {
-                 embed.setFooter({ text: 'Yako Guardian Security', iconURL: iconURL });
+                 embed.setFooter({ text: footerText, iconURL: iconURL });
             } else {
-                 embed.setFooter({ text: 'Yako Guardian Security' });
+                 embed.setFooter({ text: footerText });
             }
 
             channel.send({ content: content || null, embeds: [embed] }).catch((err) => {

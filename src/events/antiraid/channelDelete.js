@@ -1,6 +1,7 @@
 const { AuditLogEvent } = require('discord.js');
 const { checkAntiraid } = require('../../utils/antiraid');
 const { getExecutor } = require('../../utils/audit');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'channelDelete',
@@ -24,7 +25,7 @@ module.exports = {
                 await channel.clone({
                     name: channel.name,
                     position: channel.position,
-                    reason: "Yako Guardian | Anti-Channel Restoration"
+                    reason: await t('antiraid.reasons.anti_channel_restore', channel.guild.id)
                 });
             } catch (err) {
                 console.error(`[Anti-Channel] Failed to restore channel ${channel.name}:`, err);

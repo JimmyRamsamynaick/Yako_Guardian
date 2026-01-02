@@ -197,7 +197,7 @@ async function handleRoleMenuInteraction(client, interaction) {
             }
 
             // Construct Message
-            const content = `**${menu.title || 'Role Menu'}**\n\n${menu.description || ''}`;
+            const content = `**${menu.title || await t('roles.rolemenu.default_title', guildId)}**\n\n${menu.description || ''}`;
             const components = [];
 
             if (menu.type === 'select') {

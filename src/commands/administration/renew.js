@@ -52,7 +52,7 @@ module.exports = {
                     const newChannel = await channel.clone();
                     await channel.delete();
                     await newChannel.setPosition(position);
-                    await newChannel.send(await t('renew.success', message.guild.id, { user: message.author }));
+                    await sendV2Message(client, newChannel.id, await t('renew.success', message.guild.id, { user: message.author.toString() }), []);
                 } catch (e) {
                     console.error(e);
                     // Use sendV2Message because original channel might be gone or interaction failed

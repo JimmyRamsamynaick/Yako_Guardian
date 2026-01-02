@@ -4,15 +4,20 @@ const { getGuildConfig } = require('../../utils/mongoUtils');
 const { applyPunishment } = require('../../utils/moderation/punishmentSystem');
 const { t } = require('../../utils/i18n');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { addSanction } = require('../../utils/moderation/sanctionUtils');
+const { resolveMembers } = require('../../utils/moderation/memberUtils');
+const { checkUsage } = require('../../utils/moderation/helpUtils');
 
 module.exports = {
     name: 'warn',
-    description: 'Avertit un membre (Ajoute un strike)',
+    description: 'Avertit un ou plusieurs membres (Ajoute un strike)',
     category: 'Moderation',
-    usage: 'warn <user> [raison] | warn list [user]',
+    usage: 'warn <user> [raison] | warn <user1>,, <user2> [raison] | warn list [user]',
+    examples: ['warn @user Spam', 'warn @user1,, @user2 Spam', 'warn list'],
     async run(client, message, args) {
         // Handle "list" subcommand
         if (args[0] && args[0].toLowerCase() === 'list') {
+            // ... list logic (unchanged)
             // 1. If a user is specified, redirect to `strikes` (Single User View)
             if (args[1]) {
                 const strikesCommand = client.commands.get('strikes');
@@ -23,14 +28,14 @@ module.exports = {
 
             // 2. If NO user specified, show Global Warn List (All Members)
             if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-                return sendV2Message(client, message.channel.id, "❌ Permission refusée.", []);
+                return sendV2Message(client, message.channel.id, await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), []);
             }
 
             const allStrikes = await UserStrike.find({ guildId: message.guild.id });
             const validStrikes = allStrikes.filter(doc => doc.strikes && doc.strikes.length > 0);
 
             if (validStrikes.length === 0) {
-                return sendV2Message(client, message.channel.id, "✅ Aucun avertissement enregistré sur ce serveur.", []);
+                return sendV2Message(client, message.channel.id, await t('moderation.warn_list_empty', message.guild.id), []);
             }
 
             // Fetch ONLY relevant members to avoid Rate Limit (Opcode 8)
@@ -41,7 +46,7 @@ module.exports = {
                 members = await message.guild.members.fetch({ user: userIds });
             } catch (e) {
                 console.error("Failed to fetch members for warn list:", e);
-                return sendV2Message(client, message.channel.id, "❌ Erreur lors de la récupération des membres (Rate Limit possible). Réessayez dans quelques secondes.", []);
+                return sendV2Message(client, message.channel.id, await t('moderation.warn_list_error', message.guild.id), []);
             }
             
             const list = validStrikes
@@ -57,26 +62,32 @@ module.exports = {
                 .sort((a, b) => b.count - a.count); // Sort by count descending
 
             if (list.length === 0) {
-                return sendV2Message(client, message.channel.id, "✅ Aucun membre actuellement présent n'a d'avertissement.", []);
+                return sendV2Message(client, message.channel.id, await t('moderation.warn_list_empty', message.guild.id), []);
             }
 
             // Create Standard Embed (Not V2 Component)
             const embed = new EmbedBuilder()
-                .setTitle(`📋 Liste des Avertissements - ${message.guild.name}`)
+                .setTitle(await t('moderation.warn_list_title', message.guild.id, { guild: message.guild.name }))
                 .setColor('#ff9900')
                 .setThumbnail(message.guild.iconURL({ dynamic: true }));
 
             // Display top 20 (to avoid message limit)
             const topList = list.slice(0, 20);
-            const description = topList.map((item, index) => {
-                return `**${index + 1}.** ${item.user.tag} — **${item.count}** warns\n   └ *Dernier: ${new Date(item.lastStrike).toLocaleDateString()}*`;
-            }).join('\n\n');
+            const descriptionPromises = topList.map(async (item, index) => {
+                return await t('moderation.warn_list_item', message.guild.id, {
+                    index: index + 1,
+                    user: item.user.tag,
+                    count: item.count,
+                    date: new Date(item.lastStrike).toLocaleDateString()
+                });
+            });
+            const description = (await Promise.all(descriptionPromises)).join('\n\n');
 
             embed.setDescription(description);
 
-            let footerText = `${list.length} membres avertis`;
+            let footerText = await t('moderation.warn_list_footer', message.guild.id, { count: list.length });
             if (list.length > 20) {
-                footerText += ` (Affichage des 20 premiers)`;
+                footerText += await t('moderation.warn_list_footer_limit', message.guild.id);
             }
             embed.setFooter({ text: footerText });
 
@@ -88,42 +99,76 @@ module.exports = {
             return sendV2Message(client, message.channel.id, await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), []);
         }
 
-        const targetMember = message.mentions.members.first() || await message.guild.members.fetch(args[0]).catch(() => null);
-        if (!targetMember) {
-            return sendV2Message(client, message.channel.id, "❌ Membre introuvable.", []);
+        if (!await checkUsage(client, message, module.exports, args)) return;
+
+        const { members, reason } = await resolveMembers(message, args);
+
+        if (members.length === 0) {
+            return sendV2Message(client, message.channel.id, await t('moderation.member_not_found', message.guild.id), []);
         }
 
-        if (targetMember.id === message.author.id || targetMember.id === client.user.id) {
-            return sendV2Message(client, message.channel.id, "❌ Vous ne pouvez pas avertir ce membre.", []);
+        const summary = [];
+        const config = await getGuildConfig(message.guild.id);
+
+        for (const targetMember of members) {
+            if (targetMember.id === message.author.id) {
+                summary.push(await t('moderation.error_summary', message.guild.id, { user: targetMember.user.tag, error: await t('moderation.self_sanction', message.guild.id) }));
+                continue;
+            }
+            if (targetMember.id === client.user.id) {
+                summary.push(await t('moderation.error_summary', message.guild.id, { user: targetMember.user.tag, error: await t('moderation.bot_sanction', message.guild.id) }));
+                continue;
+            }
+
+            try {
+                // Add Strike to DB
+                let userStrike = await UserStrike.findOne({ guildId: message.guild.id, userId: targetMember.id });
+                if (!userStrike) {
+                    userStrike = new UserStrike({ guildId: message.guild.id, userId: targetMember.id, strikes: [] });
+                }
+
+                userStrike.strikes.push({
+                    moderatorId: message.author.id,
+                    reason: reason,
+                    timestamp: new Date()
+                });
+                await userStrike.save();
+
+                // Log Sanction
+                await addSanction(message.guild.id, targetMember.id, message.author.id, 'warn', reason);
+
+                // Check Automod/Punishments
+                const strikeCount = userStrike.strikes.length;
+                let punishmentMsg = '';
+
+                if (config && config.automod) {
+                    const punishment = await applyPunishment(message.guild, targetMember, strikeCount, config);
+                    if (punishment) {
+                        punishmentMsg = await t('moderation.automod_punishment', message.guild.id, { punishment });
+                    }
+                }
+
+                summary.push(await t('moderation.warn_success_details', message.guild.id, { user: targetMember.user.tag, count: strikeCount, reason, punishment: punishmentMsg }));
+
+                // Send DM
+                try {
+                    await targetMember.send(await t('moderation.warn_dm', message.guild.id, { guild: message.guild.name, reason }));
+                } catch (err) {
+                    // DM closed
+                }
+
+            } catch (err) {
+                console.error(err);
+                summary.push(await t('moderation.error_summary', message.guild.id, { user: targetMember.user.tag, error: await t('moderation.error_internal', message.guild.id) }));
+            }
         }
 
-        if (targetMember.roles.highest.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Vous ne pouvez pas avertir ce membre (Rôle supérieur ou égal).", []);
+        // Split summary if too long
+        const summaryText = summary.join('\n\n');
+        if (summaryText.length > 2000) {
+             return sendV2Message(client, message.channel.id, await t('moderation.action_performed_bulk', message.guild.id, { count: members.length }), []);
         }
 
-        const reason = args.slice(1).join(' ') || "Aucune raison fournie";
-
-        // Add Strike
-        try {
-            await UserStrike.updateOne(
-                { guildId: message.guild.id, userId: targetMember.id },
-                { $push: { strikes: { reason, moderatorId: message.author.id, type: 'manual' } } },
-                { upsert: true }
-            );
-
-            // Notify User
-            targetMember.send(`⚠️ Vous avez été averti sur **${message.guild.name}**\nRaison: ${reason}`).catch(() => {});
-
-            // Confirm
-            await sendV2Message(client, message.channel.id, `✅ **${targetMember.user.tag}** a été averti.\nRaison: *${reason}*`, []);
-
-            // Trigger Auto Punishment Check
-            const config = await getGuildConfig(message.guild.id);
-            await applyPunishment(client, message, targetMember.id, config);
-
-        } catch (err) {
-            console.error(err);
-            return sendV2Message(client, message.channel.id, "❌ Erreur lors de l'ajout de l'avertissement.", []);
-        }
+        return sendV2Message(client, message.channel.id, summaryText, []);
     }
 };

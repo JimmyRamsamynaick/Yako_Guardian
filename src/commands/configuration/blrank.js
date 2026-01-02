@@ -25,7 +25,7 @@ module.exports = {
 
             if (arg === 'add') {
                 db.prepare('INSERT OR REPLACE INTO blacklists (guild_id, user_id, reason) VALUES (?, ?, ?)')
-                  .run(message.guild.id, user.id, 'Manually blacklisted');
+                  .run(message.guild.id, user.id, await t('blrank.manual_reason', message.guild.id));
                 return sendV2Message(client, message.channel.id, await t('blrank.added', message.guild.id, { tag: user.tag }), []);
             } else {
                 db.prepare('DELETE FROM blacklists WHERE guild_id = ? AND user_id = ?')

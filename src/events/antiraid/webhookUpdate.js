@@ -1,6 +1,7 @@
 const { AuditLogEvent } = require('discord.js');
 const { checkAntiraid } = require('../../utils/antiraid');
 const { getExecutor } = require('../../utils/audit');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'webhookUpdate',
@@ -26,7 +27,7 @@ module.exports = {
             // entry.target is a Webhook object (partial)
             try {
                 const webhook = await channel.fetchWebhooks().then(whs => whs.get(entry.target.id));
-                if (webhook) await webhook.delete('Yako Guardian | Anti-Webhook');
+                if (webhook) await webhook.delete(await t('antiraid.reasons.anti_webhook', channel.guild.id));
             } catch (e) {}
         }
     }

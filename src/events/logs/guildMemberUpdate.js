@@ -1,6 +1,7 @@
 const { AuditLogEvent } = require('discord.js');
 const { sendLog } = require('../../utils/logManager');
 const { getExecutor } = require('../../utils/audit');
+const { t } = require('../../utils/lang');
 
 module.exports = {
     name: 'guildMemberUpdate',
@@ -12,30 +13,33 @@ module.exports = {
         
         // Nickname
         if (oldMember.nickname !== newMember.nickname) {
-            changes.push(`**Surnom:** \`${oldMember.nickname || oldMember.user.username}\` ➔ \`${newMember.nickname || newMember.user.username}\``);
+            changes.push(await t('logs.changes.nickname', newMember.guild.id, { 
+                old: oldMember.nickname || oldMember.user.username, 
+                new: newMember.nickname || newMember.user.username 
+            }));
         }
         
         // Roles
         const addedRoles = newMember.roles.cache.filter(r => !oldMember.roles.cache.has(r.id));
         const removedRoles = oldMember.roles.cache.filter(r => !newMember.roles.cache.has(r.id));
         
-        if (addedRoles.size > 0) changes.push(`**Rôles Ajoutés:** ${addedRoles.map(r => r).join(', ')}`);
-        if (removedRoles.size > 0) changes.push(`**Rôles Retirés:** ${removedRoles.map(r => r).join(', ')}`);
+        if (addedRoles.size > 0) changes.push(await t('logs.changes.roles_added', newMember.guild.id, { roles: addedRoles.map(r => r).join(', ') }));
+        if (removedRoles.size > 0) changes.push(await t('logs.changes.roles_removed', newMember.guild.id, { roles: removedRoles.map(r => r).join(', ') }));
         
         // Timeout
         if (!oldMember.isCommunicationDisabled() && newMember.isCommunicationDisabled()) {
-            changes.push(`**Timeout:** Jusqu'au <t:${Math.floor(newMember.communicationDisabledUntilTimestamp / 1000)}:R>`);
+            changes.push(await t('logs.changes.timeout_active', newMember.guild.id, { time: Math.floor(newMember.communicationDisabledUntilTimestamp / 1000) }));
         }
         if (oldMember.isCommunicationDisabled() && !newMember.isCommunicationDisabled()) {
-             changes.push(`**Timeout:** Retiré`);
+             changes.push(await t('logs.changes.timeout_removed', newMember.guild.id));
         }
 
         if (changes.length === 0) return;
 
-        const description = `Le membre ${newMember} a été mis à jour.\n\n${changes.join('\n')}`;
+        const description = await t('logs.descriptions.member_update', newMember.guild.id, { member: newMember, changes: changes.join('\n') });
         
-        sendLog(newMember.guild, '👤 Membre Modifié', description, '#0000FF', [
-            { name: 'Exécuté par', value: executor ? `${executor.tag} (\`${executor.id}\`)` : 'Inconnu' }
+        sendLog(newMember.guild, await t('logs.titles.member_update', newMember.guild.id), description, '#0000FF', [
+            { name: await t('logs.fields.executed_by', newMember.guild.id), value: executor ? `${executor.tag} (\`${executor.id}\`)` : await t('logs.fields.unknown', newMember.guild.id) }
         ], executor);
     }
 };

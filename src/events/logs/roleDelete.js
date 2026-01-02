@@ -1,6 +1,7 @@
 const { AuditLogEvent } = require('discord.js');
 const { sendLog } = require('../../utils/logManager');
 const { getExecutor } = require('../../utils/audit');
+const { t } = require('../../utils/lang');
 
 module.exports = {
     name: 'roleDelete',
@@ -8,10 +9,10 @@ module.exports = {
         if (!role.guild) return;
         const executor = await getExecutor(role.guild, AuditLogEvent.RoleDelete, role.id);
         
-        const description = `Le rôle \`${role.name}\` a été supprimé.`;
+        const description = await t('logs.descriptions.role_delete', role.guild.id, { name: role.name });
         
-        sendLog(role.guild, '🗑️ Rôle Supprimé', description, '#FF0000', [
-            { name: 'Exécuté par', value: executor ? `${executor.tag} (\`${executor.id}\`)` : 'Inconnu' }
+        sendLog(role.guild, await t('logs.titles.role_delete', role.guild.id), description, '#FF0000', [
+            { name: await t('logs.fields.executed_by', role.guild.id), value: executor ? `${executor.tag} (\`${executor.id}\`)` : await t('logs.fields.unknown', role.guild.id) }
         ], executor);
     }
 };

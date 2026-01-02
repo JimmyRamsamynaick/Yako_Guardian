@@ -7,8 +7,8 @@ const { sendV2Message } = require('../../utils/componentUtils');
 module.exports = {
     name: 'soutien',
     description: 'Configure le rôle de soutien (statut)',
-    category: 'Menus & Rôles',
-    async execute(client, message, args) { // Added client
+    category: 'Roles',
+    async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return sendV2Message(client, message.channel.id, await t('roles.soutien.permission', message.guild.id), []);
         }
@@ -25,8 +25,8 @@ module.exports = {
         if (!sub || sub === 'info') {
             return sendV2Message(client, message.channel.id, await t('roles.soutien.info', message.guild.id, {
                 enabled: soutien.enabled ? '✅' : '❌',
-                role: soutien.roleId ? `<@&${soutien.roleId}>` : 'Non défini',
-                status: soutien.statusText || 'Non défini'
+                role: soutien.roleId ? `<@&${soutien.roleId}>` : await t('common.not_defined', message.guild.id),
+                status: soutien.statusText || await t('common.not_defined', message.guild.id)
             }), []);
         }
 

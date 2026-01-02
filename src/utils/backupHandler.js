@@ -112,7 +112,7 @@ async function loadBackup(guild, name) {
             hoist: roleData.hoist,
             permissions: BigInt(roleData.permissions),
             mentionable: roleData.mentionable,
-            reason: 'Backup Load'
+            reason: await t('backup.reason_load', guild.id)
         }).catch(() => null);
         
         if (newRole) roleMap.set(roleData.name, newRole.id);

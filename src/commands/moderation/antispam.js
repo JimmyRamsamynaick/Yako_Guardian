@@ -51,10 +51,10 @@ module.exports = {
                 else if (unit === 'm') time = val * 60 * 1000;
                 else if (unit === 'h') time = val * 3600 * 1000;
             } else {
-                 return sendV2Message(client, message.channel.id, "❌ Format temps invalide (ex: 5s, 10m)", []);
+                 return sendV2Message(client, message.channel.id, await t('antispam.invalid_time', message.guild.id), []);
             }
 
-            if (isNaN(limit) || limit < 1) return sendV2Message(client, message.channel.id, "❌ Limite invalide.", []);
+            if (isNaN(limit) || limit < 1) return sendV2Message(client, message.channel.id, await t('antispam.invalid_limit', message.guild.id), []);
 
             config.moderation.antispam.limit = limit;
             config.moderation.antispam.time = time;

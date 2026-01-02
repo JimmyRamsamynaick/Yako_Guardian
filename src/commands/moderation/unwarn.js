@@ -15,12 +15,12 @@ module.exports = {
 
         const targetUser = message.mentions.users.first() || await client.users.fetch(args[0]).catch(() => null);
         if (!targetUser) {
-            return sendV2Message(client, message.channel.id, "❌ Utilisateur introuvable.", []);
+            return sendV2Message(client, message.channel.id, await t('moderation.strikes_user_not_found', message.guild.id), []);
         }
 
         const data = await UserStrike.findOne({ guildId: message.guild.id, userId: targetUser.id });
         if (!data || !data.strikes || data.strikes.length === 0) {
-            return sendV2Message(client, message.channel.id, "❌ Ce membre n'a aucun avertissement.", []);
+            return sendV2Message(client, message.channel.id, await t('moderation.strikes_none', message.guild.id, { user: targetUser.tag }), []);
         }
 
         const sub = args[1]?.toLowerCase();
@@ -29,7 +29,7 @@ module.exports = {
         if (sub === 'all') {
             data.strikes = [];
             await data.save();
-            return sendV2Message(client, message.channel.id, `✅ Tous les avertissements de **${targetUser.tag}** ont été retirés.`, []);
+            return sendV2Message(client, message.channel.id, await t('moderation.unwarn_success_all', message.guild.id, { user: targetUser.tag }), []);
         }
 
         // Remove Specific Index (1-based, usually user sees 1 as latest or 1 as first? Strikes usually listed 1..N)
@@ -56,12 +56,12 @@ module.exports = {
         const arrayIndex = data.strikes.length - index;
 
         if (arrayIndex < 0 || arrayIndex >= data.strikes.length) {
-            return sendV2Message(client, message.channel.id, `❌ Index invalide. Utilisez \`+strikes ${targetUser.username}\` pour voir les numéros.`, []);
+            return sendV2Message(client, message.channel.id, await t('moderation.unwarn_invalid_index', message.guild.id), []);
         }
 
         const removed = data.strikes.splice(arrayIndex, 1)[0];
         await data.save();
 
-        return sendV2Message(client, message.channel.id, `✅ Avertissement **#${index}** retiré (Raison: ${removed.reason}).`, []);
+        return sendV2Message(client, message.channel.id, await t('moderation.unwarn_success_index', message.guild.id, { index, reason: removed.reason }), []);
     }
 };

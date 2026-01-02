@@ -1,6 +1,7 @@
 const { AuditLogEvent } = require('discord.js');
 const { sendLog } = require('../../utils/logManager');
 const { getExecutor } = require('../../utils/audit');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'channelCreate',
@@ -8,13 +9,13 @@ module.exports = {
         if (!channel.guild) return;
         const executor = await getExecutor(channel.guild, AuditLogEvent.ChannelCreate, channel.id);
         
-        const description = `Le salon ${channel} (\`${channel.name}\`) a été créé.`;
+        const description = await t('logs.descriptions.channel_create', channel.guild.id, { channel: channel, name: channel.name });
         const fields = [
-            { name: 'Type', value: `${channel.type}`, inline: true },
-            { name: 'Catégorie', value: channel.parent ? channel.parent.name : 'Aucune', inline: true },
-            { name: 'Exécuté par', value: executor ? `${executor.tag} (\`${executor.id}\`)` : 'Inconnu' }
+            { name: await t('logs.fields.type', channel.guild.id), value: `${channel.type}`, inline: true },
+            { name: await t('logs.fields.category', channel.guild.id), value: channel.parent ? channel.parent.name : await t('common.none', channel.guild.id), inline: true },
+            { name: await t('logs.fields.executed_by', channel.guild.id), value: executor ? `${executor.tag} (\`${executor.id}\`)` : await t('logs.fields.unknown', channel.guild.id) }
         ];
         
-        sendLog(channel.guild, '📺 Salon Créé', description, '#00FF00', fields, executor);
+        sendLog(channel.guild, await t('logs.titles.channel_create', channel.guild.id), description, '#00FF00', fields, executor);
     }
 };

@@ -1,13 +1,46 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const ActiveTicket = require('../../database/models/ActiveTicket');
 const { t } = require('../../utils/i18n');
+const { deleteSanction } = require('../../utils/moderation/sanctionUtils');
+const { PermissionsBitField } = require('discord.js');
 
 module.exports = {
     name: 'del',
     aliases: ['remove'],
-    description: 'Retirer un membre du ticket',
-    category: 'Tickets',
+    description: 'Supprime un membre d\'un ticket OU une sanction',
+    category: 'General',
+    usage: 'del <membre> | del sanction <id>',
     async run(client, message, args) {
+        
+        // --- DEL SANCTION ---
+        if (args[0]?.toLowerCase() === 'sanction') {
+             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                return sendV2Message(client, message.channel.id, await t('common.admin_only', message.guild.id), []);
+            }
+
+            // Args: del sanction <member> <caseId> OR del sanction <caseId>
+            let caseId = args[1];
+            
+            // Check if args[1] is a mention or ID (member)
+            if (args[1]?.match(/^<@!?(\d+)>$/) || (args[1]?.length > 15 && isNaN(args[1]))) {
+                // It's a member, so caseId is args[2]
+                caseId = args[2];
+            }
+
+            if (!caseId || isNaN(caseId)) {
+                return sendV2Message(client, message.channel.id, await t('ticket_del.sanction_usage', message.guild.id), []);
+            }
+
+            const result = await deleteSanction(message.guild.id, parseInt(caseId));
+
+            if (result) {
+                return sendV2Message(client, message.channel.id, await t('ticket_del.sanction_success', message.guild.id, { caseId }), []);
+            } else {
+                return sendV2Message(client, message.channel.id, await t('ticket_del.sanction_not_found', message.guild.id, { caseId }), []);
+            }
+        }
+
+        // --- TICKET DEL (Default) ---
         const ticket = await ActiveTicket.findOne({ channelId: message.channel.id });
         if (!ticket) {
             return sendV2Message(client, message.channel.id, await t('ticket_del.not_ticket', message.guild.id), []);
@@ -18,14 +51,8 @@ module.exports = {
             return sendV2Message(client, message.channel.id, await t('ticket_del.usage', message.guild.id), []);
         }
 
-        // Prevent removing the ticket creator or staff (optional but good practice)
-        // For now, just remove permission.
-
         try {
             await message.channel.permissionOverwrites.delete(member);
-            // Or explicitly deny
-            // await message.channel.permissionOverwrites.edit(member, { ViewChannel: false });
-            
             return sendV2Message(client, message.channel.id, await t('ticket_del.success', message.guild.id, { user: member.id }), []);
         } catch (e) {
             return sendV2Message(client, message.channel.id, await t('ticket_del.error', message.guild.id), []);

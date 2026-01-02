@@ -27,18 +27,18 @@ module.exports = {
             const list = config.moderation.strikes.punishments.sort((a, b) => a.count - b.count);
             
             if (list.length === 0) {
-                return sendV2Message(client, message.channel.id, "❌ Aucune punition configurée.", []);
+                return sendV2Message(client, message.channel.id, await t('moderation.punish_list_empty', message.guild.id), []);
             }
 
             const embed = new EmbedBuilder()
-                .setTitle(`Échelle des Punitions - ${message.guild.name}`)
+                .setTitle(await t('moderation.punish_list_title', message.guild.id, { guild: message.guild.name }))
                 .setColor(client.config.color || '#ff0000');
 
             let desc = "";
-            list.forEach(p => {
+            for (const p of list) {
                 let dur = p.duration ? `(${ms(p.duration)})` : "";
-                desc += `**${p.count}** strikes ➔ **${p.action.toUpperCase()}** ${dur}\n`;
-            });
+                desc += (await t('moderation.punish_list_item', message.guild.id, { count: p.count, action: p.action.toUpperCase(), duration: dur })) + "\n";
+            }
 
             embed.setDescription(desc);
             return sendV2Message(client, message.channel.id, "", [embed]);
@@ -47,18 +47,18 @@ module.exports = {
         // REMOVE
         if (sub === 'remove' || sub === 'del') {
             const count = parseInt(args[1]);
-            if (isNaN(count)) return sendV2Message(client, message.channel.id, "❌ Précisez le nombre de strikes (ex: `+punish remove 3`).", []);
+            if (isNaN(count)) return sendV2Message(client, message.channel.id, await t('moderation.punish_remove_usage', message.guild.id), []);
 
             const initialLen = config.moderation.strikes.punishments.length;
             config.moderation.strikes.punishments = config.moderation.strikes.punishments.filter(p => p.count !== count);
 
             if (config.moderation.strikes.punishments.length === initialLen) {
-                return sendV2Message(client, message.channel.id, "❌ Aucune punition trouvée pour ce nombre de strikes.", []);
+                return sendV2Message(client, message.channel.id, await t('moderation.punish_remove_not_found', message.guild.id), []);
             }
 
             config.markModified('moderation');
             await config.save();
-            return sendV2Message(client, message.channel.id, `✅ Punition pour **${count}** strikes supprimée.`, []);
+            return sendV2Message(client, message.channel.id, await t('moderation.punish_remove_success', message.guild.id, { count }), []);
         }
 
         // ADD
@@ -71,17 +71,17 @@ module.exports = {
             const validActions = ['kick', 'ban', 'mute', 'timeout', 'warn'];
 
             if (isNaN(count) || !validActions.includes(action)) {
-                return sendV2Message(client, message.channel.id, "**Usage:** `+punish add <count> <action> [duration]`\nActions: `kick`, `ban`, `mute`, `timeout`, `warn`", []);
+                return sendV2Message(client, message.channel.id, await t('moderation.punish_add_usage', message.guild.id), []);
             }
 
             let duration = null;
             if (['mute', 'timeout'].includes(action)) {
-                if (!durationStr) return sendV2Message(client, message.channel.id, "❌ Durée requise pour mute/timeout (ex: 10m, 1h).", []);
+                if (!durationStr) return sendV2Message(client, message.channel.id, await t('moderation.punish_duration_required', message.guild.id), []);
                 try {
                     duration = ms(durationStr);
                     if (!duration) throw new Error();
                 } catch {
-                    return sendV2Message(client, message.channel.id, "❌ Durée invalide.", []);
+                    return sendV2Message(client, message.channel.id, await t('moderation.duration_invalid', message.guild.id), []);
                 }
             }
 
@@ -97,7 +97,7 @@ module.exports = {
             config.markModified('moderation');
             await config.save();
 
-            return sendV2Message(client, message.channel.id, `✅ Configuré: **${count}** strikes ➔ **${action.toUpperCase()}** ${duration ? `(${durationStr})` : ""}`, []);
+            return sendV2Message(client, message.channel.id, await t('moderation.punish_add_success', message.guild.id, { count, action: action.toUpperCase(), duration: duration ? `(${durationStr})` : "" }), []);
         }
 
         return sendV2Message(client, message.channel.id, await t('punish.usage', message.guild.id), []);

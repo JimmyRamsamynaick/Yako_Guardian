@@ -60,10 +60,33 @@ module.exports = {
                         .setStyle(ButtonStyle.Secondary)
                 );
 
-                return sendV2Message(client, message.channel.id, 
+                const msg = await sendV2Message(client, message.channel.id, 
                     await t('backup.load_warning', message.guild.id, { name: name }), 
                     [row]
                 );
+
+                // Collector
+                const fetchedMsg = await message.channel.messages.fetch(msg.id);
+                const collector = fetchedMsg.createMessageComponentCollector({ time: 15000 });
+
+                collector.on('collect', async i => {
+                    if (i.user.id !== message.author.id) {
+                        return i.reply({ content: await t('common.not_allowed', message.guild.id), ephemeral: true });
+                    }
+
+                    if (i.customId === `backup_confirm_load_${name}`) {
+                        await i.update({ content: await t('backup.loading', message.guild.id), components: [] });
+                        try {
+                            await loadBackup(message.guild, name);
+                            await i.editReply({ content: await t('backup.loaded', message.guild.id, { name: name }) });
+                        } catch (e) {
+                            await i.editReply({ content: await t('backup.load_error', message.guild.id, { error: e.message }) });
+                        }
+                    } else if (i.customId === 'backup_cancel') {
+                        await i.update({ content: await t('common.cancelled', message.guild.id), components: [] });
+                    }
+                });
+                return;
             }
 
             if (sub === 'delete') {
@@ -83,10 +106,33 @@ module.exports = {
                         .setStyle(ButtonStyle.Secondary)
                 );
 
-                return sendV2Message(client, message.channel.id, 
+                const msg = await sendV2Message(client, message.channel.id, 
                     await t('backup.delete_warning', message.guild.id, { name: name }), 
                     [row]
                 );
+
+                // Collector
+                const fetchedMsg = await message.channel.messages.fetch(msg.id);
+                const collector = fetchedMsg.createMessageComponentCollector({ time: 15000 });
+
+                collector.on('collect', async i => {
+                    if (i.user.id !== message.author.id) {
+                        return i.reply({ content: await t('common.not_allowed', message.guild.id), ephemeral: true });
+                    }
+
+                    if (i.customId === `backup_confirm_delete_${name}`) {
+                        await i.update({ content: await t('common.processing', message.guild.id), components: [] });
+                        try {
+                            await Backup.deleteOne({ guild_id: message.guild.id, name: name });
+                            await i.editReply({ content: await t('backup.deleted', message.guild.id, { name: name }) });
+                        } catch (e) {
+                            await i.editReply({ content: await t('backup.delete_error', message.guild.id, { error: e.message }) });
+                        }
+                    } else if (i.customId === 'backup_cancel') {
+                        await i.update({ content: await t('common.cancelled', message.guild.id), components: [] });
+                    }
+                });
+                return;
             }
 
         } catch (error) {

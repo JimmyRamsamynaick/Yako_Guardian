@@ -77,7 +77,10 @@ module.exports = {
         
         let content = await t('owner.owner_list_title', message.guild.id, { rootOwner });
         if (owners.length === 0) content += await t('owner.owner_list_empty', message.guild.id);
-        else content += owners.map(o => `• <@${o.userId}> (Ajouté par <@${o.addedBy}>)`).join('\n');
+        else {
+             const lines = await Promise.all(owners.map(async o => await t('owner.owner_list_item', message.guild.id, { user: o.userId, addedBy: o.addedBy })));
+             content += lines.join('\n');
+        }
 
         return sendV2Message(client, message.channel.id, content, []);
     }

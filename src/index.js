@@ -50,6 +50,7 @@ const { checkAutoBackups } = require('./utils/backupSystem');
 const { checkReminders } = require('./utils/reminderSystem');
 const { checkTwitch } = require('./utils/twitchSystem');
 const { checkPfp } = require('./utils/pfpSystem');
+const { checkSanctions } = require('./utils/moderation/sanctionScheduler');
 const { registerGlobalCommands } = require('./utils/registerCommands');
 
 // Ready Event
@@ -73,6 +74,9 @@ client.once('ready', () => {
 
     // Start PFP checker loop (every 60 mins)
     setInterval(() => checkPfp(client), 60 * 60 * 1000);
+
+    // Start Sanction checker loop (every 60s)
+    setInterval(() => checkSanctions(client), 60 * 1000);
 });
 
 client.login(process.env.TOKEN).catch(err => {
