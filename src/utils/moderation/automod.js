@@ -2,6 +2,7 @@ const UserStrike = require('../../database/models/UserStrike');
 const { isBotOwner } = require('../ownerUtils');
 const { applyPunishment } = require('./punishmentSystem');
 const { t } = require('../i18n');
+const { createEmbed } = require('../design');
 
 const spamMap = new Map(); // guildId -> userId -> { count, lastMsgTime }
 
@@ -84,7 +85,7 @@ async function checkAutomod(client, message, config) {
         if (message.deletable) await message.delete().catch(() => {});
         
         const warning = await t('automod.warning', message.guild.id, { user: message.author, reason });
-        const warningMsg = await sendV2Message(client, message.channel.id, warning, []);
+        const warningMsg = await message.channel.send({ embeds: [createEmbed(warning, '', 'error')] });
         setTimeout(() => warningMsg?.delete().catch(() => {}), 5000);
 
         // Add Strike

@@ -1,7 +1,5 @@
-const { EmbedBuilder } = require('discord.js');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { t } = require('../utils/i18n');
-const { sendV2Message } = require('../utils/componentUtils');
 
 module.exports = {
     name: 'guildMemberUpdate',
@@ -31,9 +29,7 @@ module.exports = {
                             .replace(/{{count}}/g, newMember.guild.premiumSubscriptionCount);
 
                          // Build Boost Embed
-                         const embed = new EmbedBuilder()
-                            .setTitle(formatText(title))
-                            .setDescription(formatText(description))
+                         const embed = createEmbed(formatText(title), formatText(description), 'default')
                             .setColor('#f47fff') // Boost Pink
                             .setFooter({ text: newMember.guild.name, iconURL: newMember.guild.iconURL({ dynamic: true }) })
                             .setTimestamp();

@@ -10,7 +10,6 @@ const {
 } = require('discord.js');
 const { db } = require('../database');
 const logger = require('../utils/logger');
-const { updateV2Interaction, replyV2Interaction, extractActionRows, createV2Payload } = require('../utils/componentUtils');
 const { loadBackup } = require('../utils/backupHandler');
 const { handleEmbedInteraction } = require('../commands/utils/embed');
 const Backup = require('../database/models/Backup');
@@ -25,6 +24,7 @@ const { handleModmailInteraction } = require('./modmailInteractionHandler');
 const { handleAutoInteraction } = require('./autoInteractionHandler');
 const { handleSuggestionButton } = require('./suggestionHandler');
 const { t } = require('../utils/i18n');
+const { createEmbed } = require('../utils/design');
 
 module.exports = (client) => {
     client.on('interactionCreate', async (interaction) => {
@@ -48,6 +48,12 @@ module.exports = (client) => {
 
         if (customId.startsWith('secur_')) {
             await handleSecurPanel(client, interaction);
+        } else if (customId.startsWith('captcha_')) {
+            const { handleCaptchaInteraction } = require('./captchaHandler');
+            await handleCaptchaInteraction(client, interaction);
+        } else if (customId.startsWith('log_')) {
+            const { handleLogInteraction } = require('./logHandler');
+            await handleLogInteraction(client, interaction);
         } else if (customId.startsWith('help_')) {
             await handleHelpMenu(client, interaction);
         } else if (customId.startsWith('rolemenu_') || customId.startsWith('rm_user_')) {
@@ -55,7 +61,7 @@ module.exports = (client) => {
         } else if (customId.startsWith('ticket_')) {
             if (customId.startsWith('ticket_settings_')) await handleTicketSettings(client, interaction);
             else if (customId.startsWith('ticket_modal_')) await handleTicketModal(client, interaction);
-            else if (customId === 'ticket_create') await handleTicketCreate(client, interaction);
+            else if (customId.startsWith('ticket_create')) await handleTicketCreate(client, interaction);
             else if (customId === 'ticket_claim') await handleTicketClaim(client, interaction);
             else if (customId === 'ticket_close_confirm') await handleTicketClose(client, interaction);
         } else if (customId.startsWith('tempvoc_')) {
@@ -66,12 +72,10 @@ module.exports = (client) => {
             } catch (error) {
                 logger.error(`Error in notification interaction ${customId}:`, error);
                 if (!interaction.replied && !interaction.deferred) {
-                    await replyV2Interaction(client, interaction, "❌ " + await t('common.error_generic', interaction.guild.id), [], true).catch(() => {});
+                    await interaction.reply({ embeds: [createEmbed("❌ " + await t('common.error_generic', interaction.guild.id), '', 'error')], ephemeral: true }).catch(() => {});
                 } else {
-                    // FollowUp V2 is basically a webhook post
-                     // checking if we can use sendV2Message but with interaction webhook? 
-                     // For simplicity, standard followUp might be okay if it accepts V2 payload structure in body, but djs handles it.
-                     // Let's just use console log or ignore for now as it's error handling.
+                    // Already replied/deferred, try to follow up or log
+                    logger.error("Could not reply to interaction (already processed) and error occurred.");
                 }
             }
         } else if (customId.startsWith('backup_')) {
@@ -94,7 +98,7 @@ module.exports = (client) => {
         if (interaction.user.id !== interaction.guild.ownerId) {
              const { isBotOwner } = require('../utils/ownerUtils');
              if (!(await isBotOwner(interaction.user.id))) {
-                 return replyV2Interaction(client, interaction, await t('handlers.owner_only', interaction.guild.id), [], true);
+                 return interaction.reply({ embeds: [createEmbed(await t('handlers.owner_only', interaction.guild.id), '', 'error')], ephemeral: true });
              }
         }
         
@@ -107,15 +111,15 @@ module.exports = (client) => {
             db.prepare('DELETE FROM command_permissions WHERE guild_id = ?').run(interaction.guild.id);
             db.prepare('DELETE FROM backups WHERE guild_id = ?').run(interaction.guild.id);
             
-            await updateV2Interaction(client, interaction, await t('handlers.reset_success', interaction.guild.id), []);
+            await interaction.update({ embeds: [createEmbed(await t('handlers.reset_success', interaction.guild.id), '', 'success')], components: [] });
         } catch (e) {
-            await updateV2Interaction(client, interaction, await t('handlers.reset_error', interaction.guild.id, { error: e.message }), []);
+            await interaction.update({ embeds: [createEmbed(await t('handlers.reset_error', interaction.guild.id, { error: e.message }), '', 'error')], components: [] });
         }
     }
 
     if (customId === 'confirm_reset_all') {
         const { isBotOwner } = require('../utils/ownerUtils');
-        if (!(await isBotOwner(interaction.user.id))) return replyV2Interaction(client, interaction, await t('handlers.owner_only', interaction.guild.id), [], true);
+        if (!(await isBotOwner(interaction.user.id))) return interaction.reply({ embeds: [createEmbed(await t('handlers.owner_only', interaction.guild.id), '', 'error')], ephemeral: true });
 
         const { db } = require('../database');
         try {
@@ -127,14 +131,14 @@ module.exports = (client) => {
             db.prepare('DELETE FROM backups').run();
             db.prepare('DELETE FROM active_tickets').run();
             
-            await updateV2Interaction(client, interaction, await t('handlers.reset_all_success', interaction.guild.id), []);
+            await interaction.update({ embeds: [createEmbed(await t('handlers.reset_all_success', interaction.guild.id), '', 'success')], components: [] });
         } catch (e) {
-            await updateV2Interaction(client, interaction, await t('handlers.reset_error', interaction.guild.id, { error: e.message }), []);
+            await interaction.update({ embeds: [createEmbed(await t('handlers.reset_error', interaction.guild.id, { error: e.message }), '', 'error')], components: [] });
         }
     }
     
     if (customId === 'cancel_reset') {
-        await updateV2Interaction(client, interaction, await t('handlers.cancel', interaction.guild.id), []);
+        await interaction.update({ embeds: [createEmbed(await t('handlers.cancel', interaction.guild.id), '', 'info')], components: [] });
     }
 
     });
@@ -153,10 +157,10 @@ module.exports = (client) => {
 async function handleSetProfilButton(client, interaction) {
     // Permission check: Administrator
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return replyV2Interaction(client, interaction, await t('handlers.permission_denied', interaction.guild.id), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('handlers.permission_denied', interaction.guild.id), '', 'error')], ephemeral: true });
     }
 
-    const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+    const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField } = require('discord.js');
     
     const modal = new ModalBuilder()
         .setCustomId('modal_set_profil')
@@ -245,8 +249,7 @@ async function handleSetProfilModal(client, interaction) {
 
     if (logs.length === 0) logs.push(await t('handlers.profil_no_change', interaction.guild.id));
     
-    const payload = createV2Payload(logs.join('\n'), []);
-    await client.rest.patch(Routes.webhookMessage(client.application.id, interaction.token, '@original'), { body: payload });
+    await interaction.editReply({ embeds: [createEmbed(logs.join('\n'), '', 'info')] });
 }
 
 async function handleRoleButton(client, interaction) {
@@ -255,11 +258,11 @@ async function handleRoleButton(client, interaction) {
     const role = interaction.guild.roles.cache.get(roleId);
 
     if (!role) {
-        return replyV2Interaction(client, interaction, await t('handlers.role_not_found', interaction.guild.id), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('handlers.role_not_found', interaction.guild.id), '', 'error')], ephemeral: true });
     }
 
     if (role.position >= interaction.guild.members.me.roles.highest.position) {
-        return replyV2Interaction(client, interaction, await t('handlers.role_hierarchy_error', interaction.guild.id), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('handlers.role_hierarchy_error', interaction.guild.id), '', 'error')], ephemeral: true });
     }
 
     const member = interaction.member;
@@ -267,14 +270,14 @@ async function handleRoleButton(client, interaction) {
     try {
         if (member.roles.cache.has(roleId)) {
             await member.roles.remove(role);
-            return replyV2Interaction(client, interaction, await t('handlers.role_removed', interaction.guild.id, { role: role.name }), [], true);
+            return interaction.reply({ embeds: [createEmbed(await t('handlers.role_removed', interaction.guild.id, { role: role.name }), '', 'success')], ephemeral: true });
         } else {
             await member.roles.add(role);
-            return replyV2Interaction(client, interaction, await t('handlers.role_added', interaction.guild.id, { role: role.name }), [], true);
+            return interaction.reply({ embeds: [createEmbed(await t('handlers.role_added', interaction.guild.id, { role: role.name }), '', 'success')], ephemeral: true });
         }
     } catch (e) {
         console.error(e);
-        return replyV2Interaction(client, interaction, await t('handlers.role_error', interaction.guild.id), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('handlers.role_error', interaction.guild.id), '', 'error')], ephemeral: true });
     }
 }
 
@@ -290,17 +293,17 @@ async function handleBackup(client, interaction) {
         
         // Check perms
         if (!interaction.member.permissions.has('Administrator') && interaction.member.id !== interaction.guild.ownerId) {
-             return replyV2Interaction(client, interaction, await t('handlers.permission_denied', interaction.guild.id), [], true);
+             return interaction.reply({ embeds: [createEmbed(await t('handlers.permission_denied', interaction.guild.id), '', 'error')], ephemeral: true });
         }
 
         try {
-            await replyV2Interaction(client, interaction, await t('handlers.backup_loading', interaction.guild.id), [], true);
+            await interaction.reply({ embeds: [createEmbed(await t('handlers.backup_loading', interaction.guild.id), '', 'info')], ephemeral: true });
             await loadBackup(interaction.guild, name);
-            await replyV2Interaction(client, interaction, await t('handlers.backup_loaded', interaction.guild.id, { name }), [], true);
+            await interaction.editReply({ embeds: [createEmbed(await t('handlers.backup_loaded', interaction.guild.id, { name }), '', 'success')] });
             await interaction.message.delete().catch(() => {});
         } catch (error) {
             console.error(error);
-            await replyV2Interaction(client, interaction, await t('handlers.backup_load_error', interaction.guild.id, { error: error.message }), [], true);
+            await interaction.editReply({ embeds: [createEmbed(await t('handlers.backup_load_error', interaction.guild.id, { error: error.message }), '', 'error')] });
         }
         return;
     }
@@ -311,16 +314,16 @@ async function handleBackup(client, interaction) {
         
         // Check perms
         if (!interaction.member.permissions.has('Administrator') && interaction.member.id !== interaction.guild.ownerId) {
-             return replyV2Interaction(client, interaction, await t('handlers.permission_denied', interaction.guild.id), [], true);
+             return interaction.reply({ embeds: [createEmbed(await t('handlers.permission_denied', interaction.guild.id), '', 'error')], ephemeral: true });
         }
 
         try {
             await Backup.deleteOne({ guild_id: interaction.guild.id, name: name });
-            await replyV2Interaction(client, interaction, await t('handlers.backup_deleted', interaction.guild.id, { name }), [], true);
+            await interaction.reply({ embeds: [createEmbed(await t('handlers.backup_deleted', interaction.guild.id, { name }), '', 'success')], ephemeral: true });
             await interaction.message.delete().catch(() => {});
         } catch (error) {
             console.error(error);
-            await replyV2Interaction(client, interaction, await t('handlers.backup_delete_error', interaction.guild.id, { error: error.message }), [], true);
+            await interaction.reply({ embeds: [createEmbed(await t('handlers.backup_delete_error', interaction.guild.id, { error: error.message }), '', 'error')], ephemeral: true });
         }
         return;
     }
@@ -331,13 +334,6 @@ async function handleBackup(client, interaction) {
 async function handleSecurPanel(client, interaction) {
     const guildId = interaction.guild.id;
     let settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
-    
-    if (!settings) {
-        try {
-            await replyV2Interaction(client, interaction, await t('handlers.secur_no_settings', interaction.guild.id), [], true);
-        } catch (e) { console.error("Error replying no settings:", e); }
-        return;
-    }
     
     // Helper to regenerate the panel
     const generateStatusText = async (s) => {
@@ -368,6 +364,13 @@ ${modules}
 
 ${footer}`;
     };
+
+    if (!settings) {
+        try {
+             await interaction.reply({ embeds: [createEmbed(await t('handlers.secur_no_settings', interaction.guild.id), '', 'error')], ephemeral: true });
+        } catch (e) { console.error("Error replying no settings:", e); }
+        return;
+    }
     
     const getRowSelect = async () => new ActionRowBuilder()
             .addComponents(
@@ -444,12 +447,10 @@ ${footer}`;
             );
 
         try {
-            await updateV2Interaction(
-                client,
-                interaction,
-                await t('handlers.secur_config_title', interaction.guild.id, { module: module.toUpperCase(), state: settings[module] }),
-                [rowModuleActions, rowBack]
-            );
+            await interaction.update({ 
+                embeds: [createEmbed(await t('handlers.secur_config_title', interaction.guild.id, { module: module.toUpperCase(), state: settings[module] }), '', 'info')], 
+                components: [rowModuleActions, rowBack] 
+            });
         } catch (error) {
             console.error("Error updating V2 secur panel (module select):", error);
         }
@@ -462,12 +463,11 @@ ${footer}`;
         if (interaction.customId === 'secur_back_main' || interaction.customId === 'secur_refresh') {
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
             try {
-                await updateV2Interaction(
-                    client,
-                    interaction,
-                    await generateStatusText(settings),
-                    [await getRowSelect(), await getRowButtons()]
-                );
+                const statusText = await generateStatusText(settings);
+                await interaction.update({ 
+                    embeds: [createEmbed(statusText, '', 'info')], 
+                    components: [await getRowSelect(), await getRowButtons()] 
+                });
             } catch (error) {
                 console.error("Error updating V2 secur panel (back/refresh):", error);
             }
@@ -484,12 +484,11 @@ ${footer}`;
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
             try {
-                await updateV2Interaction(
-                    client,
-                    interaction,
-                    generateStatusText(settings),
-                    [getRowSelect(), getRowButtons()]
-                );
+                const statusText = await generateStatusText(settings);
+                await interaction.update({ 
+                    embeds: [createEmbed(statusText, '', 'info')], 
+                    components: [await getRowSelect(), await getRowButtons()] 
+                });
             } catch (error) {
                 console.error("Error updating V2 secur panel (all on):", error);
             }
@@ -506,12 +505,11 @@ ${footer}`;
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
             try {
-                await updateV2Interaction(
-                    client,
-                    interaction,
-                    generateStatusText(settings),
-                    [getRowSelect(), getRowButtons()]
-                );
+                const statusText = await generateStatusText(settings);
+                await interaction.update({ 
+                    embeds: [createEmbed(statusText, '', 'info')], 
+                    components: [await getRowSelect(), await getRowButtons()] 
+                });
             } catch (error) {
                 console.error("Error updating V2 secur panel (all max):", error);
             }
@@ -528,12 +526,11 @@ ${footer}`;
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
             try {
-                await updateV2Interaction(
-                    client,
-                    interaction,
-                    generateStatusText(settings),
-                    [getRowSelect(), getRowButtons()]
-                );
+                const statusText = await generateStatusText(settings);
+                await interaction.update({ 
+                    embeds: [createEmbed(statusText, '', 'info')], 
+                    components: [await getRowSelect(), await getRowButtons()] 
+                });
             } catch (error) {
                 console.error("Error updating V2 secur panel (all off):", error);
             }
@@ -588,12 +585,10 @@ ${footer}`;
                 const rowBack = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('secur_back_main').setLabel('Retour').setStyle(ButtonStyle.Secondary));
 
                 try {
-                    await updateV2Interaction(
-                        client,
-                        interaction,
-                        `**Configuration : ${moduleName.toUpperCase()}**\nÉtat actuel : ${settings[moduleName]}\n\nChoisissez une action :`,
-                        [rowModuleActions, rowBack]
-                    );
+                    await interaction.update({ 
+                        embeds: [createEmbed(`**Configuration : ${moduleName.toUpperCase()}**\nÉtat actuel : ${settings[moduleName]}\n\nChoisissez une action :`, '', 'info')], 
+                        components: [rowModuleActions, rowBack] 
+                    });
                 } catch (error) {
                     console.error("Error updating V2 secur panel (action):", error);
                 }
@@ -613,13 +608,13 @@ ${footer}`;
             if (limitCount && limitTime) {
                 db.prepare(`INSERT OR REPLACE INTO module_limits (guild_id, module, limit_count, limit_time) VALUES (?, ?, ?, ?)`).run(guildId, moduleName, parseInt(limitCount), parseInt(limitTime));
                 try {
-                    await replyV2Interaction(client, interaction, `✅ Configuration sauvegardée pour ${moduleName} : ${limitCount} actions en ${limitTime}ms.`, [], true);
+                    await interaction.reply({ embeds: [createEmbed(`✅ Configuration sauvegardée pour ${moduleName} : ${limitCount} actions en ${limitTime}ms.`, '', 'success')], ephemeral: true });
                 } catch (error) {
                     console.error("Error replying V2 modal:", error);
                 }
             } else {
                 try {
-                    await replyV2Interaction(client, interaction, `⚠️ Configuration ignorée (champs vides).`, [], true);
+                    await interaction.reply({ embeds: [createEmbed(`⚠️ Configuration ignorée (champs vides).`, '', 'warning')], ephemeral: true });
                 } catch (error) {
                     console.error("Error replying V2 modal (empty):", error);
                 }

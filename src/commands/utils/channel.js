@@ -1,5 +1,5 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { ChannelType } = require('discord.js');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
         const channel = message.guild.channels.cache.get(channelId);
 
         if (!channel) {
-            return sendV2Message(client, message.channel.id, await t('channel.not_found', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('channel.not_found', message.guild.id), '', 'error')] });
         }
 
         const typeStr = Object.keys(ChannelType).find(key => ChannelType[key] === channel.type);
@@ -27,6 +27,6 @@ module.exports = {
         ].join('\n');
 
         const header = await t('channel.info_title', message.guild.id, { name: channel.name });
-        await sendV2Message(client, message.channel.id, `${header}\n\n${info}`, []);
+        await message.channel.send({ embeds: [createEmbed(`${header}\n\n${info}`, '', 'info')] });
     }
 };

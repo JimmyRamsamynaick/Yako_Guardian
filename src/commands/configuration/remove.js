@@ -1,9 +1,9 @@
 const { PermissionsBitField } = require('discord.js');
-const { sendV2Message } = require('../../utils/componentUtils');
 const { db } = require('../../database');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const ActiveTicket = require('../../database/models/ActiveTicket');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'remove',
@@ -22,16 +22,28 @@ module.exports = {
                         SendMessages: false,
                         ReadMessageHistory: false
                     });
-                    return sendV2Message(client, message.channel.id, await t('remove.ticket_removed', message.guild.id, { id: member.id }), []);
+                    return message.channel.send({ embeds: [createEmbed(
+                        await t('remove.ticket_removed', message.guild.id, { id: member.id }),
+                        '',
+                        'success'
+                    )] });
                 } catch (e) {
-                    return sendV2Message(client, message.channel.id, await t('remove.ticket_error', message.guild.id), []);
+                    return message.channel.send({ embeds: [createEmbed(
+                        await t('remove.ticket_error', message.guild.id),
+                        '',
+                        'error'
+                    )] });
                 }
              }
         }
 
         // --- STANDARD CONFIGURATION REMOVE ---
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('remove.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('remove.permission', message.guild.id),
+                '',
+                'error'
+            )] });
         }
 
         const sub = args[0]?.toLowerCase();
@@ -39,7 +51,11 @@ module.exports = {
         if (sub === 'perm' || sub === 'permission') {
             const targetStr = args[1];
             if (!targetStr) {
-                return sendV2Message(client, message.channel.id, await t('remove.usage_perm', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('remove.usage_perm', message.guild.id),
+                    '',
+                    'info'
+                )] });
             }
 
             let roleId = null;
@@ -50,12 +66,20 @@ module.exports = {
             }
 
             if (!roleId) {
-                return sendV2Message(client, message.channel.id, await t('remove.role_required', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('remove.role_required', message.guild.id),
+                    '',
+                    'error'
+                )] });
             }
 
             const config = await getGuildConfig(message.guild.id);
             if (!config.customPermissions || config.customPermissions.length === 0) {
-                 return sendV2Message(client, message.channel.id, await t('remove.no_perms', message.guild.id), []);
+                 return message.channel.send({ embeds: [createEmbed(
+                    await t('remove.no_perms', message.guild.id),
+                    '',
+                    'error'
+                 )] });
             }
 
             const initialLength = config.customPermissions.length;
@@ -63,11 +87,19 @@ module.exports = {
             const deletedCount = initialLength - config.customPermissions.length;
 
             if (deletedCount === 0) {
-                return sendV2Message(client, message.channel.id, await t('remove.role_no_perms', message.guild.id, { id: roleId }), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('remove.role_no_perms', message.guild.id, { id: roleId }),
+                    '',
+                    'warning'
+                )] });
             }
 
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('remove.perm_success', message.guild.id, { count: deletedCount, id: roleId }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('remove.perm_success', message.guild.id, { count: deletedCount, id: roleId }),
+                '',
+                'success'
+            )] });
         }
 
         if (sub === 'activity') {
@@ -78,12 +110,24 @@ module.exports = {
                 // Clear current activity (if it was this guild's turn, or just to be responsive)
                 client.user.setActivity(null);
 
-                return sendV2Message(client, message.channel.id, await t('remove.activity_success', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('remove.activity_success', message.guild.id),
+                    '',
+                    'success'
+                )] });
             } catch (e) {
-                return sendV2Message(client, message.channel.id, await t('remove.activity_error', message.guild.id, { error: e.message }), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('remove.activity_error', message.guild.id, { error: e.message }),
+                    '',
+                    'error'
+                )] });
             }
         }
 
-        return sendV2Message(client, message.channel.id, await t('remove.usage_activity', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed(
+            await t('remove.usage_activity', message.guild.id),
+            '',
+            'info'
+        )] });
     }
 };

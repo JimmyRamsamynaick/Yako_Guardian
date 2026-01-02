@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { ChannelType } = require('discord.js');
 const { t } = require('../../utils/i18n');
 
@@ -8,7 +8,11 @@ module.exports = {
     category: 'Administration',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageChannels') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('sync.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('sync.permission', message.guild.id),
+                '',
+                'error'
+            )] });
         }
 
         const target = args[0] ? args[0].toLowerCase() : 'channel'; // channel, category, all
@@ -21,15 +25,27 @@ module.exports = {
         const channel = message.channel;
 
         if (!channel.parent) {
-            return sendV2Message(client, message.channel.id, await t('sync.no_category', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('sync.no_category', message.guild.id),
+                '',
+                'warning'
+            )] });
         }
 
         try {
             await channel.lockPermissions();
-            sendV2Message(client, message.channel.id, await t('sync.success', message.guild.id, { category: channel.parent.name }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('sync.success', message.guild.id, { category: channel.parent.name }),
+                '',
+                'success'
+            )] });
         } catch (e) {
             console.error(e);
-            sendV2Message(client, message.channel.id, await t('sync.error', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('sync.error', message.guild.id),
+                '',
+                'error'
+            )] });
         }
     }
 };

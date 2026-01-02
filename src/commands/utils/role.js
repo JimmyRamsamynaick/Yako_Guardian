@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -10,7 +10,7 @@ module.exports = {
         const role = message.guild.roles.cache.get(roleId);
 
         if (!role) {
-            return sendV2Message(client, message.channel.id, await t('role.not_found', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('role.not_found', message.guild.id), '', 'error')] });
         }
 
         const info = [
@@ -24,6 +24,6 @@ module.exports = {
             `**${await t('role.created_at', message.guild.id)}:** <t:${Math.floor(role.createdTimestamp / 1000)}:R>`
         ].join('\n');
 
-        await sendV2Message(client, message.channel.id, (await t('role.title', message.guild.id, { name: role.name })) + `\n\n${info}`, []);
+        await message.channel.send({ embeds: [createEmbed((await t('role.title', message.guild.id, { name: role.name })) + `\n\n${info}`, '', 'info')] });
     }
 };

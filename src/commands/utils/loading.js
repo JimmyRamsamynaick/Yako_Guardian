@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 function parseDuration(str) {
@@ -14,7 +14,7 @@ module.exports = {
     category: 'Utilitaire',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageMessages') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('loading.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('loading.permission', message.guild.id), '', 'error')] });
         }
 
         const durationStr = args[0];
@@ -23,7 +23,7 @@ module.exports = {
         const duration = durationStr ? parseDuration(durationStr) : 5000;
         
         if (!durationStr || !duration) {
-            return sendV2Message(client, message.channel.id, await t('loading.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('loading.usage', message.guild.id), '', 'info')] });
         }
 
         const steps = 10;

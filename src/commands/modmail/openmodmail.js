@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { createTicket } = require('../../utils/modmailUtils');
 const { t } = require('../../utils/i18n');
 
@@ -8,12 +8,12 @@ module.exports = {
     category: 'Modmail',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageMessages')) {
-            return sendV2Message(client, message.channel.id, await t('openmodmail.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('openmodmail.permission', message.guild.id), '', 'error')] });
         }
 
         const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
         if (!member) {
-            return sendV2Message(client, message.channel.id, await t('openmodmail.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('openmodmail.usage', message.guild.id), '', 'info')] });
         }
 
         try {
@@ -23,9 +23,9 @@ module.exports = {
             // Notify staff in the channel
             await channel.send(`${message.author} a ouvert ce ticket avec ${member}.`);
             
-            sendV2Message(client, message.channel.id, await t('modmail.openmodmail.opened', message.guild.id, { channel }), []);
+            message.channel.send({ embeds: [createEmbed(await t('modmail.openmodmail.opened', message.guild.id, { channel }), '', 'success')] });
         } catch (error) {
-            sendV2Message(client, message.channel.id, await t('modmail.openmodmail.error', message.guild.id, { error: error.message }), []);
+            message.channel.send({ embeds: [createEmbed(await t('modmail.openmodmail.error', message.guild.id, { error: error.message }), '', 'error')] });
         }
     }
 };

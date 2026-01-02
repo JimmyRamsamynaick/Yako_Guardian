@@ -1,6 +1,6 @@
 const CustomCommand = require('../../database/models/CustomCommand');
 const { PermissionsBitField } = require('discord.js');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -9,49 +9,49 @@ module.exports = {
     aliases: ['cc'],
     async execute(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('custom.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('custom.permission', message.guild.id), '', 'error')] });
         }
 
         if (args.length < 1) {
-            return sendV2Message(client, message.channel.id, await t('custom.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('custom.usage', message.guild.id), '', 'info')] });
         }
 
         const sub = args[0].toLowerCase();
 
         // Delete Subcommand
         if (sub === 'delete' || sub === 'del' || sub === 'remove') {
-            if (args.length < 2) return sendV2Message(client, message.channel.id, await t('custom.usage_delete', message.guild.id), []);
+            if (args.length < 2) return message.channel.send({ embeds: [createEmbed(await t('custom.usage_delete', message.guild.id), '', 'info')] });
             const trigger = args[1].toLowerCase();
 
             const deleted = await CustomCommand.findOneAndDelete({ guildId: message.guild.id, trigger });
             if (deleted) {
-                return sendV2Message(client, message.channel.id, await t('custom.deleted', message.guild.id, { trigger }), []);
+                return message.channel.send({ embeds: [createEmbed(await t('custom.deleted', message.guild.id, { trigger }), '', 'success')] });
             } else {
-                return sendV2Message(client, message.channel.id, await t('custom.not_found', message.guild.id, { trigger }), []);
+                return message.channel.send({ embeds: [createEmbed(await t('custom.not_found', message.guild.id, { trigger }), '', 'error')] });
             }
         }
 
         // Transfer Subcommand
         if (sub === 'transfer') {
-            if (args.length < 3) return sendV2Message(client, message.channel.id, await t('custom.usage_transfer', message.guild.id), []);
+            if (args.length < 3) return message.channel.send({ embeds: [createEmbed(await t('custom.usage_transfer', message.guild.id), '', 'info')] });
             const oldName = args[1].toLowerCase();
             const newName = args[2].toLowerCase();
 
             const cmd = await CustomCommand.findOne({ guildId: message.guild.id, trigger: oldName });
-            if (!cmd) return sendV2Message(client, message.channel.id, await t('custom.not_found', message.guild.id, { trigger: oldName }), []);
+            if (!cmd) return message.channel.send({ embeds: [createEmbed(await t('custom.not_found', message.guild.id, { trigger: oldName }), '', 'error')] });
 
             const exists = await CustomCommand.findOne({ guildId: message.guild.id, trigger: newName });
-            if (exists) return sendV2Message(client, message.channel.id, await t('custom.exists', message.guild.id, { name: newName }), []);
+            if (exists) return message.channel.send({ embeds: [createEmbed(await t('custom.exists', message.guild.id, { name: newName }), '', 'error')] });
 
             cmd.trigger = newName;
             await cmd.save();
 
-            return sendV2Message(client, message.channel.id, await t('custom.transferred', message.guild.id, { old: oldName, new: newName }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('custom.transferred', message.guild.id, { old: oldName, new: newName }), '', 'success')] });
         }
 
         // Create/Update Logic
         const trigger = args[0].toLowerCase();
-        if (args.length < 2) return sendV2Message(client, message.channel.id, await t('custom.no_response', message.guild.id), []);
+        if (args.length < 2) return message.channel.send({ embeds: [createEmbed(await t('custom.no_response', message.guild.id), '', 'info')] });
         
         const response = args.slice(1).join(' ');
 
@@ -61,18 +61,18 @@ module.exports = {
             if (existing) {
                 existing.response = response;
                 await existing.save();
-                sendV2Message(client, message.channel.id, await t('custom.updated', message.guild.id, { trigger }), []);
+                message.channel.send({ embeds: [createEmbed(await t('custom.updated', message.guild.id, { trigger }), '', 'success')] });
             } else {
                 await CustomCommand.create({
                     guildId: message.guild.id,
                     trigger,
                     response
                 });
-                sendV2Message(client, message.channel.id, await t('custom.created', message.guild.id, { trigger }), []);
+                message.channel.send({ embeds: [createEmbed(await t('custom.created', message.guild.id, { trigger }), '', 'success')] });
             }
         } catch (e) {
             console.error(e);
-            sendV2Message(client, message.channel.id, await t('custom.save_error', message.guild.id), []);
+            message.channel.send({ embeds: [createEmbed(await t('custom.save_error', message.guild.id), '', 'error')] });
         }
     }
 };

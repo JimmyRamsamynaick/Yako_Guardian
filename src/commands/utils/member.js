@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
         try {
             member = await message.guild.members.fetch(memberId);
         } catch {
-            return sendV2Message(client, message.channel.id, await t('member.not_found', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('member.not_found', message.guild.id), '', 'error')] });
         }
 
         const info = [
@@ -22,6 +22,6 @@ module.exports = {
             `**${await t('member.roles', message.guild.id)}:** ${member.roles.cache.size - 1}` // Exclude @everyone
         ].join('\n');
 
-        await sendV2Message(client, message.channel.id, (await t('member.title', message.guild.id, { tag: member.user.tag })) + `\n\n${info}`, []);
+        await message.channel.send({ embeds: [createEmbed((await t('member.title', message.guild.id, { tag: member.user.tag })) + `\n\n${info}`, '', 'info')] });
     }
 };

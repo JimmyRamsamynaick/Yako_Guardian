@@ -1,9 +1,10 @@
 const { PermissionsBitField } = require('discord.js');
-const { getGuildConfig } = require('../../utils/mongoUtils');
+const { getGuildConfig } = require('../mongoUtils');
 const UserStrike = require('../../database/models/UserStrike');
 const ms = require('ms');
 
-const { sendV2Message } = require('../componentUtils');
+const { createEmbed } = require('../design');
+const { t } = require('../i18n');
 
 async function applyPunishment(client, message, userId, guildConfig) {
     if (!guildConfig.moderation || !guildConfig.moderation.strikes) return;
@@ -66,11 +67,11 @@ async function applyPunishment(client, message, userId, guildConfig) {
         }
 
         if (actionTaken) {
-            sendV2Message(client, message.channel.id, await t('automod.punishment_applied', message.guild.id, { 
+            message.channel.send({ embeds: [createEmbed(await t('automod.punishment_applied', message.guild.id, { 
                 user: member.toString(), 
                 count: strikeCount, 
                 action: actionTaken 
-            }), []);
+            }), '', 'info')] });
         }
 
     } catch (err) {

@@ -1,6 +1,6 @@
 const { createPagination } = require('../../utils/pagination');
 const Suggestion = require('../../database/models/Suggestion');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -16,6 +16,6 @@ module.exports = {
             return createPagination(client, message, list, 10, await t('lb.suggestions_title', message.guild.id));
         }
 
-        return sendV2Message(client, message.channel.id, await t('lb.usage', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed(await t('lb.usage', message.guild.id), '', 'info')] });
     }
 };

@@ -1,6 +1,6 @@
 const CustomCommand = require('../../database/models/CustomCommand');
 const { createPagination } = require('../../utils/pagination');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
         const commands = await CustomCommand.find({ guildId: message.guild.id }).sort({ trigger: 1 });
 
         if (commands.length === 0) {
-            return sendV2Message(client, message.channel.id, await t('customlist.empty', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('customlist.empty', message.guild.id), '', 'info')] });
         }
 
         const formatter = (cmd) => {

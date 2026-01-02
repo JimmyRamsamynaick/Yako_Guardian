@@ -1,5 +1,5 @@
 const { generateKey } = require('../../utils/subscription');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -10,16 +10,32 @@ module.exports = {
         // Actually, just keep original check or assume isBotOwner util
         
         const days = parseInt(args[0]);
-        if (!days || isNaN(days)) return sendV2Message(client, message.channel.id, await t('genkey.usage', message.guild.id), []);
+        if (!days || isNaN(days)) return message.channel.send({ embeds: [createEmbed(
+            await t('genkey.usage', message.guild.id),
+            '',
+            'error'
+        )] });
         
         const key = generateKey(days);
         
         // Send key in DM to avoid leaking
         try {
-            await message.author.send(await t('genkey.dm_success', message.guild.id, { key, days }));
-            sendV2Message(client, message.channel.id, await t('genkey.channel_success', message.guild.id), []);
+            await message.author.send({ embeds: [createEmbed(
+                await t('genkey.dm_success', message.guild.id, { key, days }),
+                '',
+                'success'
+            )] });
+            message.channel.send({ embeds: [createEmbed(
+                await t('genkey.channel_success', message.guild.id),
+                '',
+                'success'
+            )] });
         } catch (e) {
-            sendV2Message(client, message.channel.id, await t('genkey.public_success', message.guild.id, { key, days }), []);
+            message.channel.send({ embeds: [createEmbed(
+                await t('genkey.public_success', message.guild.id, { key, days }),
+                '',
+                'warning'
+            )] });
         }
     }
 };

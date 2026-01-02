@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { PermissionsBitField } = require('discord.js');
 const { db } = require('../../database');
 const { getGuildConfig } = require('../../utils/mongoUtils');
@@ -10,7 +10,7 @@ module.exports = {
     category: 'Configuration',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && message.author.id !== message.guild.ownerId) {
-             return sendV2Message(client, message.channel.id, await t('helptype.permission', message.guild.id), []);
+             return message.channel.send({ embeds: [createEmbed(await t('helptype.permission', message.guild.id), '', 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -18,10 +18,10 @@ module.exports = {
 
         const type = args[0]?.toLowerCase();
         if (!type || !['button', 'select', 'hybrid'].includes(type)) {
-            return sendV2Message(client, message.channel.id, await t('helptype.usage', message.guild.id, { prefix }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('helptype.usage', message.guild.id, { prefix }), '', 'info')] });
         }
 
         db.prepare('UPDATE guild_settings SET help_type = ? WHERE guild_id = ?').run(type, message.guild.id);
-        return sendV2Message(client, message.channel.id, await t('helptype.success', message.guild.id, { type: type.toUpperCase() }), []);
+        return message.channel.send({ embeds: [createEmbed(await t('helptype.success', message.guild.id, { type: type.toUpperCase() }), '', 'success')] });
     }
 };

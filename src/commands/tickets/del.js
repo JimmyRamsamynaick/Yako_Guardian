@@ -1,8 +1,8 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const ActiveTicket = require('../../database/models/ActiveTicket');
 const { t } = require('../../utils/i18n');
 const { deleteSanction } = require('../../utils/moderation/sanctionUtils');
 const { PermissionsBitField } = require('discord.js');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'del',
@@ -15,7 +15,7 @@ module.exports = {
         // --- DEL SANCTION ---
         if (args[0]?.toLowerCase() === 'sanction') {
              if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return sendV2Message(client, message.channel.id, await t('common.admin_only', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('common.admin_only', message.guild.id), '', 'error')] });
             }
 
             // Args: del sanction <member> <caseId> OR del sanction <caseId>
@@ -28,34 +28,34 @@ module.exports = {
             }
 
             if (!caseId || isNaN(caseId)) {
-                return sendV2Message(client, message.channel.id, await t('ticket_del.sanction_usage', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('ticket_del.sanction_usage', message.guild.id), '', 'info')] });
             }
 
             const result = await deleteSanction(message.guild.id, parseInt(caseId));
 
             if (result) {
-                return sendV2Message(client, message.channel.id, await t('ticket_del.sanction_success', message.guild.id, { caseId }), []);
+                return message.channel.send({ embeds: [createEmbed(await t('ticket_del.sanction_success', message.guild.id, { caseId }), '', 'success')] });
             } else {
-                return sendV2Message(client, message.channel.id, await t('ticket_del.sanction_not_found', message.guild.id, { caseId }), []);
+                return message.channel.send({ embeds: [createEmbed(await t('ticket_del.sanction_not_found', message.guild.id, { caseId }), '', 'error')] });
             }
         }
 
         // --- TICKET DEL (Default) ---
         const ticket = await ActiveTicket.findOne({ channelId: message.channel.id });
         if (!ticket) {
-            return sendV2Message(client, message.channel.id, await t('ticket_del.not_ticket', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('ticket_del.not_ticket', message.guild.id), '', 'error')] });
         }
 
         const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
         if (!member) {
-            return sendV2Message(client, message.channel.id, await t('ticket_del.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('ticket_del.usage', message.guild.id), '', 'info')] });
         }
 
         try {
             await message.channel.permissionOverwrites.delete(member);
-            return sendV2Message(client, message.channel.id, await t('ticket_del.success', message.guild.id, { user: member.id }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('ticket_del.success', message.guild.id, { user: member.id }), '', 'success')] });
         } catch (e) {
-            return sendV2Message(client, message.channel.id, await t('ticket_del.error', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('ticket_del.error', message.guild.id), '', 'error')] });
         }
     }
 };

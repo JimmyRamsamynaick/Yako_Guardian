@@ -29,9 +29,11 @@ module.exports = (client) => {
         try {
             const command = require(filePath);
             
-            // Assign category based on folder name
+            // Assign category based on folder name if not already defined
             const category = path.dirname(filePath).split(path.sep).pop();
-            command.category = category;
+            if (!command.category) {
+                command.category = category;
+            }
 
             if (command.name) {
                 client.commands.set(command.name, command);

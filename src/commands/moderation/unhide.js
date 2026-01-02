@@ -1,6 +1,6 @@
 const { PermissionsBitField } = require('discord.js');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'unhide',
@@ -9,19 +9,25 @@ module.exports = {
     usage: 'unhide [channel]',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-            return sendV2Message(client, message.channel.id, await t('common.permission_missing', message.guild.id, { perm: 'ManageChannels' }), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ManageChannels' }), 'error')] });
         }
 
         const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]) || message.channel;
+
+        const replyMsg = await message.channel.send({ embeds: [createEmbed('Unhide', `${THEME.icons.loading} Affichage du salon...`, 'loading')] });
 
         try {
             await channel.permissionOverwrites.edit(message.guild.roles.everyone, {
                 ViewChannel: null // Reset
             });
-            return sendV2Message(client, message.channel.id, await t('moderation.unhide_success', message.guild.id, { channelId: channel.id }), []);
+            await replyMsg.edit({ embeds: [createEmbed(
+                'Salon Visible',
+                `${THEME.icons.success} Le salon <#${channel.id}> est maintenant visible.`,
+                'success'
+            )] });
         } catch (err) {
             console.error(err);
-            return sendV2Message(client, message.channel.id, await t('moderation.unhide_error', message.guild.id), []);
+            await replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.unhide_error', message.guild.id), 'error')] });
         }
     }
 };

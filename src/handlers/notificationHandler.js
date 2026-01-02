@@ -2,7 +2,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, M
 const GuildConfig = require('../database/models/GuildConfig');
 const TwitchAlert = require('../database/models/TwitchAlert');
 const { getGuildConfig } = require('../utils/mongoUtils');
-const { updateV2Interaction, replyV2Interaction } = require('../utils/componentUtils');
+const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 
 async function handleNotificationInteraction(client, interaction) {
@@ -62,7 +62,7 @@ async function handleTwitchInteraction(client, interaction, config) {
                         .setLabel(await t('notifications.handler.twitch.back_label', guildId))
                         .setStyle(ButtonStyle.Secondary)
                 );
-            return replyV2Interaction(client, interaction, await t('notifications.handler.twitch.invalid_channel', guildId), [rowBack], true);
+            return interaction.reply({ embeds: [createEmbed(await t('notifications.handler.twitch.invalid_channel', guildId), '', 'error')], components: [rowBack], ephemeral: true });
         }
 
         await TwitchAlert.create({
@@ -78,12 +78,12 @@ async function handleTwitchInteraction(client, interaction, config) {
                     .setLabel(await t('notifications.handler.twitch.back_label', guildId))
                     .setStyle(ButtonStyle.Secondary)
             );
-        await replyV2Interaction(client, interaction, await t('notifications.handler.twitch.added_success', guildId, { name: streamerName }), [rowBack], true);
+        await interaction.reply({ embeds: [createEmbed(await t('notifications.handler.twitch.added_success', guildId, { name: streamerName }), '', 'success')], components: [rowBack], ephemeral: true });
     } else if (customId === 'twitch_del_menu') {
         // Show select menu to delete
         const alerts = await TwitchAlert.find({ guildId: interaction.guildId });
         if (alerts.length === 0) {
-            return replyV2Interaction(client, interaction, await t('notifications.handler.twitch.no_streamers', guildId), [], true);
+            return interaction.reply({ embeds: [createEmbed(await t('notifications.handler.twitch.no_streamers', guildId), '', 'error')], ephemeral: true });
         }
 
         const options = await Promise.all(alerts.map(async alert => ({
@@ -108,7 +108,7 @@ async function handleTwitchInteraction(client, interaction, config) {
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        await updateV2Interaction(interaction.client, interaction, await t('notifications.handler.twitch.delete_title', guildId), [row, rowBack]);
+        await interaction.update({ content: null, embeds: [createEmbed(await t('notifications.handler.twitch.delete_title', guildId), '', 'info')], components: [row, rowBack] });
     } else if (customId === 'twitch_delete_select') {
         if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
         const alertId = interaction.values[0];
@@ -124,7 +124,7 @@ async function handleTwitchInteraction(client, interaction, config) {
             }
         }
         
-        await replyV2Interaction(client, interaction, content, [], true);
+        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], ephemeral: true });
     }
 }
 
@@ -158,17 +158,17 @@ async function showTwitchMenu(interaction, config) {
 
     // Handle Message object (legacy command)
     if (!interaction.token) {
-        const { sendV2Message } = require('../utils/componentUtils');
-        await sendV2Message(interaction.client, interaction.channelId, content, [row]);
+        const channel = interaction.channel || interaction.client.channels.cache.get(interaction.channelId);
+        await channel.send({ embeds: [createEmbed(content, '', 'info')], components: [row] });
         return;
     }
 
     if (interaction.type === 5 || interaction.type === 3) { // Modal Submit or Component
          // If we replied ephemeral in modal submit, we can't update.
          if (interaction.replied) return; 
-         await updateV2Interaction(interaction.client, interaction, content, [row]);
+         await interaction.update({ content: null, embeds: [createEmbed(content, '', 'info')], components: [row] });
     } else {
-        await replyV2Interaction(interaction.client, interaction, content, [row]);
+        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [row], ephemeral: true });
     }
 }
 
@@ -223,7 +223,7 @@ async function handleJoinInteraction(client, interaction, config) {
                     .setLabel(await t('notifications.handler.twitch.back_label', guildId))
                     .setStyle(ButtonStyle.Secondary)
             );
-        await replyV2Interaction(client, interaction, await t('notifications.handler.join.msg_updated', guildId), [rowBack], true);
+        await interaction.reply({ embeds: [createEmbed(await t('notifications.handler.join.msg_updated', guildId), '', 'success')], components: [rowBack], ephemeral: true });
     }
 }
 
@@ -258,15 +258,15 @@ async function showJoinMenu(interaction, config) {
 
     // Handle Message object (legacy command)
     if (!interaction.token) {
-        const { sendV2Message } = require('../utils/componentUtils');
-        await sendV2Message(interaction.client, interaction.channelId, content, [rowControls, rowChannel]);
+        const channel = interaction.channel || interaction.client.channels.cache.get(interaction.channelId);
+        await channel.send({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
         return;
     }
 
     if (interaction.type === 5 || interaction.type === 3) {
-        if (!interaction.replied) await updateV2Interaction(interaction.client, interaction, content, [rowControls, rowChannel]);
+        if (!interaction.replied) await interaction.update({ content: null, embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
     } else {
-        await replyV2Interaction(interaction.client, interaction, content, [rowControls, rowChannel]);
+        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel], ephemeral: true });
     }
 }
 
@@ -313,7 +313,7 @@ async function handleLeaveInteraction(client, interaction, config) {
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        await replyV2Interaction(client, interaction, await t('notifications.handler.leave.msg_updated', guildId), [rowBack], true);
+        await interaction.reply({ embeds: [createEmbed(await t('notifications.handler.leave.msg_updated', guildId), '', 'success')], components: [rowBack], ephemeral: true });
     }
 }
 
@@ -348,15 +348,15 @@ async function showLeaveMenu(interaction, config) {
 
     // Handle Message object (legacy command)
     if (!interaction.token) {
-        const { sendV2Message } = require('../utils/componentUtils');
-        await sendV2Message(interaction.client, interaction.channelId, content, [rowControls, rowChannel]);
+        const channel = interaction.channel || interaction.client.channels.cache.get(interaction.channelId);
+        await channel.send({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
         return;
     }
 
     if (interaction.type === 5 || interaction.type === 3) {
-        if (!interaction.replied) await updateV2Interaction(interaction.client, interaction, content, [rowControls, rowChannel]);
+        if (!interaction.replied) await interaction.update({ content: null, embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
     } else {
-        await replyV2Interaction(interaction.client, interaction, content, [rowControls, rowChannel]);
+        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel], ephemeral: true });
     }
 }
 

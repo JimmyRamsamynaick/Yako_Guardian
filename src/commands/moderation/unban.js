@@ -1,6 +1,6 @@
 const { PermissionsBitField } = require('discord.js');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 const { addSanction } = require('../../utils/moderation/sanctionUtils');
 const { checkUsage } = require('../../utils/moderation/helpUtils');
 
@@ -12,10 +12,18 @@ module.exports = {
     examples: ['unban 123456789012345678', 'unban 123456789,, 987654321 Mistake'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-            return sendV2Message(client, message.channel.id, await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args)) return;
+
+        // Loading state
+        const loadingEmbed = createEmbed(
+            'Unban',
+            `${THEME.icons.loading} Recherche des bannissements...`,
+            'loading'
+        );
+        const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
 
         const fullContent = args.join(' ');
         let idsToUnban = [];
@@ -48,33 +56,58 @@ module.exports = {
         }
 
         if (idsToUnban.length === 0) {
-            return sendV2Message(client, message.channel.id, await t('moderation.id_invalid', message.guild.id), []);
+            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.id_invalid', message.guild.id), 'error')] });
         }
 
+        await replyMsg.edit({ embeds: [createEmbed('Unban', `${THEME.icons.loading} Levée des bannissements...`, 'loading')] });
+
         const summary = [];
+        let successCount = 0;
 
         for (const userId of idsToUnban) {
             try {
                 // Check if ban exists
                 const ban = await message.guild.bans.fetch(userId).catch(() => null);
                 if (!ban) {
-                    summary.push(await t('moderation.error_summary', message.guild.id, { user: userId, error: await t('moderation.not_banned', message.guild.id) }));
+                    summary.push(`${THEME.icons.error} **${userId}**: ${await t('moderation.not_banned', message.guild.id)}`);
                     continue;
                 }
 
                 await message.guild.members.unban(userId, reason);
                 await addSanction(message.guild.id, userId, message.author.id, 'unban', reason);
-                summary.push(await t('moderation.unban_success', message.guild.id, { user: ban.user ? ban.user.tag : userId }));
+                
+                const userTag = ban.user ? ban.user.tag : userId;
+                summary.push(`${THEME.icons.success} **${userTag}**: Débanni`);
+                successCount++;
             } catch (err) {
                 console.error(err);
-                summary.push(await t('moderation.error_summary', message.guild.id, { user: userId, error: await t('moderation.error_internal', message.guild.id) }));
+                summary.push(`${THEME.icons.error} **${userId}**: ${await t('common.error_generic', message.guild.id)}`);
             }
         }
 
-        const summaryText = summary.join('\n');
-        if (summaryText.length > 2000) {
-             return sendV2Message(client, message.channel.id, await t('moderation.action_performed_bulk', message.guild.id, { count: idsToUnban.length }), []);
+        // Final Result Construction
+        let finalDescription = '';
+        let type = 'default';
+
+        if (idsToUnban.length === 1 && successCount === 1) {
+            const targetId = idsToUnban[0];
+            type = 'success';
+            finalDescription = 
+                `${THEME.separators.line}\n` +
+                `👤 **ID :** ${targetId}\n` +
+                `📌 **Action :** UNBAN\n` +
+                `✏️ **Raison :** ${reason}\n\n` +
+                `${THEME.icons.success} **Action effectuée avec succès**\n` +
+                `${THEME.separators.line}`;
+        } else {
+            type = successCount > 0 ? (successCount === idsToUnban.length ? 'success' : 'warning') : 'error';
+            finalDescription = summary.join('\n');
+            if (finalDescription.length > 4000) {
+                finalDescription = finalDescription.substring(0, 4000) + '...';
+            }
         }
-        return sendV2Message(client, message.channel.id, summaryText || await t('moderation.no_action', message.guild.id), []);
+
+        const finalEmbed = createEmbed('Unban', finalDescription, type);
+        await replyMsg.edit({ embeds: [finalEmbed] });
     }
 };

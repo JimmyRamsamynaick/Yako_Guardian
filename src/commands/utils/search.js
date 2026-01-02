@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const axios = require('axios');
 const { t } = require('../../utils/i18n');
 
@@ -11,7 +11,7 @@ module.exports = {
         
         if (sub === 'wiki') {
             const query = args.slice(1).join(' ');
-            if (!query) return sendV2Message(client, message.channel.id, await t('search.usage_keyword', message.guild.id), []);
+            if (!query) return message.channel.send({ embeds: [createEmbed(await t('search.usage_keyword', message.guild.id), '', 'info')] });
 
             try {
                 const url = `https://fr.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=5&namespace=0&format=json`;
@@ -21,16 +21,16 @@ module.exports = {
                 const [searchTerm, titles, descriptions, urls] = res.data;
 
                 if (!titles || titles.length === 0) {
-                     return sendV2Message(client, message.channel.id, await t('search.no_results', message.guild.id), []);
+                     return message.channel.send({ embeds: [createEmbed(await t('search.no_results', message.guild.id), '', 'error')] });
                 }
 
                 const list = titles.map((title, i) => `**${title}** - [Lien](${urls[i]})`).join('\n');
-                await sendV2Message(client, message.channel.id, (await t('search.result_title', message.guild.id, { query: query })) + `\n${list}`, []);
+                await message.channel.send({ embeds: [createEmbed((await t('search.result_title', message.guild.id, { query: query })) + `\n${list}`, '', 'info')] });
             } catch (e) {
-                return sendV2Message(client, message.channel.id, await t('search.error', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('search.error', message.guild.id), '', 'error')] });
             }
         } else {
-            return sendV2Message(client, message.channel.id, await t('search.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('search.usage', message.guild.id), '', 'info')] });
         }
     }
 };

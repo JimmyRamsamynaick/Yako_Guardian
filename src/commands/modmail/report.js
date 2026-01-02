@@ -1,6 +1,6 @@
 const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
-const { sendV2Message, updateV2Interaction } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -9,13 +9,13 @@ module.exports = {
     async execute(client, message, args) { // Added client parameter
         if (args[0] === 'settings') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return sendV2Message(client, message.channel.id, await t('report.permission', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('report.permission', message.guild.id), '', 'error')] });
             }
 
             const config = await getGuildConfig(message.guild.id);
             await showReportMenu(client, message, config);
         } else {
-            sendV2Message(client, message.channel.id, await t('report.usage', message.guild.id), []);
+            message.channel.send({ embeds: [createEmbed(await t('report.usage', message.guild.id), '', 'info')] });
         }
     }
 };
@@ -46,11 +46,13 @@ async function showReportMenu(client, interaction, config) {
                 .setChannelTypes(ChannelType.GuildText)
         );
 
+    const embed = createEmbed(content, '', 'info');
+
     if (interaction.type === 3) { // Component Interaction
-        await updateV2Interaction(client, interaction, content, [rowControls, rowChannel]);
+        await interaction.update({ embeds: [embed], components: [rowControls, rowChannel] });
     } else {
         // Message Command
         // For messages, interaction is the message object.
-        await sendV2Message(client, interaction.channel.id, content, [rowControls, rowChannel]);
+        await interaction.channel.send({ embeds: [embed], components: [rowControls, rowChannel] });
     }
 }

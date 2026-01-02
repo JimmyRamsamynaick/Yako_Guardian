@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -7,17 +7,17 @@ module.exports = {
     category: 'Voice',
     async run(client, message, args) {
         if (!message.member.permissions.has('MoveMembers') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('bringall.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('bringall.permission', message.guild.id), '', 'error')] });
         }
 
         const targetChannel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]) || message.member.voice.channel;
 
         if (!targetChannel) {
-            return sendV2Message(client, message.channel.id, await t('bringall.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('bringall.usage', message.guild.id), '', 'error')] });
         }
 
         if (!targetChannel.isVoiceBased()) {
-            return sendV2Message(client, message.channel.id, await t('bringall.invalid_channel', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('bringall.invalid_channel', message.guild.id), '', 'error')] });
         }
 
         let count = 0;
@@ -28,6 +28,6 @@ module.exports = {
             } catch (err) {}
         });
 
-        return sendV2Message(client, message.channel.id, await t('bringall.success', message.guild.id, { count, channel: targetChannel.toString() }), []);
+        return message.channel.send({ embeds: [createEmbed(await t('bringall.success', message.guild.id, { count, channel: targetChannel.toString() }), '', 'success')] });
     }
 };

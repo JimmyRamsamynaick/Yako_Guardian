@@ -1,7 +1,7 @@
-const { PermissionsBitField } = require('discord.js');
+const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
-const { sendV2Message, updateV2Interaction, editV2Message } = require('../../utils/componentUtils');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'clearperms',
@@ -9,17 +9,23 @@ module.exports = {
     category: 'Configuration',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('clearperms.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('clearperms.permission', message.guild.id),
+                '',
+                'error'
+            )] });
         }
 
-        const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('confirm_clearperms').setLabel(await t('clearperms.confirm', message.guild.id)).setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId('cancel_clearperms').setLabel(await t('clearperms.cancel', message.guild.id)).setStyle(ButtonStyle.Secondary)
         );
 
         const content = await t('clearperms.question', message.guild.id);
-        const msg = await sendV2Message(client, message.channel.id, content, [row]);
+        const msg = await message.channel.send({ 
+            embeds: [createEmbed(content, '', 'warning')], 
+            components: [row] 
+        });
 
         const filter = i => (i.customId === 'confirm_clearperms' || i.customId === 'cancel_clearperms') && i.user.id === message.author.id && i.message.id === msg.id;
         
@@ -32,13 +38,22 @@ module.exports = {
                 const config = await getGuildConfig(message.guild.id);
                 config.customPermissions = [];
                 await config.save();
-                await updateV2Interaction(client, interaction, await t('clearperms.success', message.guild.id), []);
+                await interaction.update({ 
+                    embeds: [createEmbed(await t('clearperms.success', message.guild.id), '', 'success')], 
+                    components: [] 
+                });
             } else {
-                await updateV2Interaction(client, interaction, await t('clearperms.cancelled', message.guild.id), []);
+                await interaction.update({ 
+                    embeds: [createEmbed(await t('clearperms.cancelled', message.guild.id), '', 'info')], 
+                    components: [] 
+                });
             }
         } catch (e) {
             try {
-                await editV2Message(client, channel.id, msg.id, await t('clearperms.timeout', message.guild.id), []);
+                await msg.edit({ 
+                    embeds: [createEmbed(await t('clearperms.timeout', message.guild.id), '', 'info')], 
+                    components: [] 
+                });
             } catch (err) {}
         }
     }

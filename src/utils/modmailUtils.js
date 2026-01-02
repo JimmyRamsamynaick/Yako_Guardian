@@ -2,7 +2,7 @@ const { ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBi
 const ActiveTicket = require('../database/models/ActiveTicket');
 const GuildConfig = require('../database/models/GuildConfig');
 const { t } = require('./i18n');
-const { sendV2Message } = require('./componentUtils');
+const { createEmbed } = require('./design');
 
 async function createTicket(client, user, guild, initialContent) {
     const config = await GuildConfig.findOne({ guildId: guild.id });
@@ -69,7 +69,7 @@ async function createTicket(client, user, guild, initialContent) {
         );
     
     await channel.send({ content: "@here", components: [row] }); // Notify staff
-    await sendV2Message(client, channel.id, content, []);
+    await channel.send({ embeds: [createEmbed(content, '', 'info')] });
 
     return channel;
 }

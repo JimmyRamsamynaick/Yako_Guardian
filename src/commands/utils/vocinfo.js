@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -25,6 +25,6 @@ module.exports = {
             await t('vocinfo.deafened', message.guild.id, { count: voiceChannels.reduce((acc, c) => acc + c.members.filter(m => m.voice.serverDeaf).size, 0) })
         ].join('\n');
 
-        await sendV2Message(client, message.channel.id, (await t('vocinfo.title', message.guild.id)) + "\n\n" + info, []);
+        await message.channel.send({ embeds: [createEmbed((await t('vocinfo.title', message.guild.id)) + "\n\n" + info, '', 'info')] });
     }
 };

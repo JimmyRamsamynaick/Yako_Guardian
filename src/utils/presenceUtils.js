@@ -1,6 +1,6 @@
 const { ActivityType } = require('discord.js');
 const { db } = require('../database');
-const { sendV2Message } = require('./componentUtils');
+const { createEmbed } = require('./design');
 const { t } = require('./i18n');
 
 /**
@@ -18,9 +18,17 @@ async function setBotStatus(client, message, status) {
         // Note: This changes global status immediately, which is fine as it will rotate later if needed
         client.user.setStatus(status);
 
-        return sendV2Message(client, message.channel.id, await t('presence.status_success', message.guild.id, { status: status }), []);
+        return message.channel.send({ embeds: [createEmbed(
+            await t('presence.status_success', message.guild.id, { status: status }),
+            '',
+            'success'
+        )] });
     } catch (e) {
-        return sendV2Message(client, message.channel.id, await t('presence.error', message.guild.id, { error: e.message }), []);
+        return message.channel.send({ embeds: [createEmbed(
+            await t('presence.error', message.guild.id, { error: e.message }),
+            '',
+            'error'
+        )] });
     }
 }
 
@@ -53,9 +61,17 @@ async function setBotActivity(client, message, typeStr, text, url = null) {
         const firstActivity = text.split(',,')[0].trim();
         client.user.setActivity(firstActivity, { type: typeEnum, url: url });
 
-        return sendV2Message(client, message.channel.id, await t('presence.activity_success', message.guild.id, { type: activityTypeDisplay, text: text }), []);
+        return message.channel.send({ embeds: [createEmbed(
+            await t('presence.activity_success', message.guild.id, { type: activityTypeDisplay, text: text }),
+            '',
+            'success'
+        )] });
     } catch (e) {
-        return sendV2Message(client, message.channel.id, await t('presence.error', message.guild.id, { error: e.message }), []);
+        return message.channel.send({ embeds: [createEmbed(
+            await t('presence.error', message.guild.id, { error: e.message }),
+            '',
+            'error'
+        )] });
     }
 }
 

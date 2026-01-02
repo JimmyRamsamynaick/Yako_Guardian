@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const axios = require('axios');
 const { t } = require('../../utils/i18n');
 
@@ -8,7 +8,7 @@ module.exports = {
     category: 'Utils',
     async run(client, message, args) {
         const query = args.join(' ');
-        if (!query) return sendV2Message(client, message.channel.id, await t('wiki.usage', message.guild.id), []);
+        if (!query) return message.channel.send({ embeds: [createEmbed(await t('wiki.usage', message.guild.id), '', 'info')] });
 
         try {
             const url = `https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
@@ -18,17 +18,17 @@ module.exports = {
             const data = res.data;
 
             if (data.type === 'https://mediawiki.org/wiki/HyperSwitch/errors/not_found') {
-                 return sendV2Message(client, message.channel.id, await t('wiki.not_found', message.guild.id), []);
+                 return message.channel.send({ embeds: [createEmbed(await t('wiki.not_found', message.guild.id), '', 'error')] });
             }
 
             const info = `**${data.title}**\n${data.extract}\n\n` + await t('wiki.read_more', message.guild.id, { url: data.content_urls.desktop.page });
-            await sendV2Message(client, message.channel.id, info, []);
+            await message.channel.send({ embeds: [createEmbed(info, '', 'info')] });
         } catch (e) {
             console.error(e);
             if (e.response && e.response.status === 404) {
-                return sendV2Message(client, message.channel.id, await t('wiki.not_found', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('wiki.not_found', message.guild.id), '', 'error')] });
             }
-            return sendV2Message(client, message.channel.id, await t('wiki.error', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('wiki.error', message.guild.id), '', 'error')] });
         }
     }
 };

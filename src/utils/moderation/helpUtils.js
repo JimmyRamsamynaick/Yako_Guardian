@@ -1,5 +1,6 @@
-const { sendV2Message } = require('../componentUtils');
 const { t } = require('../i18n');
+const { createEmbed } = require('../design');
+
 
 /**
  * Checks if arguments are sufficient and sends a usage message if not.
@@ -76,7 +77,7 @@ async function checkUsage(client, message, command, args, minArgs = 1) {
             content += `\n\n${examplesLabel}\n${examples.map(e => `\`+${e}\``).join('\n')}`;
         }
 
-        await sendV2Message(client, message.channel.id, content, []);
+        await message.channel.send({ embeds: [createEmbed('', content, 'error')] });
         return false;
     }
     return true;

@@ -85,6 +85,56 @@
         "success": "✅ Ticket renamed to **{{name}}**.",
         "error": "❌ Unable to rename channel (Rate limit or Permissions)."
     },
+    "tickets": {
+        "handler": {
+            "error_not_configured": "❌ Ticket system is not configured on this server.",
+            "dashboard_categories_title": "Category Management",
+            "btn_add_cat": "Add",
+            "btn_del_cat": "Delete",
+            "btn_refresh": "Refresh",
+            "btn_set_transcript": "Set Transcript",
+            "btn_manage_roles": "Manage Roles",
+            "btn_send_panel": "Send Panel",
+            "dashboard_none": "None",
+            "dashboard_title": "Ticket Configuration",
+            "dashboard_transcript": "Transcript",
+            "dashboard_roles": "Staff Roles",
+            "dashboard_none_roles": "None",
+            "modal_transcript_title": "Set Transcript Channel",
+            "modal_transcript_label": "Channel ID",
+            "modal_role_title": "Set Staff Roles",
+            "modal_role_label": "Role IDs (comma separated)",
+            "modal_send_title": "Send Panel",
+            "modal_send_label": "Channel ID",
+            "modal_add_cat_title": "Add Category",
+            "modal_cat_name": "Name",
+            "modal_cat_emoji": "Emoji",
+            "modal_cat_parent": "Discord Category ID",
+            "modal_cat_roles": "Specific Role IDs",
+            "modal_cat_desc": "Description",
+            "error_limit": "❌ Category limit reached (25).",
+            "modal_del_cat_title": "Delete Category",
+            "modal_del_cat_label": "Category Name",
+            "cat_not_found": "❌ Category not found.",
+            "error_channel_invalid": "❌ Invalid channel.",
+            "panel_default_btn": "Open a ticket",
+            "panel_sent": "✅ Panel sent in <#{{channel}}>.",
+            "ticket_closing": "🔒 Closing ticket in 5 seconds...",
+            "error_ticket_db": "❌ Ticket not found in database.",
+            "error_already_claimed": "❌ This ticket is already claimed by {{user}}.",
+            "ticket_claimed": "🙋‍♂️ Ticket claimed by {{user}}.",
+            "ticket_welcome": "👋 Hello {{user}},\nA staff member will take care of your request.",
+            "btn_close": "Close",
+            "btn_claim": "Claim"
+        },
+        "panel": {
+            "title": "Support & Tickets",
+            "description": "To open a ticket, please click the button below.",
+            "placeholder": "Select a category...",
+            "created": "✅ Ticket created: {{channel}}",
+            "error_create": "❌ Unable to create ticket."
+        }
+    },
     "common": {
         "admin_only": "❌ This command is reserved for administrators.",
         "permission_missing": "❌ I am missing the `{{perm}}` permission to perform this action.",
@@ -457,6 +507,10 @@
         "description": "Open a Modmail ticket with a member"
     },
     "help": {
+        "category_title": "📂 Category: {{category}}",
+        "handler": {
+            "select_footer": "Use the menu to change category"
+        },
         "placeholder": "Select a category",
         "cat_antiraid": "Antiraid",
         "cat_antiraid_desc": "Protection modules (Antibot, Antiraid, etc.)",
@@ -577,6 +631,7 @@
         "description": "Unmutes a member",
         "usage": "**Usage:** `+unmute <user> [reason]`"
     },
+
     "kick": {
         "description": "Kicks a member",
         "usage": "**Usage:** `+kick <user> [reason]`"
@@ -678,18 +733,31 @@
         "usage": "**Usage:** `+clear <owners/bl/perms/customs>`"
     },
     "serverinfo": {
-        "title": "**Server Info**",
-        "name": "Name: {{name}}",
-        "id": "ID: {{id}}",
-        "owner": "Owner: {{tag}} ({{id}})",
-        "created": "Created at: {{date}}",
-        "members": "Members: {{count}}",
-        "channels": "Channels: {{total}} (Text: {{text}} | Voice: {{voice}})",
-        "roles": "Roles: {{count}}",
-        "emojis": "Emojis: {{count}}",
-        "boosts": "Boosts: {{count}} (Level {{level}})",
-        "description": "Informations complètes du serveur",
-        "usage": "**Usage:** **Usage:** `+serverinfo`"
+        "title": "**Server Info: {{name}}**",
+        "description": "Full server information",
+        "usage": "**Usage:** `+serverinfo`",
+        "section_general": "__**General Info**__",
+        "section_stats": "__**Statistics**__",
+        "name": "**Name:** {{name}}",
+        "id": "**ID:** {{id}}",
+        "owner": "**Owner:** {{tag}}",
+        "created": "**Created:** {{date}}",
+        "members": "**Members:** {{count}}",
+        "channels": "**Channels:** {{total}} (📝 {{text}} | 🔊 {{voice}})",
+        "roles": "**Roles:** {{count}}",
+        "emojis": "**Emojis:** {{count}}",
+        "boosts": "**Boosts:** Level {{level}} ({{count}} Boosts)",
+        "security": "**Security:** {{level}}",
+        "section_config": "__**⚙️ Configuration**__",
+        "section_features": "__**✨ Features**__",
+        "vanity": "**Vanity URL:** {{url}}",
+        "rules": "**Rules:** {{channel}}",
+        "system": "**System:** {{channel}}",
+        "afk": "**AFK:** {{channel}} ({{timeout}}s)",
+        "links": "🔗 **Links:** {{links}}",
+        "link_icon": "Icon",
+        "link_banner": "Banner",
+        "link_splash": "Splash"
     },
     "userinfo": {
         "not_found": "❌ User not found.",
@@ -699,9 +767,16 @@
         "bot": "**Bot:** {{isBot}}",
         "yes": "Yes",
         "no": "No",
-        "avatar_link": "[Avatar]",
-        "banner_link": "[Banner]",
-        "title": "**User Info: {{username}}**"
+        "avatar_link": "Avatar",
+        "banner_link": "Banner",
+        "title": "**User Info: {{username}}**",
+        "joined": "**Joined:** {{date}}",
+        "roles": "**Roles ({{count}}):** {{roles}}",
+        "badges": "**Badges:** {{badges}}",
+        "mutual_servers": "**Mutual Servers ({{count}}):** {{guilds}}",
+        "none": "None",
+        "section_general": "__**General Info**__",
+        "section_server": "__**Server Info**__"
     },
     "pic": {
         "not_found": "❌ User not found.",
@@ -1773,52 +1848,7 @@
             "label_field_inline": "Inline (true/false)"
         }
     },
-    "tickets": {
-        "handler": {
-            "modal_category_title": "Category ID",
-            "modal_category_label": "Enter Category ID",
-            "modal_transcript_title": "Transcript Channel",
-            "modal_transcript_label": "Enter Text Channel ID",
-            "modal_role_title": "Manage Staff Roles",
-            "modal_role_label": "Enter Role ID",
-            "modal_send_title": "Send Panel",
-            "modal_send_label": "Enter Channel ID to send",
-            "dashboard_none": "None",
-            "dashboard_title": "Ticket Configuration",
-            "dashboard_category": "Category",
-            "dashboard_transcript": "Transcript",
-            "dashboard_roles": "Staff Roles",
-            "dashboard_none_roles": "No roles defined",
-            "btn_set_category": "Set Category",
-            "btn_set_transcript": "Set Transcript",
-            "btn_manage_roles": "Manage Roles",
-            "btn_send_panel": "Send Panel",
-            "btn_refresh": "Refresh",
-            "error_category_invalid": "❌ Invalid Category ID.",
-            "error_channel_invalid": "❌ Invalid Channel ID.",
-            "error_role_invalid": "❌ Invalid Role ID.",
-            "panel_default_btn": "Open a Ticket",
-            "panel_default_title": "Support Ticket",
-            "panel_default_desc": "Click the button below to open a ticket.",
-            "panel_sent": "✅ Panel sent to {{channel}}.",
-            "error_not_configured": "❌ Ticket system is not configured.",
-            "ticket_welcome": "Hello {{user}}, a staff member will be with you shortly.",
-            "ticket_created": "✅ Ticket created: {{channel}}",
-            "error_creation": "❌ Error creating ticket.",
-            "error_ticket_inactive": "❌ This ticket is not active.",
-            "error_already_claimed": "❌ This ticket is already claimed by {{user}}.",
-            "ticket_claimed": "✅ Ticket claimed by {{user}}.",
-            "error_ticket_db": "❌ Ticket not found in database.",
-            "ticket_closing": "🔒 Closing ticket in 5 seconds...",
-            "transcript_title": "TICKET TRANSCRIPT",
-            "transcript_id": "Channel ID",
-            "transcript_creator": "Creator",
-            "transcript_closed_by": "Closed by",
-            "transcript_error": "Error fetching messages.",
-            "transcript_embed_title": "Ticket Closed",
-            "transcript_embed_desc": "Ticket **{{channel}}** from {{user}} has been closed."
-        }
-    },
+
     "forms": {
         "handler": {
             "config_title": "Form Configuration",
@@ -1870,5 +1900,11 @@
         "description_usage": "❌ Usage: `+boostembed description <text/reset>`",
         "description_reset": "✅ Embed description reset to default.",
         "description_set": "✅ Embed description configured: {{content}}"
+    },
+    "yako": {
+        "title": "🆘 Yako Guardian Support",
+        "description": "Need help or want to join the community?\nClick the link below or the button to join the support server!\n\n🔗 **Link:** {{link}}",
+        "button": "Join Support",
+        "message": "Join the support server: https://discord.gg/sferTT73tZ"
     }
 }

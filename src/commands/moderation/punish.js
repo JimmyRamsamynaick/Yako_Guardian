@@ -1,7 +1,7 @@
-const { PermissionsBitField, EmbedBuilder } = require('discord.js');
+const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 const ms = require('ms');
 
 module.exports = {
@@ -12,7 +12,7 @@ module.exports = {
     aliases: ['setpunish', 'punishment'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('common.admin_only', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -27,12 +27,8 @@ module.exports = {
             const list = config.moderation.strikes.punishments.sort((a, b) => a.count - b.count);
             
             if (list.length === 0) {
-                return sendV2Message(client, message.channel.id, await t('moderation.punish_list_empty', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed('Punitions', await t('moderation.punish_list_empty', message.guild.id), 'info')] });
             }
-
-            const embed = new EmbedBuilder()
-                .setTitle(await t('moderation.punish_list_title', message.guild.id, { guild: message.guild.name }))
-                .setColor(client.config.color || '#ff0000');
 
             let desc = "";
             for (const p of list) {
@@ -40,25 +36,31 @@ module.exports = {
                 desc += (await t('moderation.punish_list_item', message.guild.id, { count: p.count, action: p.action.toUpperCase(), duration: dur })) + "\n";
             }
 
-            embed.setDescription(desc);
-            return sendV2Message(client, message.channel.id, "", [embed]);
+            const embed = createEmbed(
+                await t('moderation.punish_list_title', message.guild.id, { guild: message.guild.name }),
+                desc,
+                'primary'
+            );
+            return message.channel.send({ embeds: [embed] });
         }
+
+        const replyMsg = await message.channel.send({ embeds: [createEmbed('Punish', `${THEME.icons.loading} Configuration en cours...`, 'loading')] });
 
         // REMOVE
         if (sub === 'remove' || sub === 'del') {
             const count = parseInt(args[1]);
-            if (isNaN(count)) return sendV2Message(client, message.channel.id, await t('moderation.punish_remove_usage', message.guild.id), []);
+            if (isNaN(count)) return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.punish_remove_usage', message.guild.id), 'error')] });
 
             const initialLen = config.moderation.strikes.punishments.length;
             config.moderation.strikes.punishments = config.moderation.strikes.punishments.filter(p => p.count !== count);
 
             if (config.moderation.strikes.punishments.length === initialLen) {
-                return sendV2Message(client, message.channel.id, await t('moderation.punish_remove_not_found', message.guild.id), []);
+                return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.punish_remove_not_found', message.guild.id), 'error')] });
             }
 
             config.markModified('moderation');
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('moderation.punish_remove_success', message.guild.id, { count }), []);
+            return replyMsg.edit({ embeds: [createEmbed('Succès', await t('moderation.punish_remove_success', message.guild.id, { count }), 'success')] });
         }
 
         // ADD
@@ -71,17 +73,17 @@ module.exports = {
             const validActions = ['kick', 'ban', 'mute', 'timeout', 'warn'];
 
             if (isNaN(count) || !validActions.includes(action)) {
-                return sendV2Message(client, message.channel.id, await t('moderation.punish_add_usage', message.guild.id), []);
+                return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.punish_add_usage', message.guild.id), 'error')] });
             }
 
             let duration = null;
             if (['mute', 'timeout'].includes(action)) {
-                if (!durationStr) return sendV2Message(client, message.channel.id, await t('moderation.punish_duration_required', message.guild.id), []);
+                if (!durationStr) return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.punish_duration_required', message.guild.id), 'error')] });
                 try {
                     duration = ms(durationStr);
                     if (!duration) throw new Error();
                 } catch {
-                    return sendV2Message(client, message.channel.id, await t('moderation.duration_invalid', message.guild.id), []);
+                    return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.duration_invalid', message.guild.id), 'error')] });
                 }
             }
 
@@ -97,9 +99,7 @@ module.exports = {
             config.markModified('moderation');
             await config.save();
 
-            return sendV2Message(client, message.channel.id, await t('moderation.punish_add_success', message.guild.id, { count, action: action.toUpperCase(), duration: duration ? `(${durationStr})` : "" }), []);
+            return replyMsg.edit({ embeds: [createEmbed('Succès', await t('moderation.punish_add_success', message.guild.id, { count, action: action.toUpperCase(), duration: duration ? `(${durationStr})` : "" }), 'success')] });
         }
-
-        return sendV2Message(client, message.channel.id, await t('punish.usage', message.guild.id), []);
     }
 };

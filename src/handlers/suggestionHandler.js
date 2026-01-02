@@ -1,7 +1,7 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, PermissionsBitField } = require('discord.js');
 const Suggestion = require('../database/models/Suggestion');
 const { getGuildConfig } = require('../utils/mongoUtils');
-const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../utils/componentUtils');
+const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 
 async function handleSuggestionButton(client, interaction) {
@@ -31,7 +31,7 @@ async function handleSuggestionButton(client, interaction) {
 
     const suggestion = await Suggestion.findById(suggestionId);
     if (!suggestion) {
-        return replyV2Interaction(client, interaction, await t('suggestion.handler.not_found', guildId), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('suggestion.handler.not_found', guildId), '', 'error')], ephemeral: true });
     }
 
     if (action === 'upvote' || action === 'downvote') {
@@ -62,7 +62,7 @@ async function handleSuggestionButton(client, interaction) {
     else if (action === 'approve' || action === 'reject' || action === 'delete') {
         // Permission check
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
-            return replyV2Interaction(client, interaction, await t('suggestion.handler.permission_denied', guildId), [], true);
+            return interaction.reply({ embeds: [createEmbed(await t('suggestion.handler.permission_denied', guildId), '', 'error')], ephemeral: true });
         }
 
         if (action === 'delete') {
@@ -113,17 +113,11 @@ async function updateSuggestionMessage(client, suggestion, interaction) {
         );
 
         if (interaction.isMessageComponent && interaction.isMessageComponent()) {
-            await updateV2Interaction(client, interaction, content, [row, rowAdmin]);
+            await interaction.update({ embeds: [createEmbed('', content, 'info')], components: [row, rowAdmin] });
         } else {
             // If called from elsewhere (not interaction update)
             const channel = interaction.guild.channels.cache.get(interaction.channelId);
             const msg = await channel.messages.fetch(suggestion.messageId);
-            // This is trickier with V2 because "edit" on a message object uses standard API.
-            // We should use our editV2Message util if possible, or just interaction update if we are in interaction.
-            // Here we are in interaction context typically (button click).
-            
-            // Wait, if it's "updateSuggestionMessage", we might be responding to the interaction that triggered it.
-            // So updateV2Interaction is correct.
         }
     } else {
         const rowDisabled = new ActionRowBuilder().addComponents(
@@ -133,7 +127,7 @@ async function updateSuggestionMessage(client, suggestion, interaction) {
         );
         
         if (interaction.isMessageComponent && interaction.isMessageComponent()) {
-            await updateV2Interaction(client, interaction, content, [rowDisabled]);
+            await interaction.update({ embeds: [createEmbed('', content, 'info')], components: [rowDisabled] });
         }
     }
 }
@@ -166,9 +160,9 @@ async function showSuggestionSettings(client, interaction, config) {
         );
 
     if (interaction.isMessageComponent && interaction.isMessageComponent()) {
-        await updateV2Interaction(client, interaction, content, [rowControls, rowChannel]);
+        await interaction.update({ content: null, embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
     } else {
-        await replyV2Interaction(client, interaction, content, [rowControls, rowChannel]);
+        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel], ephemeral: true });
     }
 }
 

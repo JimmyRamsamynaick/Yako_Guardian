@@ -11,7 +11,9 @@ const globalSettingsSchema = new mongoose.Schema({
     },
     status: { type: String, default: 'online' },
     securInvite: { type: Boolean, default: false },
-    mpEnabled: { type: Boolean, default: true }
+    mpEnabled: { type: Boolean, default: true },
+    mpAutoReplyEnabled: { type: Boolean, default: false },
+    mpAutoReplyMessage: { type: String, default: 'Je suis un bot, je ne lis pas les MP.' }
 });
 
 module.exports = mongoose.model('GlobalSettings', globalSettingsSchema);

@@ -1,5 +1,5 @@
 const TempRole = require('../../database/models/TempRole');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 // Simple duration parser function
@@ -22,7 +22,7 @@ module.exports = {
     async run(client, message, args) {
         // Permissions
         if (!message.member.permissions.has('ManageRoles') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('roles.temprole.permission_manage_roles', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.temprole.permission_manage_roles', message.guild.id), '', 'error')] });
         }
 
         const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
@@ -30,20 +30,17 @@ module.exports = {
         const durationStr = args[2];
 
         if (!member || !role || !durationStr) {
-            return sendV2Message(client, message.channel.id, 
-                await t('roles.temprole.usage', message.guild.id), 
-                []
-            );
+            return message.channel.send({ embeds: [createEmbed(await t('roles.temprole.usage', message.guild.id), '', 'error')] });
         }
 
         const durationMs = parseDuration(durationStr);
         if (!durationMs) {
-            return sendV2Message(client, message.channel.id, await t('roles.temprole.invalid_duration', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.temprole.invalid_duration', message.guild.id), '', 'error')] });
         }
 
         // Check hierarchy
         if (role.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('roles.temprole.role_hierarchy_error', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.temprole.role_hierarchy_error', message.guild.id), '', 'error')] });
         }
 
         try {
@@ -60,18 +57,16 @@ module.exports = {
             });
             await newTempRole.save();
 
-            sendV2Message(client, message.channel.id, 
-                `${await t('roles.temprole.success_title', message.guild.id)}\n` +
-                `${await t('roles.temprole.success_member', message.guild.id, { user: member.user.tag })}\n` +
+            const successContent = `${await t('roles.temprole.success_member', message.guild.id, { user: member.user.tag })}\n` +
                 `${await t('roles.temprole.success_role', message.guild.id, { role: role.name })}\n` +
                 `${await t('roles.temprole.success_duration', message.guild.id, { duration: durationStr })}\n` +
-                `${await t('roles.temprole.success_expires', message.guild.id, { time: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>` })}`, 
-                []
-            );
+                `${await t('roles.temprole.success_expires', message.guild.id, { time: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>` })}`;
+
+            message.channel.send({ embeds: [createEmbed(await t('roles.temprole.success_title', message.guild.id), successContent, 'success')] });
 
         } catch (error) {
             console.error(error);
-            sendV2Message(client, message.channel.id, await t('roles.temprole.error', message.guild.id), []);
+            message.channel.send({ embeds: [createEmbed(await t('roles.temprole.error', message.guild.id), '', 'error')] });
         }
     }
 };

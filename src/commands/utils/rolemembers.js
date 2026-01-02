@@ -1,5 +1,5 @@
 const { createPagination } = require('../../utils/pagination');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -11,7 +11,7 @@ module.exports = {
         const role = message.guild.roles.cache.get(roleId);
         
         if (!role) {
-            return sendV2Message(client, message.channel.id, await t('rolemembers.not_found', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('rolemembers.not_found', message.guild.id), '', 'error')] });
         }
 
         await message.guild.members.fetch();

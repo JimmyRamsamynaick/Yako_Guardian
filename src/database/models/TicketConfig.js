@@ -15,7 +15,18 @@ const TicketConfigSchema = new mongoose.Schema({
     
     // Ticket settings
     namingScheme: { type: String, default: 'ticket-{username}' }, // or ticket-{count}
-    ticketCount: { type: Number, default: 0 }
+    ticketCount: { type: Number, default: 0 },
+
+    // Advanced features
+    categories: [{
+        label: String,
+        emoji: String,
+        style: String, // Primary, Secondary, Danger, Success
+        description: String,
+        categoryId: String, // Parent Category ID
+        staffRoles: [String],
+        welcomeMessage: String
+    }]
 });
 
 module.exports = mongoose.model('TicketConfig', TicketConfigSchema);

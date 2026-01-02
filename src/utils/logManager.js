@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { createEmbed } = require('./design');
 const { db } = require('../database/index');
 
 async function sendLog(guild, title, description, color, fields = [], author = null) {
@@ -9,9 +9,7 @@ async function sendLog(guild, title, description, color, fields = [], author = n
         const channel = guild.channels.cache.get(settings.raid_log_channel);
         if (!channel) return;
 
-        const embed = new EmbedBuilder()
-            .setTitle(title)
-            .setDescription(description)
+        const embed = createEmbed(title, description, 'default')
             .setColor(color)
             .setTimestamp()
             .setFooter({ text: 'Yako Guardian Logs', iconURL: guild.iconURL() });

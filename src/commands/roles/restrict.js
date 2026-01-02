@@ -1,7 +1,7 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const RoleMenu = require('../../database/models/RoleMenu');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'restrict',
@@ -9,7 +9,7 @@ module.exports = {
     category: 'Roles',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('roles.restrict.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.restrict.permission', message.guild.id), '', 'error')] });
         }
 
         // Try to find the target role (restriction) first
@@ -32,7 +32,7 @@ module.exports = {
         }
 
         if (!targetRole || !query) {
-            return sendV2Message(client, message.channel.id, await t('roles.restrict.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.restrict.usage', message.guild.id), '', 'error')] });
         }
 
         // Case insensitive regex for query
@@ -58,7 +58,7 @@ module.exports = {
 
             if (index !== -1) {
                 if (foundMenu) {
-                    return sendV2Message(client, message.channel.id, await t('roles.restrict.multiple_matches', message.guild.id, { query: query }), []);
+                    return message.channel.send({ embeds: [createEmbed(await t('roles.restrict.multiple_matches', message.guild.id, { query: query }), '', 'error')] });
                 }
                 foundMenu = menu;
                 foundOptionIndex = index;
@@ -78,7 +78,7 @@ module.exports = {
             }
             if (count === 0) helpMsg = await t('roles.restrict.no_menus', message.guild.id);
             
-            return sendV2Message(client, message.channel.id, helpMsg, []);
+            return message.channel.send({ embeds: [createEmbed(helpMsg, '', 'error')] });
         }
 
         // Apply restriction
@@ -91,6 +91,6 @@ module.exports = {
             await foundMenu.save();
         }
 
-        return sendV2Message(client, message.channel.id, await t('roles.restrict.success', message.guild.id, { option: foundMenu.options[foundOptionIndex].label, role: targetRole.name }), []);
+        return message.channel.send({ embeds: [createEmbed(await t('roles.restrict.success', message.guild.id, { option: foundMenu.options[foundOptionIndex].label, role: targetRole.name }), '', 'success')] });
     }
 };

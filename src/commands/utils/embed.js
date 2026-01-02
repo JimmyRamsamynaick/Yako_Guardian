@@ -8,7 +8,7 @@ const {
     TextInputStyle,
     Routes
 } = require('discord.js');
-const { sendV2Message, replyV2Interaction, updateV2Interaction } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 // Cache to store embed drafts: userId -> { embedData, previewMessageId, previewToken }
@@ -100,7 +100,10 @@ async function handleEmbedInteraction(client, interaction) {
         embedDrafts.set(interaction.user.id, draft);
     } else if (!draft) {
         // Expired or missing
-        return replyV2Interaction(client, interaction, await t('embed.session_expired', interaction.guildId), [], true);
+        return interaction.reply({ 
+            embeds: [createEmbed(await t('embed.session_expired', interaction.guildId), '', 'error')],
+            ephemeral: true 
+        });
     }
 
     const { customId } = interaction;
@@ -110,11 +113,11 @@ async function handleEmbedInteraction(client, interaction) {
     if (customId === 'embed_start') {
         const embed = getEmbedFromDraft(draft);
         // Reply with V2 UI
-        await replyV2Interaction(client, interaction, 
-            await t('embed.generator_title', interaction.guildId) + "\n" + await t('embed.generator_desc', interaction.guildId), 
-            await getControls(interaction.guildId), 
-            true
-        );
+        await interaction.reply({
+            embeds: [createEmbed(await t('embed.generator_title', interaction.guildId) + "\n" + await t('embed.generator_desc', interaction.guildId), '', 'info')],
+            components: await getControls(interaction.guildId),
+            ephemeral: true
+        });
         
         // Delete the trigger message to keep channel clean and ensure privacy
         // We do this AFTER replying to ensure the interaction is valid, but it works either way.
@@ -142,7 +145,10 @@ async function handleEmbedInteraction(client, interaction) {
 
     if (customId === 'embed_cancel') {
         embedDrafts.delete(interaction.user.id);
-        return updateV2Interaction(client, interaction, await t('embed.cancel_msg', interaction.guildId), [], []);
+        return interaction.update({
+            embeds: [createEmbed(await t('embed.cancel_msg', interaction.guildId), '', 'info')],
+            components: []
+        });
     }
 
     if (customId === 'embed_send') {
@@ -150,16 +156,25 @@ async function handleEmbedInteraction(client, interaction) {
         try {
             await interaction.channel.send({ embeds: [embed] });
             embedDrafts.delete(interaction.user.id);
-            return updateV2Interaction(client, interaction, await t('embed.success', interaction.guildId), [], []);
+            return interaction.update({
+                embeds: [createEmbed(await t('embed.success', interaction.guildId), '', 'success')],
+                components: []
+            });
         } catch (e) {
-            return replyV2Interaction(client, interaction, await t('embed.error_send', interaction.guildId), [], true);
+            return interaction.reply({
+                embeds: [createEmbed(await t('embed.error_send', interaction.guildId), '', 'error')],
+                ephemeral: true
+            });
         }
     }
 
     if (customId === 'embed_clear_fields') {
         draft.fields = [];
         const embed = getEmbedFromDraft(draft);
-        await updateV2Interaction(client, interaction, await t('embed.generator_title', interaction.guildId), await getControls(interaction.guildId));
+        await interaction.update({
+            embeds: [createEmbed(await t('embed.generator_title', interaction.guildId), '', 'info')],
+            components: await getControls(interaction.guildId)
+        });
         await updatePreview(client, draft, embed, interaction);
         return;
     }
@@ -245,7 +260,10 @@ async function handleEmbedInteraction(client, interaction) {
         }
 
         const embed = getEmbedFromDraft(draft);
-        await updateV2Interaction(client, interaction, await t('embed.generator_title', interaction.guildId), await getControls(interaction.guildId));
+        await interaction.update({
+            embeds: [createEmbed(await t('embed.generator_title', interaction.guildId), '', 'info')],
+            components: await getControls(interaction.guildId)
+        });
         // Send updated preview
         await updatePreview(client, draft, embed, interaction);
         return;
@@ -261,8 +279,7 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('embed_start').setLabel(await t('embed.trigger_btn', message.guild.id)).setStyle(ButtonStyle.Primary)
         );
-        // We use sendV2Message for the trigger button
-        await sendV2Message(client, message.channel.id, await t('embed.trigger_msg', message.guild.id), [row]);
+        await message.channel.send({ embeds: [createEmbed(await t('embed.trigger_msg', message.guild.id), '', 'info')], components: [row] });
     },
     handleEmbedInteraction
 };

@@ -89,8 +89,10 @@ module.exports = {
                         new ButtonBuilder().setCustomId('tempvoc_bl').setEmoji('⛔').setLabel(await t('tempvoc.blacklist', newState.guild.id)).setStyle(ButtonStyle.Secondary)
                     );
 
-                    const { sendV2Message } = require('../utils/componentUtils');
-                    await sendV2Message(client, channel.id, await t('tempvoc.welcome', newState.guild.id, { user: newState.member.id }), [row1, row2, row3]);
+                    await channel.send({ 
+                        embeds: [createEmbed(await t('tempvoc.welcome', newState.guild.id, { user: newState.member.id }), '', 'info')], 
+                        components: [row1, row2, row3] 
+                    });
 
                 } catch (e) {
                     console.error("TempVoc Error:", e);

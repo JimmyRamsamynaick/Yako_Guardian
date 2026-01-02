@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -7,17 +7,17 @@ module.exports = {
     category: 'Voice',
     async run(client, message, args) {
         if (!message.member.permissions.has('MoveMembers') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('cleanup.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('cleanup.permission', message.guild.id), '', 'error')] });
         }
 
         const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]);
 
         if (!channel) {
-            return sendV2Message(client, message.channel.id, await t('cleanup.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('cleanup.usage', message.guild.id), '', 'error')] });
         }
 
         if (!channel.isVoiceBased()) {
-            return sendV2Message(client, message.channel.id, await t('cleanup.not_voice', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('cleanup.not_voice', message.guild.id), '', 'error')] });
         }
 
         let count = 0;
@@ -28,6 +28,6 @@ module.exports = {
             } catch (e) {}
         }
 
-        return sendV2Message(client, message.channel.id, await t('cleanup.success', message.guild.id, { count, channel: channel.toString() }), []);
+        return message.channel.send({ embeds: [createEmbed(await t('cleanup.success', message.guild.id, { count, channel: channel.toString() }), '', 'success')] });
     }
 };

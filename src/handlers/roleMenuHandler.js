@@ -9,7 +9,7 @@ const {
     PermissionsBitField
 } = require('discord.js');
 const RoleMenu = require('../database/models/RoleMenu');
-const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../utils/componentUtils');
+const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 
 async function handleRoleMenuInteraction(client, interaction) {
@@ -24,7 +24,7 @@ async function handleRoleMenuInteraction(client, interaction) {
 
     // --- CONFIGURATION (Admin Only) ---
     if (!member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return replyV2Interaction(client, interaction, await t('roles.handler.permission_denied', guildId), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('roles.handler.permission_denied', guildId), '', 'error')], ephemeral: true });
     }
 
     // Extract Menu ID if present (format: rolemenu_action_menuId)
@@ -34,7 +34,7 @@ async function handleRoleMenuInteraction(client, interaction) {
     if (action === 'dashboard') {
         const menuId = parts[2];
         const menu = await RoleMenu.findById(menuId);
-        if (!menu) return updateV2Interaction(client, interaction, await t('roles.handler.menu_not_found', guildId), []);
+        if (!menu) return interaction.update({ embeds: [createEmbed(await t('roles.handler.menu_not_found', guildId), '', 'error')], components: [] });
         await updateDashboard(client, interaction, menu);
     }
     else if (action === 'edit') {
@@ -107,10 +107,10 @@ async function handleRoleMenuInteraction(client, interaction) {
     else if (action === 'del') {
         const menuId = parts[3]; // rolemenu_del_option_<menuId>
         const menu = await RoleMenu.findById(menuId);
-        if (!menu) return replyV2Interaction(client, interaction, await t('roles.handler.menu_not_found', guildId), [], true);
+        if (!menu) return interaction.reply({ embeds: [createEmbed(await t('roles.handler.menu_not_found', guildId), '', 'error')], ephemeral: true });
 
         if (menu.options.length === 0) {
-            return replyV2Interaction(client, interaction, await t('roles.handler.error_no_options', guildId), [], true);
+            return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_no_options', guildId), '', 'error')], ephemeral: true });
         }
 
         const select = new StringSelectMenuBuilder()
@@ -125,7 +125,7 @@ async function handleRoleMenuInteraction(client, interaction) {
                 }))
             );
         
-        await replyV2Interaction(client, interaction, await t('roles.handler.select_del_msg', guildId), [new ActionRowBuilder().addComponents(select)], true);
+        await interaction.reply({ embeds: [createEmbed(await t('roles.handler.select_del_msg', guildId), '', 'info')], components: [new ActionRowBuilder().addComponents(select)], ephemeral: true });
     }
     else if (action === 'toggle') {
         const menuId = parts[3]; // rolemenu_toggle_type_<menuId>
@@ -150,7 +150,7 @@ async function handleRoleMenuInteraction(client, interaction) {
     else if (action === 'delete') {
         const menuId = parts[2];
         await RoleMenu.findByIdAndDelete(menuId);
-        await updateV2Interaction(client, interaction, await t('roles.handler.menu_deleted', guildId), []);
+        await interaction.update({ embeds: [createEmbed(await t('roles.handler.menu_deleted', guildId), '', 'success')], components: [] });
     }
     
     // --- MODAL SUBMITS ---
@@ -158,7 +158,7 @@ async function handleRoleMenuInteraction(client, interaction) {
         const sub = parts[2]; // title, desc, option, send
         const menuId = parts[3];
         const menu = await RoleMenu.findById(menuId);
-        if (!menu) return replyV2Interaction(client, interaction, await t('roles.handler.menu_not_found', guildId), [], true);
+        if (!menu) return interaction.reply({ embeds: [createEmbed(await t('roles.handler.menu_not_found', guildId), '', 'error')], ephemeral: true });
 
         if (sub === 'title') {
             menu.title = interaction.fields.getTextInputValue('title');
@@ -178,7 +178,7 @@ async function handleRoleMenuInteraction(client, interaction) {
 
             // Verify role
             if (!guild.roles.cache.has(roleId)) {
-                return replyV2Interaction(client, interaction, await t('roles.handler.error_role_invalid', guildId), [], true);
+                return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_role_invalid', guildId), '', 'error')], ephemeral: true });
             }
 
             menu.options.push({ label, emoji, roleId, description: desc });
@@ -187,13 +187,13 @@ async function handleRoleMenuInteraction(client, interaction) {
         }
         else if (sub === 'send') {
             if (menu.options.length === 0) {
-                return replyV2Interaction(client, interaction, await t('roles.handler.error_send_no_options', guildId), [], true);
+                return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_send_no_options', guildId), '', 'error')], ephemeral: true });
             }
             const channelId = interaction.fields.getTextInputValue('channel_id');
             const channel = guild.channels.cache.get(channelId);
             
             if (!channel || !channel.isTextBased()) {
-                return replyV2Interaction(client, interaction, await t('roles.handler.error_channel_invalid', guildId), [], true);
+                return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_channel_invalid', guildId), '', 'error')], ephemeral: true });
             }
 
             // Construct Message
@@ -239,15 +239,15 @@ async function handleRoleMenuInteraction(client, interaction) {
             }
 
             try {
-                const msg = await sendV2Message(client, channel.id, content, components);
+                const msg = await channel.send({ content: content, components: components });
                 // V2 API returns the message object but properties might be slightly different.
                 // Assuming msg.id is available.
                 menu.channelId = channel.id;
                 menu.messageId = msg.id;
                 await menu.save();
-                await replyV2Interaction(client, interaction, await t('roles.handler.menu_sent', guildId, { channel: `<#${channel.id}>` }), [], true);
+                await interaction.reply({ embeds: [createEmbed(await t('roles.handler.menu_sent', guildId, { channel: `<#${channel.id}>` }), '', 'success')], ephemeral: true });
             } catch (e) {
-                await replyV2Interaction(client, interaction, await t('roles.handler.error_send', guildId, { error: e.message }), [], true);
+                await interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_send', guildId, { error: e.message }), '', 'error')], ephemeral: true });
             }
         }
     }
@@ -264,7 +264,7 @@ async function handleRoleMenuInteraction(client, interaction) {
                 menu.options.splice(index, 1);
                 await menu.save();
                 
-                await updateV2Interaction(client, interaction, await t('roles.handler.option_deleted', guildId), []);
+                await interaction.update({ embeds: [createEmbed(await t('roles.handler.option_deleted', guildId), '', 'success')], components: [] });
             }
         }
     }
@@ -297,9 +297,9 @@ async function updateDashboard(client, interaction, menu) {
     );
 
     if (interaction.isMessageComponent && interaction.isMessageComponent() || interaction.isModalSubmit && interaction.isModalSubmit()) {
-        await updateV2Interaction(client, interaction, content, [row1, row2, row3]);
+        await interaction.update({ embeds: [createEmbed(content, '', 'info')], components: [row1, row2, row3] });
     } else {
-        await replyV2Interaction(client, interaction, content, [row1, row2, row3]);
+        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [row1, row2, row3] });
     }
 }
 
@@ -311,7 +311,7 @@ async function handleUserInteraction(client, interaction) {
     const menuId = parts[3];
 
     const menu = await RoleMenu.findById(menuId);
-    if (!menu) return replyV2Interaction(client, interaction, await t('roles.handler.menu_not_found', guildId), [], true);
+    if (!menu) return interaction.reply({ embeds: [createEmbed(await t('roles.handler.menu_not_found', guildId), '', 'error')], ephemeral: true });
 
     if (type === 'select') {
         const selectedRoleIds = values;
@@ -322,7 +322,7 @@ async function handleUserInteraction(client, interaction) {
             if (option && option.requiredRoles && option.requiredRoles.length > 0) {
                 const hasRequired = member.roles.cache.some(r => option.requiredRoles.includes(r.id));
                 if (!hasRequired) {
-                    return replyV2Interaction(client, interaction, await t('roles.handler.error_required_roles', guildId, { option: option.emoji || option.label }), [], true);
+                    return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_required_roles', guildId, { option: option.emoji || option.label }), '', 'error')], ephemeral: true });
                 }
             }
         }
@@ -334,7 +334,7 @@ async function handleUserInteraction(client, interaction) {
         await member.roles.add(toAdd).catch(() => {});
         await member.roles.remove(toRemove).catch(() => {});
 
-        await replyV2Interaction(client, interaction, await t('roles.handler.roles_updated', guildId), [], true);
+        await interaction.reply({ embeds: [createEmbed(await t('roles.handler.roles_updated', guildId), '', 'success')], ephemeral: true });
     }
     else if (type === 'btn') {
         const roleId = parts[4];
@@ -343,16 +343,16 @@ async function handleUserInteraction(client, interaction) {
         if (option && option.requiredRoles && option.requiredRoles.length > 0) {
             const hasRequired = member.roles.cache.some(r => option.requiredRoles.includes(r.id));
             if (!hasRequired) {
-                return replyV2Interaction(client, interaction, await t('roles.handler.error_required_roles', guildId), [], true);
+                return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_required_roles', guildId), '', 'error')], ephemeral: true });
             }
         }
 
         if (member.roles.cache.has(roleId)) {
             await member.roles.remove(roleId);
-            await replyV2Interaction(client, interaction, await t('roles.handler.role_removed', guildId, { role: `<@&${roleId}>` }), [], true);
+            await interaction.reply({ embeds: [createEmbed(await t('roles.handler.role_removed', guildId, { role: `<@&${roleId}>` }), '', 'success')], ephemeral: true });
         } else {
             await member.roles.add(roleId);
-            await replyV2Interaction(client, interaction, await t('roles.handler.role_added', guildId, { role: `<@&${roleId}>` }), [], true);
+            await interaction.reply({ embeds: [createEmbed(await t('roles.handler.role_added', guildId, { role: `<@&${roleId}>` }), '', 'success')], ephemeral: true });
         }
     }
 }

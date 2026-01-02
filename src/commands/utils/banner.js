@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -11,14 +11,16 @@ module.exports = {
         try {
             user = await client.users.fetch(userId, { force: true }); 
         } catch {
-            return sendV2Message(client, message.channel.id, await t('banner.user_not_found', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('banner.user_not_found', message.guild.id), '', 'error')] });
         }
 
         if (!user.banner) {
-             return sendV2Message(client, message.channel.id, await t('banner.no_banner', message.guild.id), []);
+             return message.channel.send({ embeds: [createEmbed(await t('banner.no_banner', message.guild.id), '', 'info')] });
         }
 
         const url = user.bannerURL({ size: 4096, extension: 'png' });
-        await sendV2Message(client, message.channel.id, `${await t('banner.success', message.guild.id, { user: user.tag })}\n${url}`, []);
+        const embed = createEmbed(await t('banner.success', message.guild.id, { user: user.tag }), '', 'info');
+        embed.setImage(url);
+        await message.channel.send({ embeds: [embed] });
     }
 };

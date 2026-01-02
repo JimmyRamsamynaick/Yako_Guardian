@@ -1,7 +1,7 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { PermissionsBitField } = require('discord.js');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'perms',
@@ -10,7 +10,7 @@ module.exports = {
     aliases: ['perm'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('perms.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('perms.permission', message.guild.id), 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -42,8 +42,8 @@ module.exports = {
                 content += `**Perm${i}**\n${list}\n`;
             }
 
-            content += await t('perms.footer', message.guild.id, { prefix });
-            return sendV2Message(client, message.channel.id, content, []);
+            content += `\n${await t('perms.footer', message.guild.id, { prefix })}`;
+            return message.channel.send({ embeds: [createEmbed('Configuration des Permissions', content, 'info')] });
         }
 
         if (sub === 'set') {
@@ -51,7 +51,7 @@ module.exports = {
             const target = args[2];
 
             if (!level || !['1', '2', '3', '4', '5'].includes(level) || !target) {
-                return sendV2Message(client, message.channel.id, await t('perms.usage_set', message.guild.id, { prefix }), []);
+                return message.channel.send({ embeds: [createEmbed('Usage', await t('perms.usage_set', message.guild.id, { prefix }), 'info')] });
             }
 
             let id;
@@ -70,7 +70,7 @@ module.exports = {
             }
 
             const targetName = message.guild.roles.cache.get(id)?.name || 'Utilisateur';
-            return sendV2Message(client, message.channel.id, await t('perms.added', message.guild.id, { target: targetName, level }), []);
+            return message.channel.send({ embeds: [createEmbed('Succès', await t('perms.added', message.guild.id, { target: targetName, level }), 'success')] });
         }
 
         if (sub === 'del' || sub === 'remove') {
@@ -78,7 +78,7 @@ module.exports = {
             const target = args[2];
 
             if (!level || !['1', '2', '3', '4', '5'].includes(level) || !target) {
-                return sendV2Message(client, message.channel.id, await t('perms.usage_del', message.guild.id, { prefix }), []);
+                return message.channel.send({ embeds: [createEmbed('Usage', await t('perms.usage_del', message.guild.id, { prefix }), 'info')] });
             }
 
             let id;
@@ -92,16 +92,16 @@ module.exports = {
                 await config.save();
             }
 
-            return sendV2Message(client, message.channel.id, await t('perms.removed', message.guild.id, { level }), []);
+            return message.channel.send({ embeds: [createEmbed('Succès', await t('perms.removed', message.guild.id, { level }), 'success')] });
         }
 
         if (sub === 'reset' || sub === 'clear') {
              config.permissionLevels = { '1': [], '2': [], '3': [], '4': [], '5': [] };
              config.markModified('permissionLevels');
              await config.save();
-             return sendV2Message(client, message.channel.id, await t('perms.reset_success', message.guild.id), []);
+             return message.channel.send({ embeds: [createEmbed('Succès', await t('perms.reset_success', message.guild.id), 'success')] });
         }
         
-        return sendV2Message(client, message.channel.id, await t('perms.unknown_sub', message.guild.id, { prefix }), []);
+        return message.channel.send({ embeds: [createEmbed('Usage', await t('perms.unknown_sub', message.guild.id, { prefix }), 'info')] });
     }
 };

@@ -1,6 +1,6 @@
 const TempRole = require('../../database/models/TempRole');
-const { sendV2Message } = require('../../utils/componentUtils');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'untemprole',
@@ -9,14 +9,14 @@ module.exports = {
     async run(client, message, args) {
         // Permissions
         if (!message.member.permissions.has('ManageRoles') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('roles.temprole.permission_manage_roles', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.temprole.permission_manage_roles', message.guild.id), '', 'error')] });
         }
 
         const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
         const role = message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
 
         if (!member || !role) {
-            return sendV2Message(client, message.channel.id, await t('roles.untemprole.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.untemprole.usage', message.guild.id), '', 'error')] });
         }
 
         try {
@@ -33,14 +33,14 @@ module.exports = {
             }
 
             if (result.deletedCount > 0) {
-                sendV2Message(client, message.channel.id, await t('roles.untemprole.success', message.guild.id, { user: member.user.tag }), []);
+                message.channel.send({ embeds: [createEmbed(await t('roles.untemprole.success', message.guild.id, { user: member.user.tag }), '', 'success')] });
             } else {
-                sendV2Message(client, message.channel.id, await t('roles.untemprole.warning_not_temp', message.guild.id), []);
+                message.channel.send({ embeds: [createEmbed(await t('roles.untemprole.warning_not_temp', message.guild.id), '', 'error')] });
             }
 
         } catch (error) {
             console.error(error);
-            sendV2Message(client, message.channel.id, await t('roles.untemprole.error', message.guild.id), []);
+            message.channel.send({ embeds: [createEmbed(await t('roles.untemprole.error', message.guild.id), '', 'error')] });
         }
     }
 };

@@ -1,8 +1,8 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const TicketConfig = require('../../database/models/TicketConfig');
 const { updateTicketDashboard } = require('../../handlers/ticketHandler');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'ticket',
@@ -13,7 +13,7 @@ module.exports = {
 
         if (sub === 'settings') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return sendV2Message(client, message.channel.id, await t('ticket.permission', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('ticket.permission', message.guild.id), null, 'error')] });
             }
             
             let config = await TicketConfig.findOne({ guildId: message.guild.id });
@@ -29,7 +29,7 @@ module.exports = {
             
             await updateTicketDashboard(client, mockInteraction, config);
         } else {
-             return sendV2Message(client, message.channel.id, await t('ticket.usage', message.guild.id), []);
+             return message.channel.send({ embeds: [createEmbed(await t('ticket.usage', message.guild.id), null, 'info')] });
         }
     }
 };

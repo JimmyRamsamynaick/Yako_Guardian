@@ -1,5 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes } = require('discord.js');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -8,22 +8,22 @@ module.exports = {
     category: 'Personnalisation',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageMessages') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('button.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('button.permission', message.guild.id), '', 'error')] });
         }
 
         const sub = args[0] ? args[0].toLowerCase() : null;
 
         if (!sub || !['link', 'role', 'del', 'add'].includes(sub)) {
-            return sendV2Message(client, message.channel.id, await t('button.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('button.usage', message.guild.id), '', 'info')] });
         }
 
         if (!message.reference) {
-            return sendV2Message(client, message.channel.id, await t('button.no_reference', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('button.no_reference', message.guild.id), '', 'error')] });
         }
 
         const targetMsg = await message.channel.messages.fetch(message.reference.messageId);
         if (!targetMsg.editable && targetMsg.author.id !== client.user.id) {
-            return sendV2Message(client, message.channel.id, await t('button.not_editable', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('button.not_editable', message.guild.id), '', 'error')] });
         }
 
         if (sub === 'link' || sub === 'add') {
@@ -31,11 +31,11 @@ module.exports = {
             const label = args.slice(2).join(' ');
 
             if (!url || !label) {
-                return sendV2Message(client, message.channel.id, await t('button.link_missing_args', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('button.link_missing_args', message.guild.id), '', 'error')] });
             }
 
             if (!url.startsWith('http')) {
-                return sendV2Message(client, message.channel.id, await t('button.invalid_url', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('button.invalid_url', message.guild.id), '', 'error')] });
             }
 
             await addButton(client, message, targetMsg, label, ButtonStyle.Link, url);
@@ -46,7 +46,7 @@ module.exports = {
             const label = args.slice(2).join(' ') || (role ? role.name : null);
 
             if (!role) {
-                return sendV2Message(client, message.channel.id, await t('button.role_not_found', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('button.role_not_found', message.guild.id), '', 'error')] });
             }
 
             // CustomID format: btn_role_ROLEID
@@ -60,16 +60,16 @@ module.exports = {
                 
                 // Note: Ephemeral messages are not possible with text commands (+button).
                 // We simulate it by deleting the confirmation after 3 seconds.
-                const confirmMsg = await sendV2Message(client, message.channel.id, await t('button.deleted', message.guild.id), []);
+                const confirmMsg = await message.channel.send({ embeds: [createEmbed(await t('button.deleted', message.guild.id), '', 'success')] });
                 setTimeout(() => {
-                    client.rest.delete(Routes.channelMessage(message.channel.id, confirmMsg.id)).catch(() => {});
+                    confirmMsg.delete().catch(() => {});
                 }, 3000);
                 
                 return;
             } catch (e) {
-                 const errorMsg = await sendV2Message(client, message.channel.id, await t('button.delete_error', message.guild.id), []);
+                 const errorMsg = await message.channel.send({ embeds: [createEmbed(await t('button.delete_error', message.guild.id), '', 'error')] });
                  setTimeout(() => {
-                    client.rest.delete(Routes.channelMessage(message.channel.id, errorMsg.id)).catch(() => {});
+                    errorMsg.delete().catch(() => {});
                 }, 5000);
                 return;
             }
@@ -84,7 +84,7 @@ async function addButton(client, message, targetMsg, label, style, url = null, c
         let row = components.find(r => r.components.length < 5);
         if (!row) {
             if (components.length >= 5) {
-                return sendV2Message(client, message.channel.id, await t('button.limit_reached', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('button.limit_reached', message.guild.id), '', 'error')] });
             }
             row = new ActionRowBuilder();
             components.push(row);
@@ -103,6 +103,6 @@ async function addButton(client, message, targetMsg, label, style, url = null, c
         await message.delete().catch(() => {});
     } catch (e) {
         console.error(e);
-        return sendV2Message(client, message.channel.id, await t('button.add_error', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed(await t('button.add_error', message.guild.id), '', 'error')] });
     }
 }

@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const BotOwner = require('../../database/models/BotOwner');
 const GlobalBlacklist = require('../../database/models/GlobalBlacklist');
@@ -20,43 +20,79 @@ module.exports = {
             if (!await isBotOwner(message.author.id)) return;
             // Root Owner check
             if (process.env.OWNER_ID && message.author.id !== process.env.OWNER_ID) {
-                return sendV2Message(client, message.channel.id, await t('clear.root_owner_only', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('clear.root_owner_only', message.guild.id),
+                    '',
+                    'error'
+                )] });
             }
             
             const deleted = await BotOwner.deleteMany({});
-            return sendV2Message(client, message.channel.id, await t('clear.owners_deleted', message.guild.id, { count: deleted.deletedCount }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('clear.owners_deleted', message.guild.id, { count: deleted.deletedCount }),
+                '',
+                'success'
+            )] });
         }
         else if (type === 'bl' || type === 'blacklist') {
             if (!await isBotOwner(message.author.id)) return;
             // Root Owner check (safety)
              if (process.env.OWNER_ID && message.author.id !== process.env.OWNER_ID) {
-                return sendV2Message(client, message.channel.id, await t('clear.root_owner_only', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('clear.root_owner_only', message.guild.id),
+                    '',
+                    'error'
+                )] });
             }
 
             const deleted = await GlobalBlacklist.deleteMany({});
-            return sendV2Message(client, message.channel.id, await t('clear.bl_deleted', message.guild.id, { count: deleted.deletedCount }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('clear.bl_deleted', message.guild.id, { count: deleted.deletedCount }),
+                '',
+                'success'
+            )] });
         }
         // --- ADMIN COMMANDS ---
         else if (type === 'perms' || type === 'permissions') {
              if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !await isBotOwner(message.author.id)) {
-                return sendV2Message(client, message.channel.id, await t('clear.admin_only', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('clear.admin_only', message.guild.id),
+                    '',
+                    'error'
+                )] });
             }
 
             const config = await getGuildConfig(message.guild.id);
             config.customPermissions = [];
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('clear.perms_deleted', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('clear.perms_deleted', message.guild.id),
+                '',
+                'success'
+            )] });
         }
         else if (type === 'customs' || type === 'customcommands') {
              if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !await isBotOwner(message.author.id)) {
-                return sendV2Message(client, message.channel.id, await t('clear.admin_only', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('clear.admin_only', message.guild.id),
+                    '',
+                    'error'
+                )] });
             }
 
             const deleted = await CustomCommand.deleteMany({ guildId: message.guild.id });
-            return sendV2Message(client, message.channel.id, await t('clear.customs_deleted', message.guild.id, { count: deleted.deletedCount }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('clear.customs_deleted', message.guild.id, { count: deleted.deletedCount }),
+                '',
+                'success'
+            )] });
         }
         else {
-            return sendV2Message(client, message.channel.id, await t('clear.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('clear.usage', message.guild.id),
+                '',
+                'info'
+            )] });
         }
     }
 };

@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { PermissionsBitField } = require('discord.js');
 const { setBotActivity, setBotStatus } = require('../../utils/presenceUtils');
 const { db } = require('../../database');
@@ -16,7 +16,7 @@ module.exports = {
     async run(client, message, args) {
         // Permission check: Administrator
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-             return sendV2Message(client, message.channel.id, await t('activity.permission', message.guild.id), []);
+             return message.channel.send({ embeds: [createEmbed(await t('activity.permission', message.guild.id), '', 'error')] });
         }
 
         let commandName = message.content.split(' ')[0].slice(client.config.prefix.length).toLowerCase();
@@ -30,9 +30,9 @@ module.exports = {
                     // Force update if possible, but rotation will handle it
                     // To show immediate effect, we might want to clear presence if no other servers have custom presence
                     // But simpler is just to confirm
-                    return sendV2Message(client, message.channel.id, await t('activity.removed', message.guild.id), []);
+                    return message.channel.send({ embeds: [createEmbed(await t('activity.removed', message.guild.id), '', 'success')] });
                 } catch (e) {
-                    return sendV2Message(client, message.channel.id, await t('activity.error', message.guild.id, { error: e.message }), []);
+                    return message.channel.send({ embeds: [createEmbed(await t('activity.error', message.guild.id, { error: e.message }), '', 'error')] });
                 }
             }
             return; // Other remove commands handled elsewhere or return help?
@@ -70,7 +70,7 @@ module.exports = {
             }
 
             if (!text) {
-                return sendV2Message(client, message.channel.id, await t('activity.usage', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('activity.usage', message.guild.id), '', 'info')] });
             }
 
             return await setBotActivity(client, message, typeStr, text, url);

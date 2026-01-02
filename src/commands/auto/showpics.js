@@ -1,6 +1,6 @@
 const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
-const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -8,11 +8,11 @@ module.exports = {
     description: 'Commandes d\'affichage automatique',
     async execute(client, message, args) {
         if (!args[0]) {
-            return sendV2Message(client, message.channel.id, await t('showpics.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('showpics.usage', message.guild.id), '', 'info')] });
         }
         if (args[0] === 'pics') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return sendV2Message(client, message.channel.id, await t('showpics.permission', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('showpics.permission', message.guild.id), '', 'error')] });
             }
 
             const config = await getGuildConfig(message.guild.id);
@@ -27,10 +27,12 @@ async function showPfpMenu(client, interaction, config) {
     const status = pfp.enabled ? await t('showpics.status_on', guildId) : await t('showpics.status_off', guildId);
     const channel = pfp.channelId ? `<#${pfp.channelId}>` : await t('showpics.channel_undefined', guildId);
 
-    const content = (await t('showpics.menu_title', guildId)) + `\n\n` +
+    const description = (await t('showpics.menu_title', guildId)) + `\n\n` +
                     `${status}\n` +
                     `${channel}\n\n` +
                     (await t('showpics.description', guildId));
+
+    const embed = createEmbed(description, '', 'info');
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
@@ -49,16 +51,11 @@ async function showPfpMenu(client, interaction, config) {
         );
 
     if (interaction.isMessageComponent && interaction.isMessageComponent()) {
-        await updateV2Interaction(client, interaction, content, [rowControls, rowChannel]);
+        await interaction.update({ embeds: [embed], components: [rowControls, rowChannel] });
     } else {
-        // Command (message) or initial reply
-        // Check if it's a message or interaction
-        if (interaction.channelId) {
-             await sendV2Message(client, interaction.channelId, content, [rowControls, rowChannel]);
-        } else {
-             // Fallback if interaction but not updating (e.g. slash command reply?)
-             // But here it's likely message or update
-             await replyV2Interaction(client, interaction, content, [rowControls, rowChannel]);
+        // Command (message)
+        if (interaction.channel) {
+             await interaction.channel.send({ embeds: [embed], components: [rowControls, rowChannel] });
         }
     }
 }

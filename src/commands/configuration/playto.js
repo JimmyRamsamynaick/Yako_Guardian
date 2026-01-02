@@ -1,7 +1,7 @@
 const { PermissionsBitField } = require('discord.js');
-const { sendV2Message } = require('../../utils/componentUtils');
 const { setBotActivity } = require('../../utils/presenceUtils');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'playto',
@@ -10,11 +10,19 @@ module.exports = {
     category: 'Configuration',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('playto.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('playto.permission', message.guild.id),
+                '',
+                'error'
+            )] });
         }
 
         const text = args.join(' ');
-        if (!text) return sendV2Message(client, message.channel.id, await t('playto.usage', message.guild.id), []);
+        if (!text) return message.channel.send({ embeds: [createEmbed(
+            await t('playto.usage', message.guild.id),
+            '',
+            'info'
+        )] });
 
         await setBotActivity(client, message, 'play', text);
     }

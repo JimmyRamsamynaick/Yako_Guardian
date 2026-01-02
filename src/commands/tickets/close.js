@@ -1,8 +1,8 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const ActiveTicket = require('../../database/models/ActiveTicket');
 const TicketConfig = require('../../database/models/TicketConfig');
 const { AttachmentBuilder } = require('discord.js');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'close',
@@ -11,7 +11,7 @@ module.exports = {
     async run(client, message, args) {
         const ticket = await ActiveTicket.findOne({ channelId: message.channel.id });
         if (!ticket) {
-            return sendV2Message(client, message.channel.id, await t('ticket_close.not_ticket', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('ticket_close.not_ticket', message.guild.id), '', 'error')] });
         }
 
         const reason = args.join(' ') || await t('ticket_close.default_reason', message.guild.id);
@@ -50,7 +50,7 @@ module.exports = {
         await ActiveTicket.deleteOne({ channelId: message.channel.id });
 
         // Delete channel
-        await sendV2Message(client, message.channel.id, await t('ticket_close.closing', message.guild.id), []);
+        await message.channel.send({ embeds: [createEmbed(await t('ticket_close.closing', message.guild.id), '', 'success')] });
         setTimeout(() => message.channel.delete().catch(() => {}), 5000);
     }
 };

@@ -4,9 +4,9 @@ const {
     ButtonStyle, 
     StringSelectMenuBuilder 
 } = require('discord.js');
-const { updateV2Interaction, replyV2Interaction, extractActionRows } = require('../utils/componentUtils');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { t } = require('../utils/i18n');
+const { createEmbed, THEME } = require('../utils/design');
 
 async function handleHelpMenu(client, interaction) {
     const { customId } = interaction;
@@ -16,7 +16,7 @@ async function handleHelpMenu(client, interaction) {
         try {
             await interaction.message.delete();
         } catch (e) {
-            await updateV2Interaction(client, interaction, await t('help.handler.closed', guildId), []);
+            await interaction.deferUpdate();
         }
         return;
     }
@@ -40,40 +40,42 @@ async function handleHelpMenu(client, interaction) {
         
         // Dynamic command list generation
         const commands = client.commands.filter(c => (c.category ? c.category.toLowerCase() : '') === category.toLowerCase());
-        let content = '';
+        
+        let embed;
 
         if (commands.size === 0) {
-            content = await t('help.empty_category', guildId);
+            embed = createEmbed(
+                await t('help.category_title', guildId, { category: category.toUpperCase() }),
+                await t('help.empty_category', guildId),
+                'error'
+            );
         } else {
-            content = await t('help.category_title', guildId, { category: category.toUpperCase() }) + "\n\n";
+            const description = [];
             
             for (const cmd of commands.values()) {
-                // Try to fetch translated description and usage
-                // Since JSON is flattened, we look for 'commandName.description' and 'commandName.usage'
-                let description = await t(`${cmd.name}.description`, guildId);
-                let usage = await t(`${cmd.name}.usage`, guildId);
-
+                let desc = await t(`${cmd.name}.description`, guildId);
                 // Fallbacks
-                if (description === `${cmd.name}.description`) description = cmd.description || await t('common.no_description', guildId);
-                if (usage === `${cmd.name}.usage`) usage = cmd.usage || '';
+                if (desc === `${cmd.name}.description`) desc = cmd.description || await t('common.no_description', guildId);
 
-                content += `> **${prefix}${cmd.name}**\n`;
-                if (usage) content += `> ${usage}\n`;
-                content += `> ${description}\n\n`;
+                description.push(`**${prefix}${cmd.name}**\n> ${desc}`);
             }
+
+            embed = createEmbed(
+                await t('help.category_title', guildId, { category: category.toUpperCase() }),
+                description.join('\n\n'),
+                'default',
+                { footer: await t('help.handler.select_footer', guildId) }
+            );
         }
 
-        const components = extractActionRows(interaction.message.components);
-        
         try {
-            await updateV2Interaction(
-                client, 
-                interaction, 
-                content + '\n' + await t('help.handler.select_footer', guildId), 
-                components
-            );
+            await interaction.update({
+                content: null,
+                embeds: [embed],
+                components: interaction.message.components
+            });
         } catch (error) {
-            console.error("Error updating V2 help:", error);
+            console.error("Error updating help menu:", error);
         }
     }
 }

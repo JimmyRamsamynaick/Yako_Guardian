@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const GlobalSettings = require('../../database/models/GlobalSettings');
 const { t } = require('../../utils/i18n');
@@ -15,9 +15,17 @@ module.exports = {
         if (sub === 'activity') {
             client.user.setActivity(null);
             await GlobalSettings.findOneAndUpdate({ clientId: client.user.id }, { activity: { type: null, name: null } }, { upsert: true });
-            return sendV2Message(client, message.channel.id, await t('remove.success', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('remove.success', message.guild.id),
+                '',
+                'success'
+            )] });
         }
 
-        return sendV2Message(client, message.channel.id, await t('remove.usage', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed(
+            await t('remove.usage', message.guild.id),
+            '',
+            'info'
+        )] });
     }
 };

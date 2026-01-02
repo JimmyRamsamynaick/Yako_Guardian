@@ -2,7 +2,7 @@ const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = re
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const Suggestion = require('../../database/models/Suggestion');
 const { showSuggestionSettings } = require('../../handlers/suggestionHandler');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -14,7 +14,7 @@ module.exports = {
         // Settings
         if (args[0] === 'settings') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return sendV2Message(client, message.channel.id, await t('suggestion.permission_admin', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('suggestion.permission_admin', message.guild.id), '', 'error')] });
             }
             const config = await getGuildConfig(message.guild.id);
             await showSuggestionSettings(client, message, config);
@@ -24,14 +24,14 @@ module.exports = {
         // Submit
         const config = await getGuildConfig(message.guild.id);
         if (!config.suggestion || !config.suggestion.enabled || !config.suggestion.channelId) {
-            return sendV2Message(client, message.channel.id, await t('suggestion.suggestion.not_configured', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('suggestion.suggestion.not_configured', message.guild.id), '', 'error')] });
         }
 
         const channel = message.guild.channels.cache.get(config.suggestion.channelId);
-        if (!channel) return sendV2Message(client, message.channel.id, await t('suggestion.suggestion.channel_not_found', message.guild.id), []);
+        if (!channel) return message.channel.send({ embeds: [createEmbed(await t('suggestion.suggestion.channel_not_found', message.guild.id), '', 'error')] });
 
         const content = args.join(' ');
-        if (!content) return sendV2Message(client, message.channel.id, await t('suggestion.suggestion.usage', message.guild.id), []);
+        if (!content) return message.channel.send({ embeds: [createEmbed(await t('suggestion.suggestion.usage', message.guild.id), '', 'error')] });
 
         try {
             // Create Suggestion Doc
@@ -60,17 +60,20 @@ module.exports = {
                 new ButtonBuilder().setCustomId(`suggestion_delete_${suggestion._id}`).setLabel(await t('suggestion.suggestion.btn_delete', message.guild.id)).setStyle(ButtonStyle.Danger)
             );
 
-            const sentMsg = await sendV2Message(client, channel.id, msgContent, [row, rowAdmin]);
+            const sentMsg = await channel.send({ 
+                embeds: [createEmbed('', msgContent, 'info')], 
+                components: [row, rowAdmin] 
+            });
             
             // Save Message ID
             // V2 message response structure might vary but usually has id.
             suggestion.messageId = sentMsg.id;
             await suggestion.save();
 
-            sendV2Message(client, message.channel.id, await t('suggestion.suggestion.success', message.guild.id), []);
+            message.channel.send({ embeds: [createEmbed(await t('suggestion.suggestion.success', message.guild.id), '', 'success')] });
         } catch (e) {
             console.error(e);
-            sendV2Message(client, message.channel.id, await t('suggestion.suggestion.error', message.guild.id), []);
+            message.channel.send({ embeds: [createEmbed(await t('suggestion.suggestion.error', message.guild.id), '', 'error')] });
         }
     }
 };

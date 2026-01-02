@@ -1,10 +1,10 @@
-const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../utils/componentUtils');
-const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, AttachmentBuilder } = require('discord.js');
+const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType } = require('discord.js');
 const TicketConfig = require('../database/models/TicketConfig');
 const ActiveTicket = require('../database/models/ActiveTicket');
 const { t } = require('../utils/i18n');
+const { createEmbed } = require('../utils/design');
 
-// Handler for Ticket Settings Interactions
+// --- TICKET SETTINGS HANDLER ---
 async function handleTicketSettings(client, interaction) {
     const { customId, guild } = interaction;
     const guildId = guild.id;
@@ -14,19 +14,8 @@ async function handleTicketSettings(client, interaction) {
     let config = await TicketConfig.findOne({ guildId: guild.id });
     if (!config) config = await TicketConfig.create({ guildId: guild.id });
 
-    if (action === 'category') {
-        const modal = new ModalBuilder()
-            .setCustomId('ticket_modal_category')
-            .setTitle(await t('tickets.handler.modal_category_title', guildId));
-        const input = new TextInputBuilder()
-            .setCustomId('category_id')
-            .setLabel(await t('tickets.handler.modal_category_label', guildId))
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
-        modal.addComponents(new ActionRowBuilder().addComponents(input));
-        await interaction.showModal(modal);
-    }
-    else if (action === 'transcript') {
+    // --- MAIN DASHBOARD ACTIONS ---
+    if (action === 'transcript') {
         const modal = new ModalBuilder()
             .setCustomId('ticket_modal_transcript')
             .setTitle(await t('tickets.handler.modal_transcript_title', guildId));
@@ -65,257 +54,347 @@ async function handleTicketSettings(client, interaction) {
     else if (action === 'refresh') {
         await updateTicketDashboard(client, interaction, config);
     }
+    else if (action === 'addcat') {
+        const modal = new ModalBuilder()
+            .setCustomId('ticket_modal_addcat')
+            .setTitle(await t('tickets.handler.modal_add_cat_title', guildId));
+        
+        const nameInput = new TextInputBuilder().setCustomId('cat_name').setLabel(await t('tickets.handler.modal_cat_name', guildId)).setStyle(TextInputStyle.Short).setRequired(true);
+        const emojiInput = new TextInputBuilder().setCustomId('cat_emoji').setLabel(await t('tickets.handler.modal_cat_emoji', guildId)).setStyle(TextInputStyle.Short).setRequired(false);
+        const parentInput = new TextInputBuilder().setCustomId('cat_parent').setLabel(await t('tickets.handler.modal_cat_parent', guildId)).setStyle(TextInputStyle.Short).setRequired(true);
+        const rolesInput = new TextInputBuilder().setCustomId('cat_roles').setLabel(await t('tickets.handler.modal_cat_roles', guildId)).setStyle(TextInputStyle.Short).setRequired(false);
+        const descInput = new TextInputBuilder().setCustomId('cat_desc').setLabel(await t('tickets.handler.modal_cat_desc', guildId)).setStyle(TextInputStyle.Paragraph).setRequired(false);
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(nameInput),
+            new ActionRowBuilder().addComponents(emojiInput),
+            new ActionRowBuilder().addComponents(parentInput),
+            new ActionRowBuilder().addComponents(rolesInput),
+            new ActionRowBuilder().addComponents(descInput)
+        );
+        await interaction.showModal(modal);
+    }
+    else if (action === 'delcat') {
+        // If we have categories, show a select menu to delete? 
+        // Or just a modal to type the name. Let's use a modal for simplicity or Select Menu if we can fit it in update.
+        // Actually, let's use a Select Menu in the dashboard if possible, but for now let's use a modal to type name.
+        const modal = new ModalBuilder()
+            .setCustomId('ticket_modal_delcat')
+            .setTitle(await t('tickets.handler.modal_del_cat_title', guildId));
+        const input = new TextInputBuilder()
+            .setCustomId('cat_name')
+            .setLabel(await t('tickets.handler.modal_del_cat_label', guildId))
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+        modal.addComponents(new ActionRowBuilder().addComponents(input));
+        await interaction.showModal(modal);
+    }
 }
 
+// --- MODAL SUBMIT HANDLER ---
+async function handleTicketModal(client, interaction) {
+    const { customId, fields, guild } = interaction;
+    const guildId = guild.id;
+    const sub = customId.replace('ticket_modal_', '');
+
+    let config = await TicketConfig.findOne({ guildId });
+    if (!config) config = await TicketConfig.create({ guildId });
+
+    if (sub === 'transcript') {
+        const channelId = fields.getTextInputValue('channel_id');
+        config.transcriptChannelId = channelId;
+        await config.save();
+        await updateTicketDashboard(client, interaction, config);
+    }
+    else if (sub === 'role') {
+        const roles = fields.getTextInputValue('role_id').split(',').map(r => r.trim()).filter(r => r);
+        config.staffRoles = roles;
+        await config.save();
+        await updateTicketDashboard(client, interaction, config);
+    }
+    else if (sub === 'addcat') {
+        const name = fields.getTextInputValue('cat_name');
+        const emoji = fields.getTextInputValue('cat_emoji');
+        const parentId = fields.getTextInputValue('cat_parent');
+        const roles = fields.getTextInputValue('cat_roles') ? fields.getTextInputValue('cat_roles').split(',').map(r => r.trim()) : [];
+        const desc = fields.getTextInputValue('cat_desc');
+
+        if (config.categories.length >= 25) {
+             return interaction.reply({ embeds: [createEmbed(await t('tickets.handler.error_limit', guildId), '', 'error')], ephemeral: true });
+        }
+
+        config.categories.push({
+            label: name,
+            emoji: emoji,
+            categoryId: parentId,
+            staffRoles: roles,
+            description: desc,
+            style: 'Secondary'
+        });
+        await config.save();
+        await updateTicketDashboard(client, interaction, config);
+    }
+    else if (sub === 'delcat') {
+        const name = fields.getTextInputValue('cat_name');
+        const index = config.categories.findIndex(c => c.label.toLowerCase() === name.toLowerCase());
+        if (index > -1) {
+            config.categories.splice(index, 1);
+            await config.save();
+            await updateTicketDashboard(client, interaction, config);
+        } else {
+            await interaction.reply({ embeds: [createEmbed(await t('tickets.handler.cat_not_found', guildId), '', 'error')], ephemeral: true });
+        }
+    }
+    else if (sub === 'send') {
+        const channelId = fields.getTextInputValue('channel_id');
+        const channel = guild.channels.cache.get(channelId);
+        if (!channel) return interaction.reply({ embeds: [createEmbed(await t('tickets.handler.error_channel_invalid', guildId), '', 'error')], ephemeral: true });
+
+        // Create Panel
+        const embed = createEmbed(
+            config.panelTitle || await t('tickets.panel.title', guildId),
+            config.panelDescription || await t('tickets.panel.description', guildId),
+            'default'
+        )
+            .setColor(client.config.color || '#2b2d31')
+            .setFooter({ text: guild.name, iconURL: guild.iconURL() });
+
+        // If categories exist, create a Select Menu or Buttons
+        // If < 5 categories, buttons. If > 5, Select Menu.
+        const components = [];
+
+        if (config.categories && config.categories.length > 0) {
+            if (config.categories.length <= 5) {
+                const row = new ActionRowBuilder();
+                config.categories.forEach((cat, index) => {
+                    const btn = new ButtonBuilder()
+                        .setCustomId(`ticket_create_${index}`)
+                        .setLabel(cat.label)
+                        .setStyle(ButtonStyle[cat.style || 'Secondary']);
+                    if (cat.emoji) btn.setEmoji(cat.emoji);
+                    row.addComponents(btn);
+                });
+                components.push(row);
+            } else {
+                const select = new StringSelectMenuBuilder()
+                    .setCustomId('ticket_create_select')
+                    .setPlaceholder(await t('tickets.panel.placeholder', guildId));
+                
+                config.categories.forEach((cat, index) => {
+                    select.addOptions({
+                        label: cat.label,
+                        value: `cat_${index}`,
+                        description: cat.description || '',
+                        emoji: cat.emoji
+                    });
+                });
+                components.push(new ActionRowBuilder().addComponents(select));
+            }
+        } else {
+            // Default Button
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('ticket_create_default')
+                    .setLabel(config.buttonLabel || await t('tickets.handler.panel_default_btn', guildId))
+                    .setEmoji(config.buttonEmoji || '📩')
+                    .setStyle(ButtonStyle.Primary)
+            );
+            components.push(row);
+        }
+
+        await channel.send({ embeds: [embed], components: components });
+        await interaction.reply({ embeds: [createEmbed(await t('tickets.handler.panel_sent', guildId, { channel: channelId }), '', 'success')], ephemeral: true });
+    }
+}
+
+// --- DASHBOARD UPDATER ---
 async function updateTicketDashboard(client, interaction, config) {
-    const guildId = interaction.guildId;
+    const guildId = interaction.guildId || interaction.guild.id;
     const notDefined = await t('tickets.handler.dashboard_none', guildId);
 
-    const content = `**${await t('tickets.handler.dashboard_title', guildId)}**\n\n` +
-        `**${await t('tickets.handler.dashboard_category', guildId)}:** ${config.categoryId ? `<#${config.categoryId}>` : notDefined}\n` +
-        `**${await t('tickets.handler.dashboard_transcript', guildId)}:** ${config.transcriptChannelId ? `<#${config.transcriptChannelId}>` : notDefined}\n` +
-        `**${await t('tickets.handler.dashboard_roles', guildId)}:** ${config.staffRoles.length > 0 ? config.staffRoles.map(r => `<@&${r}>`).join(', ') : await t('tickets.handler.dashboard_none_roles', guildId)}\n`;
+    // Helper to handle both MessageComponent and Command/Modal update
+    const embed = createEmbed(await t('tickets.handler.dashboard_title', guildId), '', 'info');
 
-    const row1 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket_settings_category').setLabel(await t('tickets.handler.btn_set_category', guildId)).setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('ticket_settings_transcript').setLabel(await t('tickets.handler.btn_set_transcript', guildId)).setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('ticket_settings_role').setLabel(await t('tickets.handler.btn_manage_roles', guildId)).setStyle(ButtonStyle.Secondary)
+    embed.addFields(
+        { 
+            name: await t('tickets.handler.dashboard_transcript', guildId), 
+            value: config.transcriptChannelId ? `<#${config.transcriptChannelId}>` : notDefined, 
+            inline: true 
+        },
+        { 
+            name: await t('tickets.handler.dashboard_roles', guildId), 
+            value: (config.staffRoles && config.staffRoles.length > 0) ? config.staffRoles.map(r => `<@&${r}>`).join(', ') : await t('tickets.handler.dashboard_none_roles', guildId), 
+            inline: true 
+        }
     );
 
-    const row2 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket_settings_send').setLabel(await t('tickets.handler.btn_send_panel', guildId)).setStyle(ButtonStyle.Success),
+    let catList = "";
+    if (config.categories && config.categories.length > 0) {
+        config.categories.forEach(c => {
+            catList += `- **${c.label}** (${c.categoryId ? `<#${c.categoryId}>` : 'Invalid'}) - Staff: ${c.staffRoles.length}\n`;
+        });
+    } else {
+        catList = `*${await t('tickets.handler.dashboard_none', guildId)}*`;
+    }
+
+    embed.addFields({ name: await t('tickets.handler.dashboard_categories_title', guildId), value: catList, inline: false });
+
+    const row1 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('ticket_settings_addcat').setLabel(await t('tickets.handler.btn_add_cat', guildId)).setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('ticket_settings_delcat').setLabel(await t('tickets.handler.btn_del_cat', guildId)).setStyle(ButtonStyle.Danger),
         new ButtonBuilder().setCustomId('ticket_settings_refresh').setLabel(await t('tickets.handler.btn_refresh', guildId)).setStyle(ButtonStyle.Secondary)
     );
 
-    // If it's a real component interaction, update it
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('ticket_settings_transcript').setLabel(await t('tickets.handler.btn_set_transcript', guildId)).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('ticket_settings_role').setLabel(await t('tickets.handler.btn_manage_roles', guildId)).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('ticket_settings_send').setLabel(await t('tickets.handler.btn_send_panel', guildId)).setStyle(ButtonStyle.Success)
+    );
+
+    const components = [row1, row2];
+
     if (interaction.isMessageComponent && interaction.isMessageComponent()) {
-        await updateV2Interaction(client, interaction, content, [row1, row2]);
+        await interaction.update({ embeds: [embed], components: components, content: null });
     } 
-    // If it's a Modal Submit, we also need to update (or reply if not deferrable easily)
     else if (interaction.isModalSubmit && interaction.isModalSubmit()) {
-        await updateV2Interaction(client, interaction, content, [row1, row2]);
+        await interaction.update({ embeds: [embed], components: components, content: null });
     }
-    // If it's a command (mock interaction)
     else {
-        // Just send a new message
-        await sendV2Message(client, interaction.channelId || interaction.channel.id, content, [row1, row2]);
+        // Mock interaction from command
+        await interaction.channel.send({ embeds: [embed], components: components });
     }
 }
 
-async function handleTicketModal(client, interaction) {
-    const { customId, guild, fields } = interaction;
-    const guildId = guild.id;
-    let config = await TicketConfig.findOne({ guildId: guild.id });
-    if (!config) config = await TicketConfig.create({ guildId: guild.id });
-
-    if (customId === 'ticket_modal_category') {
-        const catId = fields.getTextInputValue('category_id');
-        const channel = guild.channels.cache.get(catId);
-        if (!channel || channel.type !== ChannelType.GuildCategory) {
-            return replyV2Interaction(client, interaction, await t('tickets.handler.error_category_invalid', guildId), [], true);
-        }
-        config.categoryId = catId;
-        await config.save();
-        await updateTicketDashboard(client, interaction, config);
-    }
-    else if (customId === 'ticket_modal_transcript') {
-        const chanId = fields.getTextInputValue('channel_id');
-        const channel = guild.channels.cache.get(chanId);
-        if (!channel || !channel.isTextBased()) {
-            return replyV2Interaction(client, interaction, await t('tickets.handler.error_channel_invalid', guildId), [], true);
-        }
-        config.transcriptChannelId = chanId;
-        await config.save();
-        await updateTicketDashboard(client, interaction, config);
-    }
-    else if (customId === 'ticket_modal_role') {
-        const roleId = fields.getTextInputValue('role_id');
-        if (!guild.roles.cache.has(roleId)) {
-            return replyV2Interaction(client, interaction, await t('tickets.handler.error_role_invalid', guildId), [], true);
-        }
-        if (config.staffRoles.includes(roleId)) {
-            config.staffRoles = config.staffRoles.filter(r => r !== roleId);
-        } else {
-            config.staffRoles.push(roleId);
-        }
-        await config.save();
-        await updateTicketDashboard(client, interaction, config);
-    }
-    else if (customId === 'ticket_modal_send') {
-        const chanId = fields.getTextInputValue('channel_id');
-        const channel = guild.channels.cache.get(chanId);
-        if (!channel || !channel.isTextBased()) {
-            return replyV2Interaction(client, interaction, await t('tickets.handler.error_channel_invalid', guildId), [], true);
-        }
-
-        const btn = new ButtonBuilder()
-            .setCustomId('ticket_create')
-            .setLabel(config.buttonLabel || await t('tickets.handler.panel_default_btn', guildId))
-            .setEmoji(config.buttonEmoji || '📩')
-            .setStyle(ButtonStyle.Primary);
-
-        const row = new ActionRowBuilder().addComponents(btn);
-        
-        await sendV2Message(client, chanId, `**${config.panelTitle || await t('tickets.handler.panel_default_title', guildId)}**\n${config.panelDescription || await t('tickets.handler.panel_default_desc', guildId)}`, [row]);
-        
-        await replyV2Interaction(client, interaction, await t('tickets.handler.panel_sent', guildId, { channel: `<#${chanId}>` }), [], true);
-    }
-}
-
+// --- TICKET CREATION ---
 async function handleTicketCreate(client, interaction) {
-    const { guild, user } = interaction;
+    const { customId, values, guild, user } = interaction;
     const guildId = guild.id;
+
+    let config = await TicketConfig.findOne({ guildId });
+    if (!config) return interaction.reply({ embeds: [createEmbed(await t('tickets.handler.error_not_configured', guildId), '', 'error')], ephemeral: true });
+
+    let categoryConfig = null;
     
-    // Defer immediately to prevent timeout during channel creation
-    if (!interaction.deferred && !interaction.replied) {
-        await interaction.deferReply({ ephemeral: true });
+    // Determine Category
+    if (customId === 'ticket_create_select') {
+        const index = parseInt(values[0].replace('cat_', ''));
+        categoryConfig = config.categories[index];
+    } else if (customId.startsWith('ticket_create_')) {
+        const suffix = customId.replace('ticket_create_', '');
+        if (suffix === 'default') {
+             // Fallback if no categories
+        } else {
+             const index = parseInt(suffix);
+             categoryConfig = config.categories[index];
+        }
     }
 
-    const config = await TicketConfig.findOne({ guildId: guild.id });
-    if (!config || !config.categoryId) {
-        return replyV2Interaction(client, interaction, await t('tickets.handler.error_not_configured', guildId), [], true);
-    }
+    // Determine Parent Category (Discord Channel Category)
+    const parentId = categoryConfig ? categoryConfig.categoryId : config.categoryId;
+    
+    // Determine Staff Roles
+    const staffRoles = categoryConfig && categoryConfig.staffRoles.length > 0 ? categoryConfig.staffRoles : config.staffRoles;
 
-    config.ticketCount = (config.ticketCount || 0) + 1;
+    // Increment count
+    config.ticketCount += 1;
     await config.save();
 
-    const channelName = config.namingScheme
-        .replace('{username}', user.username)
-        .replace('{count}', config.ticketCount);
-
-    const permissionOverwrites = [
-        {
-            id: guild.id,
-            deny: [PermissionsBitField.Flags.ViewChannel],
-        },
-        {
-            id: user.id,
-            allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles],
-        },
-        {
-            id: client.user.id,
-            allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageChannels],
-        }
-    ];
-
-    if (config.staffRoles) {
-        config.staffRoles.forEach(rId => {
-            permissionOverwrites.push({
-                id: rId,
-                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
-            });
-        });
-    }
+    const ticketName = config.namingScheme.replace('{username}', user.username).replace('{count}', config.ticketCount);
 
     try {
-        const channel = await guild.channels.create({
-            name: channelName,
+        const ticketChannel = await guild.channels.create({
+            name: ticketName,
             type: ChannelType.GuildText,
-            parent: config.categoryId,
-            permissionOverwrites
+            parent: parentId,
+            permissionOverwrites: [
+                {
+                    id: guild.id,
+                    deny: [PermissionsBitField.Flags.ViewChannel]
+                },
+                {
+                    id: user.id,
+                    allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles]
+                },
+                {
+                    id: client.user.id,
+                    allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageChannels]
+                },
+                ...staffRoles.map(roleId => ({
+                    id: roleId,
+                    allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
+                }))
+            ]
         });
 
+        // Save to DB
         await ActiveTicket.create({
             guildId: guild.id,
-            channelId: channel.id,
-            userId: user.id
+            channelId: ticketChannel.id,
+            userId: user.id,
+            type: categoryConfig ? categoryConfig.label : 'Default'
         });
 
+        // Send Welcome Message
+        const embed = createEmbed(
+            await t('tickets.panel.title', guildId),
+            categoryConfig?.welcomeMessage || await t('tickets.handler.ticket_welcome', guildId, { user: user.toString() }),
+            'default'
+        )
+            .setColor(client.config.color || '#2b2d31');
+        
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('ticket_close_confirm').setLabel(await t('tickets.handler.btn_close', guildId)).setStyle(ButtonStyle.Danger).setEmoji('🔒'),
-            new ButtonBuilder().setCustomId('ticket_claim').setLabel(await t('tickets.handler.btn_claim', guildId)).setStyle(ButtonStyle.Secondary).setEmoji('🙋‍♂️')
+            new ButtonBuilder().setCustomId('ticket_claim').setLabel(await t('tickets.handler.btn_claim', guildId)).setStyle(ButtonStyle.Success).setEmoji('🙋‍♂️')
         );
 
-        await sendV2Message(client, channel.id, await t('tickets.handler.ticket_welcome', guildId, { user: `<@${user.id}>` }), [row]);
+        await ticketChannel.send({ content: `${user.toString()} ${staffRoles.map(r => `<@&${r}>`).join(' ')}`, embeds: [embed], components: [row] });
 
-        await replyV2Interaction(client, interaction, await t('tickets.handler.ticket_created', guildId, { channel: `<#${channel.id}>` }), [], true);
+        await interaction.reply({ embeds: [createEmbed(await t('tickets.panel.created', guildId, { channel: ticketChannel.toString() }), '', 'success')], ephemeral: true });
 
-    } catch (e) {
-        console.error(e);
-        await replyV2Interaction(client, interaction, await t('tickets.handler.error_creation', guildId), [], true);
+    } catch (error) {
+        console.error(error);
+        await interaction.reply({ embeds: [createEmbed(await t('tickets.panel.error_create', guildId), '', 'error')], ephemeral: true });
     }
 }
 
+// --- TICKET ACTIONS ---
 async function handleTicketClaim(client, interaction) {
-    const { channel, user } = interaction;
-    const guildId = interaction.guildId;
-    
-    // Defer just in case DB is slow
-    if (!interaction.deferred && !interaction.replied) {
-        // We reply publicly to announce claim
-        await interaction.deferReply({ ephemeral: false });
+    const { guild, user, channel } = interaction;
+    const ticket = await ActiveTicket.findOne({ channelId: channel.id });
+    if (!ticket) return interaction.reply({ embeds: [createEmbed(await t('tickets.handler.error_ticket_db', guild.id), '', 'error')], ephemeral: true });
+
+    if (ticket.claimedBy) {
+        return interaction.reply({ embeds: [createEmbed(await t('tickets.handler.error_already_claimed', guild.id, { user: `<@${ticket.claimedBy}>` }), '', 'error')], ephemeral: true });
     }
 
-    const ticket = await ActiveTicket.findOne({ channelId: channel.id });
-    
-    if (!ticket) {
-        return replyV2Interaction(client, interaction, await t('tickets.handler.error_ticket_inactive', guildId), [], true);
-    }
-    
-    if (ticket.claimedBy) {
-        return replyV2Interaction(client, interaction, await t('tickets.handler.error_already_claimed', guildId, { user: `<@${ticket.claimedBy}>` }), [], true);
-    }
-    
     ticket.claimedBy = user.id;
     await ticket.save();
+
+    await channel.permissionOverwrites.edit(user.id, { ViewChannel: true, SendMessages: true });
     
-    await replyV2Interaction(client, interaction, await t('tickets.handler.ticket_claimed', guildId, { user: `<@${user.id}>` }));
+    // Notify
+    await interaction.reply({ embeds: [createEmbed(await t('tickets.handler.ticket_claimed', guild.id, { user: user.toString() }), '', 'success')] });
 }
 
 async function handleTicketClose(client, interaction) {
-    const { channel, user, guild } = interaction;
-    const guildId = guild.id;
-    const ticket = await ActiveTicket.findOne({ channelId: channel.id });
+    const { guild, channel } = interaction;
     
-    if (!ticket) {
-        return replyV2Interaction(client, interaction, await t('tickets.handler.error_ticket_db', guildId), [], true);
-    }
-
-    await replyV2Interaction(client, interaction, await t('tickets.handler.ticket_closing', guildId));
-
-    // Transcript Logic (simplified from close.js)
-    let transcript = `${await t('tickets.handler.transcript_title', guildId)}\n`;
-    transcript += `${await t('tickets.handler.transcript_id', guildId)}: ${ticket.channelId}\n`;
-    transcript += `${await t('tickets.handler.transcript_creator', guildId)}: ${ticket.userId}\n`;
-    transcript += `${await t('tickets.handler.transcript_closed_by', guildId)}: ${user.tag}\n`;
-    transcript += `-------------------------\n\n`;
-
-    try {
-        const messages = await channel.messages.fetch({ limit: 100 });
-        messages.reverse().forEach(m => {
-            transcript += `[${m.createdAt.toLocaleString()}] ${m.author.tag}: ${m.content}\n`;
-        });
-    } catch (e) {
-        console.error("Error fetching messages for transcript:", e);
-        transcript += `\n[${await t('tickets.handler.transcript_error', guildId)}]`;
-    }
-
-    const attachment = new AttachmentBuilder(Buffer.from(transcript, 'utf-8'), { name: `transcript-${ticket.channelId}.txt` });
-
-    // Send to transcript channel
-    const config = await TicketConfig.findOne({ guildId: guild.id });
-    if (config && config.transcriptChannelId) {
-        const transChannel = guild.channels.cache.get(config.transcriptChannelId);
-        if (transChannel) {
-            await transChannel.send({
-                content: `${await t('tickets.handler.transcript_embed_title', guildId)}\n${await t('tickets.handler.transcript_embed_desc', guildId, { channel: channel.name, user: `<@${user.id}>` })}`,
-                files: [attachment]
-            });
-        }
-    }
-
-    // Delete active ticket entry
-    await ActiveTicket.deleteOne({ channelId: channel.id });
-
-    // Delete channel
-    setTimeout(() => channel.delete().catch(() => {}), 5000);
+    await interaction.reply({ embeds: [createEmbed(await t('tickets.handler.ticket_closing', guild.id), '', 'info')] });
+    
+    setTimeout(async () => {
+        // Generate Transcript (Basic text file for now)
+        // TODO: Advanced HTML Transcript
+        
+        await channel.delete().catch(() => {});
+        await ActiveTicket.deleteOne({ channelId: channel.id });
+    }, 5000);
 }
 
-module.exports = { 
-    handleTicketSettings, 
-    handleTicketModal, 
-    handleTicketCreate, 
+module.exports = {
+    handleTicketSettings,
+    handleTicketModal,
+    handleTicketCreate,
     handleTicketClaim,
     handleTicketClose,
-    updateTicketDashboard 
+    updateTicketDashboard
 };

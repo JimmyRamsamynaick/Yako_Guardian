@@ -1,5 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
-const { parseEmoji } = require('discord.js');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -8,7 +7,7 @@ module.exports = {
     category: 'Utilitaire',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageEmojisAndStickers') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('create.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('create.permission', message.guild.id), '', 'error')] });
         }
 
         let url;
@@ -31,15 +30,15 @@ module.exports = {
         }
 
         if (!url || !name) {
-            return sendV2Message(client, message.channel.id, await t('create.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('create.usage', message.guild.id), '', 'info')] });
         }
 
         try {
             const newEmoji = await message.guild.emojis.create({ attachment: url, name: name });
-            sendV2Message(client, message.channel.id, await t('create.success', message.guild.id, { emoji: newEmoji }), []);
+            message.channel.send({ embeds: [createEmbed(await t('create.success', message.guild.id, { emoji: newEmoji }), '', 'success')] });
         } catch (error) {
             console.error(error);
-            sendV2Message(client, message.channel.id, await t('create.error', message.guild.id, { error: error.message.replace('DiscordAPIError[50035]: ', '') }), []);
+            message.channel.send({ embeds: [createEmbed(await t('create.error', message.guild.id, { error: error.message.replace('DiscordAPIError[50035]: ', '') }), '', 'error')] });
         }
     }
 };

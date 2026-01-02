@@ -1,7 +1,7 @@
 const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'antilink',
@@ -10,7 +10,7 @@ module.exports = {
     usage: 'antilink <on/off> [invite/all]',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('common.admin_only', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -20,8 +20,10 @@ module.exports = {
         const arg = args[0]?.toLowerCase();
 
         if (!arg) {
-             return sendV2Message(client, message.channel.id, await t('antilink.usage', message.guild.id), []);
+             return message.channel.send({ embeds: [createEmbed('Utilisation', await t('antilink.usage', message.guild.id), 'info')] });
         }
+
+        const replyMsg = await message.channel.send({ embeds: [createEmbed('AntiLink', `${THEME.icons.loading} Configuration en cours...`, 'loading')] });
 
         if (['on', 'off'].includes(arg)) {
             config.moderation.antilink.enabled = (arg === 'on');
@@ -34,10 +36,11 @@ module.exports = {
             
             config.markModified('moderation');
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('antilink.success', message.guild.id, { 
+            await replyMsg.edit({ embeds: [createEmbed('AntiLink', await t('antilink.success', message.guild.id, { 
                 status: arg.toUpperCase(), 
                 mode: config.moderation.antilink.mode 
-            }), []);
+            }), arg === 'on' ? 'success' : 'warning')] });
+            return;
         }
         
         // Handle "antilink invite" or "antilink all" direct shortcuts
@@ -46,12 +49,13 @@ module.exports = {
              config.moderation.antilink.enabled = true;
              config.markModified('moderation');
              await config.save();
-             return sendV2Message(client, message.channel.id, await t('antilink.success', message.guild.id, { 
+             await replyMsg.edit({ embeds: [createEmbed('AntiLink', await t('antilink.success', message.guild.id, { 
                 status: "ON", 
                 mode: arg 
-            }), []);
+            }), 'success')] });
+             return;
         }
 
-        return sendV2Message(client, message.channel.id, await t('antilink.usage', message.guild.id), []);
+        await replyMsg.edit({ embeds: [createEmbed('Utilisation', await t('antilink.usage', message.guild.id), 'warning')] });
     }
 };

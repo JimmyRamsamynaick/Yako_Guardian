@@ -1,8 +1,8 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField, ChannelType } = require('discord.js');
 const TempVocConfig = require('../../database/models/TempVocConfig');
 const ActiveTempVoc = require('../../database/models/ActiveTempVoc');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'tempvoc',
@@ -15,10 +15,10 @@ module.exports = {
         if (sub === 'cmd') {
             const active = await ActiveTempVoc.findOne({ channelId: message.member.voice.channelId });
             if (!active) {
-                return sendV2Message(client, message.channel.id, await t('tempvoc.not_in_temp', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed('Erreur', await t('tempvoc.not_in_temp', message.guild.id), 'error')] });
             }
             if (active.ownerId !== message.author.id) {
-                return sendV2Message(client, message.channel.id, await t('tempvoc.not_owner', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed('Erreur', await t('tempvoc.not_owner', message.guild.id), 'error')] });
             }
 
             // Send Panel
@@ -40,19 +40,22 @@ module.exports = {
                 new ButtonBuilder().setCustomId('tempvoc_bl').setEmoji('⛔').setLabel(await t('tempvoc.blacklist', message.guild.id)).setStyle(ButtonStyle.Secondary)
             );
 
-            return sendV2Message(client, message.channel.id, await t('tempvoc.panel_title', message.guild.id), [row1, row2, row3]);
+            return message.channel.send({ 
+                embeds: [createEmbed('Panel Vocal', await t('tempvoc.panel_title', message.guild.id), 'info')], 
+                components: [row1, row2, row3] 
+            });
         }
 
         // --- SETUP ---
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('tempvoc.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('tempvoc.permission', message.guild.id), 'error')] });
         }
 
         if (sub === 'setup') {
             try {
                 // Check Bot Permissions
                 if (!message.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-                    return sendV2Message(client, message.channel.id, await t('tempvoc.bot_perm', message.guild.id), []);
+                    return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('tempvoc.bot_perm', message.guild.id), 'error')] });
                 }
 
                 const category = await message.guild.channels.create({
@@ -75,14 +78,14 @@ module.exports = {
                 config.hubChannelId = hub.id;
                 await config.save();
 
-                return sendV2Message(client, message.channel.id, await t('tempvoc.setup_success', message.guild.id, { category: category.toString(), hub: hub.toString() }), []);
+                return message.channel.send({ embeds: [createEmbed('Succès', await t('tempvoc.setup_success', message.guild.id, { category: category.toString(), hub: hub.toString() }), 'success')] });
 
             } catch (e) {
                 console.error(e);
-                return sendV2Message(client, message.channel.id, await t('tempvoc.setup_error', message.guild.id, { error: e.message }), []);
+                return message.channel.send({ embeds: [createEmbed('Erreur', await t('tempvoc.setup_error', message.guild.id, { error: e.message }), 'error')] });
             }
         }
 
-        return sendV2Message(client, message.channel.id, await t('tempvoc.usage', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed('Usage', await t('tempvoc.usage', message.guild.id), 'info')] });
     }
 };

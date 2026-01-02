@@ -3,7 +3,7 @@ const ActiveTicket = require('../../database/models/ActiveTicket');
 const GuildConfig = require('../../database/models/GuildConfig');
 const { createTicket } = require('../../utils/modmailUtils');
 const { getGuildConfig } = require('../../utils/mongoUtils');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -19,14 +19,14 @@ module.exports = {
             if (activeTicket) {
                 // Forward to guild channel
                 const guild = client.guilds.cache.get(activeTicket.guildId);
-                if (!guild) return sendV2Message(client, message.channel.id, await t('modmail.handler.guild_inaccessible', 'dm'), []);
+                if (!guild) return message.channel.send({ embeds: [createEmbed(await t('modmail.handler.guild_inaccessible', 'dm'), '', 'error')] });
 
                 const channel = guild.channels.cache.get(activeTicket.channelId);
                 if (!channel) {
                     // Channel deleted? Clean up
                     activeTicket.closed = true;
                     await activeTicket.save();
-                    return sendV2Message(client, message.channel.id, await t('modmail.handler.ticket_closed', guild.id), []);
+                    return message.channel.send({ embeds: [createEmbed(await t('modmail.handler.ticket_closed', guild.id), '', 'info')] });
                 }
 
                 let content = await t('modmail.handler.user_reply', guild.id, { user: message.author.tag, content: message.content });
@@ -38,7 +38,7 @@ module.exports = {
                     await channel.send({ content });
                     await message.react('✅');
                 } catch (e) {
-                    sendV2Message(client, message.channel.id, await t('modmail.handler.send_error', guild.id), []);
+                    message.channel.send({ embeds: [createEmbed(await t('modmail.handler.send_error', guild.id), '', 'error')] });
                 }
                 return;
             }
@@ -56,16 +56,16 @@ module.exports = {
             }
 
             if (mutualGuilds.length === 0) {
-                return sendV2Message(client, message.channel.id, await t('modmail.handler.no_common_guild', 'dm'), []);
+                return message.channel.send({ embeds: [createEmbed(await t('modmail.handler.no_common_guild', 'dm'), '', 'error')] });
             }
 
             if (mutualGuilds.length === 1) {
                 // Create ticket directly
                 try {
                     await createTicket(client, message.author, mutualGuilds[0], message.content);
-                    sendV2Message(client, message.channel.id, await t('modmail.handler.ticket_opened', 'dm', { server: mutualGuilds[0].name }), []);
+                    message.channel.send({ embeds: [createEmbed(await t('modmail.handler.ticket_opened', 'dm', { server: mutualGuilds[0].name }), '', 'success')] });
                 } catch (e) {
-                    sendV2Message(client, message.channel.id, await t('modmail.handler.ticket_create_error', 'dm', { error: e.message }), []);
+                    message.channel.send({ embeds: [createEmbed(await t('modmail.handler.ticket_create_error', 'dm', { error: e.message }), '', 'error')] });
                 }
             } else {
                 // Ask to choose
@@ -84,7 +84,7 @@ module.exports = {
                             .addOptions(options.slice(0, 25))
                     );
 
-                await sendV2Message(client, message.channel.id, await t('modmail.handler.choose_server', 'dm'), [row]);
+                await message.channel.send({ embeds: [createEmbed(await t('modmail.handler.choose_server', 'dm'), '', 'info')], components: [row] });
             }
             return;
         }

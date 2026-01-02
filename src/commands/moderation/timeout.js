@@ -1,7 +1,7 @@
 const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'timeout',
@@ -10,13 +10,15 @@ module.exports = {
     usage: 'timeout <on/off>',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('common.admin_only', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
         }
 
         const sub = args[0]?.toLowerCase();
         if (!['on', 'off'].includes(sub)) {
-            return sendV2Message(client, message.channel.id, await t('timeout.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Utilisation Incorrecte', await t('timeout.usage', message.guild.id), 'warning')] });
         }
+
+        const replyMsg = await message.channel.send({ embeds: [createEmbed('Timeout', `${THEME.icons.loading} Configuration en cours...`, 'loading')] });
 
         const config = await getGuildConfig(message.guild.id);
         if (!config.moderation) config.moderation = {};
@@ -25,6 +27,18 @@ module.exports = {
         config.markModified('moderation');
         await config.save();
 
-        return sendV2Message(client, message.channel.id, await t('timeout.success', message.guild.id, { status: sub.toUpperCase() }), []);
+        const statusText = sub === 'on' ? 'ACTIVÉ' : 'DÉSACTIVÉ';
+        const type = sub === 'on' ? 'success' : 'warning';
+
+        const embed = createEmbed(
+            'Configuration Timeout',
+            `${THEME.separators.line}\n` +
+            `**Statut :** ${statusText}\n\n` +
+            `${sub === 'on' ? '✅ Le bot utilisera désormais les Timeouts natifs de Discord.' : '⚠️ Le bot utilisera désormais le système de rôle Mute classique.'}\n` +
+            `${THEME.separators.line}`,
+            type
+        );
+
+        await replyMsg.edit({ embeds: [embed] });
     }
 };

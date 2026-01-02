@@ -1,7 +1,7 @@
-const { PermissionsBitField, EmbedBuilder } = require('discord.js');
+const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'boostembed',
@@ -10,7 +10,7 @@ module.exports = {
     aliases: ['boost'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('common.admin_only', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('common.admin_only', message.guild.id), '', 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -28,118 +28,118 @@ module.exports = {
                 config.boost.channelId = message.channel.id;
             }
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('boostembed.state_change', message.guild.id, { state: sub.toUpperCase() }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('boostembed.state_change', message.guild.id, { state: sub.toUpperCase() }), '', 'success')] });
         }
 
         // +boostembed channel <#channel>
         if (['channel', 'salon', 'set'].includes(sub)) {
-            if (!value) return sendV2Message(client, message.channel.id, await t('boostembed.channel_usage', message.guild.id), []);
+            if (!value) return message.channel.send({ embeds: [createEmbed(await t('boostembed.channel_usage', message.guild.id), '', 'error')] });
 
             let channelId = value.replace(/[<#>]/g, '');
             const channel = message.guild.channels.cache.get(channelId);
 
             if (!channel || !channel.isTextBased()) {
-                return sendV2Message(client, message.channel.id, await t('boostembed.channel_invalid', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.channel_invalid', message.guild.id), '', 'error')] });
             }
 
             config.boost.channelId = channel.id;
             config.boost.enabled = true; // Auto enable
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('boostembed.channel_success', message.guild.id, { channel: channel.toString() }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('boostembed.channel_success', message.guild.id, { channel: channel.toString() }), '', 'success')] });
         }
 
         // +boostembed message <content>
         if (['message', 'msg', 'content'].includes(sub)) {
-            if (!content) return sendV2Message(client, message.channel.id, await t('boostembed.message_usage', message.guild.id), []);
+            if (!content) return message.channel.send({ embeds: [createEmbed(await t('boostembed.message_usage', message.guild.id), '', 'error')] });
 
             if (['reset', 'default'].includes(content.toLowerCase())) {
                 config.boost.message = null;
                 await config.save();
-                return sendV2Message(client, message.channel.id, await t('boostembed.message_reset', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.message_reset', message.guild.id), '', 'success')] });
             }
 
             config.boost.message = content;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('boostembed.message_set', message.guild.id, { content }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('boostembed.message_set', message.guild.id, { content }), '', 'success')] });
         }
 
         // +boostembed title <content>
         if (['title', 'titre'].includes(sub)) {
-            if (!content) return sendV2Message(client, message.channel.id, await t('boostembed.title_usage', message.guild.id), []);
+            if (!content) return message.channel.send({ embeds: [createEmbed(await t('boostembed.title_usage', message.guild.id), '', 'error')] });
 
             if (['reset', 'default'].includes(content.toLowerCase())) {
                 config.boost.title = null;
                 await config.save();
-                return sendV2Message(client, message.channel.id, await t('boostembed.title_reset', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.title_reset', message.guild.id), '', 'success')] });
             }
 
             config.boost.title = content;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('boostembed.title_set', message.guild.id, { content }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('boostembed.title_set', message.guild.id, { content }), '', 'success')] });
         }
 
         // +boostembed description <content>
         if (['description', 'desc'].includes(sub)) {
-            if (!content) return sendV2Message(client, message.channel.id, await t('boostembed.description_usage', message.guild.id), []);
+            if (!content) return message.channel.send({ embeds: [createEmbed(await t('boostembed.description_usage', message.guild.id), '', 'error')] });
 
             if (['reset', 'default'].includes(content.toLowerCase())) {
                 config.boost.description = null;
                 await config.save();
-                return sendV2Message(client, message.channel.id, await t('boostembed.description_reset', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.description_reset', message.guild.id), '', 'success')] });
             }
 
             config.boost.description = content;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('boostembed.description_set', message.guild.id, { content }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('boostembed.description_set', message.guild.id, { content }), '', 'success')] });
         }
 
         // +boostembed image <url/reset>
         if (['image', 'img'].includes(sub)) {
-            if (!value) return sendV2Message(client, message.channel.id, await t('boostembed.image_usage', message.guild.id), []);
+            if (!value) return message.channel.send({ embeds: [createEmbed(await t('boostembed.image_usage', message.guild.id), '', 'error')] });
 
             if (['reset', 'off', 'default'].includes(value.toLowerCase())) {
                 config.boost.image = null;
                 await config.save();
-                return sendV2Message(client, message.channel.id, await t('boostembed.image_reset', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.image_reset', message.guild.id), '', 'success')] });
             }
 
             if (!value.startsWith('http')) {
-                return sendV2Message(client, message.channel.id, await t('boostembed.invalid_url', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.invalid_url', message.guild.id), '', 'error')] });
             }
 
             config.boost.image = value;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('boostembed.image_set', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('boostembed.image_set', message.guild.id), '', 'success')] });
         }
 
         // +boostembed thumbnail <url/reset>
         if (['thumbnail', 'thumb'].includes(sub)) {
-            if (!value) return sendV2Message(client, message.channel.id, await t('boostembed.thumbnail_usage', message.guild.id), []);
+            if (!value) return message.channel.send({ embeds: [createEmbed(await t('boostembed.thumbnail_usage', message.guild.id), '', 'error')] });
 
             if (['reset', 'off', 'default'].includes(value.toLowerCase())) {
                 config.boost.thumbnail = null;
                 await config.save();
-                return sendV2Message(client, message.channel.id, await t('boostembed.thumbnail_reset', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.thumbnail_reset', message.guild.id), '', 'success')] });
             }
 
             if (!value.startsWith('http')) {
-                return sendV2Message(client, message.channel.id, await t('boostembed.invalid_url', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.invalid_url', message.guild.id), '', 'error')] });
             }
 
             config.boost.thumbnail = value;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('boostembed.thumbnail_set', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('boostembed.thumbnail_set', message.guild.id), '', 'success')] });
         }
 
         // +boostembed test
         if (sub === 'test') {
             if (!config.boost.channelId) {
-                return sendV2Message(client, message.channel.id, await t('boostembed.no_channel', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.no_channel', message.guild.id), '', 'error')] });
             }
 
             const channel = message.guild.channels.cache.get(config.boost.channelId);
             if (!channel) {
-                return sendV2Message(client, message.channel.id, await t('boostembed.channel_not_found', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.channel_not_found', message.guild.id), '', 'error')] });
             }
 
             // Simulate Boost Embed
@@ -151,9 +151,7 @@ module.exports = {
                 .replace(/{{user}}/g, message.author.toString())
                 .replace(/{{count}}/g, message.guild.premiumSubscriptionCount);
 
-            const embed = new EmbedBuilder()
-                .setTitle(formatText(title))
-                .setDescription(formatText(description))
+            const embed = createEmbed(formatText(title), formatText(description), 'default')
                 .setColor('#f47fff') // Boost Pink
                 .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({ dynamic: true }) })
                 .setTimestamp();
@@ -177,13 +175,13 @@ module.exports = {
 
             try {
                 await channel.send({ content, embeds: [embed] });
-                return sendV2Message(client, message.channel.id, await t('boostembed.test_sent', message.guild.id, { channel: channel.toString() }), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.test_sent', message.guild.id, { channel: channel.toString() }), '', 'success')] });
             } catch (e) {
-                return sendV2Message(client, message.channel.id, await t('boostembed.test_error', message.guild.id, { error: e.message }), []);
+                return message.channel.send({ embeds: [createEmbed(await t('boostembed.test_error', message.guild.id, { error: e.message }), '', 'error')] });
             }
         }
 
         // Default Usage
-        return sendV2Message(client, message.channel.id, await t('boostembed.help_details', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed(await t('boostembed.help_details', message.guild.id), '', 'info')] });
     }
 };

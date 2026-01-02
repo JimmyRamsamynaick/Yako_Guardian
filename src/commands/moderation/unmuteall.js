@@ -1,7 +1,7 @@
 const { PermissionsBitField, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { t } = require('../../utils/i18n');
 const { getGuildConfig } = require('../../utils/mongoUtils');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'unmuteall',
@@ -10,7 +10,7 @@ module.exports = {
     usage: 'unmuteall',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('common.admin_only', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
         }
 
         // Confirmation
@@ -30,7 +30,7 @@ module.exports = {
             );
 
         const msg = await message.channel.send({
-            content: await t('moderation.unmuteall_confirm', message.guild.id),
+            embeds: [createEmbed('Confirmation', await t('moderation.unmuteall_confirm', message.guild.id), 'warning')],
             components: [row]
         });
 
@@ -39,7 +39,7 @@ module.exports = {
 
         collector.on('collect', async i => {
             if (i.customId === confirmId) {
-                await i.deferUpdate();
+                await i.update({ embeds: [createEmbed('UnmuteAll', `${THEME.icons.loading} Traitement en cours...`, 'loading')], components: [] });
                 
                 const config = await getGuildConfig(message.guild.id);
                 const muteRoleId = config.moderation?.muteRole;
@@ -52,7 +52,7 @@ module.exports = {
                 });
 
                 if (mutedMembers.size === 0) {
-                    return i.editReply({ content: await t('moderation.unmuteall_no_mutes', message.guild.id), components: [] });
+                    return msg.edit({ embeds: [createEmbed('UnmuteAll', await t('moderation.unmuteall_no_mutes', message.guild.id), 'info')], components: [] });
                 }
 
                 let count = 0;
@@ -72,15 +72,15 @@ module.exports = {
                     }
                 }
 
-                await i.editReply({ content: await t('moderation.unmuteall_success', message.guild.id, { count }), components: [] });
+                await msg.edit({ embeds: [createEmbed('Succès', await t('moderation.unmuteall_success', message.guild.id, { count }), 'success')], components: [] });
 
             } else {
-                await i.update({ content: await t('moderation.unmuteall_cancel', message.guild.id), components: [] });
+                await i.update({ embeds: [createEmbed('Annulé', await t('moderation.unmuteall_cancel', message.guild.id), 'error')], components: [] });
             }
         });
 
         collector.on('end', async collected => {
-            if (collected.size === 0) msg.edit({ content: await t('moderation.unmuteall_timeout', message.guild.id), components: [] }).catch(() => {});
+            if (collected.size === 0) msg.edit({ embeds: [createEmbed('Expiré', await t('moderation.unmuteall_timeout', message.guild.id), 'error')], components: [] }).catch(() => {});
         });
     }
 };

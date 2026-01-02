@@ -1,65 +1,74 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
+const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'settings',
-    description: 'Affiche le tableau de bord de configuration',
+    description: 'Affiche le tableau de bord de configuration complet',
     category: 'Configuration',
-    aliases: ['conf', 'dashboard'],
+    aliases: ['conf', 'dashboard', 'config'],
     async run(client, message, args) {
-        // Permission Check (Admin only usually for settings)
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && message.author.id !== message.guild.ownerId) {
-             return sendV2Message(client, message.channel.id, await t('common.admin_only', message.guild.id), []);
+             return message.channel.send({ embeds: [createEmbed(
+                 await t('common.admin_only', message.guild.id),
+                 '',
+                 'error'
+             )] });
         }
 
         const config = await getGuildConfig(message.guild.id);
         const prefix = config.prefix || client.config.prefix;
-
-        // Helper to format booleans
         const bool = (b) => b ? "✅" : "❌";
 
-        // Build Main Overview Embed
-        const embed = new EmbedBuilder()
-            .setTitle(await t('configuration.dashboard_title', message.guild.id, { guild: message.guild.name }))
-            .setColor(client.config.color || '#2b2d31')
+        // General
+        const general = [
+            `**Prefix:** \`${prefix}\``,
+            `**Lang:** \`${config.language || 'fr'}\``,
+            `**Public:** ${bool(config.public?.enabled)}`,
+            `**AutoPublish:** ${bool(config.autoPublish)}`
+        ].join('\n');
+
+        // Moderation
+        const mod = [
+            `**Timeout:** ${bool(config.moderation?.timeoutEnabled)}`,
+            `**MuteRole:** ${config.moderation?.muteRole ? `<@&${config.moderation.muteRole}>` : 'Non défini'}`,
+            `**ClearLimit:** \`${config.moderation?.clearLimit || 100}\``,
+            `**AntiSpam:** ${bool(config.moderation?.antispam?.enabled)}`,
+            `**AntiLink:** ${bool(config.moderation?.antilink?.enabled)}`,
+            `**MassMention:** ${bool(config.moderation?.massmention?.enabled)}`,
+            `**BadWords:** ${bool(config.moderation?.badwords?.enabled)}`
+        ].join('\n');
+
+        // Logs
+        const logsObj = config.logs || {};
+        const logs = [
+            `**Mod:** ${bool(logsObj.mod?.enabled)} ${logsObj.mod?.channelId ? `<#${logsObj.mod.channelId}>` : ''}`,
+            `**Message:** ${bool(logsObj.message?.enabled)} ${logsObj.message?.channelId ? `<#${logsObj.message.channelId}>` : ''}`,
+            `**Voice:** ${bool(logsObj.voice?.enabled)} ${logsObj.voice?.channelId ? `<#${logsObj.voice.channelId}>` : ''}`,
+            `**Boost:** ${bool(logsObj.boost?.enabled)} ${logsObj.boost?.channelId ? `<#${logsObj.boost.channelId}>` : ''}`,
+            `**Role:** ${bool(logsObj.role?.enabled)} ${logsObj.role?.channelId ? `<#${logsObj.role.channelId}>` : ''}`,
+            `**Raid:** ${bool(logsObj.raid?.enabled)} ${logsObj.raid?.channelId ? `<#${logsObj.raid.channelId}>` : ''}`
+        ].join('\n');
+
+        // Community / Other
+        const other = [
+            `**Welcome:** ${bool(config.welcome?.enabled)}`,
+            `**Goodbye:** ${bool(config.goodbye?.enabled)}`,
+            `**Suggestion:** ${bool(config.suggestion?.enabled)}`,
+            `**Soutien:** ${bool(config.soutien?.enabled)}`
+        ].join('\n');
+
+        const embed = createEmbed(await t('settings.title', message.guild.id, { guild: message.guild.name }), '', 'default')
             .setThumbnail(message.guild.iconURL({ dynamic: true }))
             .addFields(
-                { 
-                    name: await t('configuration.general_title', message.guild.id), 
-                    value: await t('configuration.general_value', message.guild.id, { prefix, public: bool(config.public?.enabled) }), 
-                    inline: true 
-                },
-                { 
-                    name: await t('configuration.moderation_title', message.guild.id), 
-                    value: await t('configuration.moderation_value', message.guild.id, { timeout: bool(config.moderation?.timeoutEnabled), muteRole: config.moderation?.muteRole ? `<@&${config.moderation.muteRole}>` : await t('common.not_defined', message.guild.id) }), 
-                    inline: true 
-                },
-                { 
-                    name: await t('configuration.automod_title', message.guild.id), 
-                    value: await t('configuration.automod_value', message.guild.id, { antispam: bool(config.moderation?.antispam?.enabled), antilink: bool(config.moderation?.antilink?.enabled), badwords: bool(config.moderation?.badwords?.enabled) }), 
-                    inline: true 
-                },
-                { 
-                    name: await t('configuration.antiraid_title', message.guild.id), 
-                    value: await t('configuration.antiraid_value', message.guild.id, { secur: bool(config.antiraid?.secur), antitoken: bool(config.antiraid?.antitoken?.enabled) }), 
-                    inline: true 
-                },
-                { 
-                    name: await t('configuration.logs_title', message.guild.id), 
-                    value: await t('configuration.logs_value', message.guild.id, { raidlog: bool(config.antiraid?.raidlog?.enabled), modlog: bool(config.report?.enabled) }), 
-                    inline: true 
-                }
+                { name: await t('settings.category_general', message.guild.id), value: general, inline: true },
+                { name: await t('settings.category_moderation', message.guild.id), value: mod, inline: true },
+                { name: await t('settings.category_logs', message.guild.id), value: logs, inline: true },
+                { name: 'Communauté', value: other, inline: true }
             )
-            .setFooter({ text: await t('common.requested_by', message.guild.id, { user: message.author.tag }), iconURL: message.author.displayAvatarURL() });
+            .setFooter({ text: await t('settings.footer', message.guild.id), iconURL: message.author.displayAvatarURL() });
 
-        // Buttons for categories? Or just display?
-        // User asked for "Interactive menus".
-        // Let's add buttons to "Edit" categories if possible, or just navigation.
-        // For now, let's keep it simple: Just display. Detailed edit commands are separate.
-        // Or better: Buttons that show specific details?
-        
         return message.channel.send({ embeds: [embed] });
     }
 };

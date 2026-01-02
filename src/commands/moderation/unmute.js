@@ -1,7 +1,7 @@
 const { PermissionsBitField } = require('discord.js');
 const { t } = require('../../utils/i18n');
 const { getGuildConfig } = require('../../utils/mongoUtils');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 const { addSanction } = require('../../utils/moderation/sanctionUtils');
 const { resolveMembers } = require('../../utils/moderation/memberUtils');
 const { checkUsage } = require('../../utils/moderation/helpUtils');
@@ -14,19 +14,31 @@ module.exports = {
     examples: ['unmute @user', 'unmute @user1,, @user2'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-            return sendV2Message(client, message.channel.id, await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args)) return;
 
+        // Loading state
+        const loadingEmbed = createEmbed(
+            'Unmute',
+            `${THEME.icons.loading} Recherche des utilisateurs...`,
+            'loading'
+        );
+        const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
+
         const { members, reason } = await resolveMembers(message, args);
 
         if (members.length === 0) {
-            return sendV2Message(client, message.channel.id, await t('moderation.member_not_found', message.guild.id), []);
+            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.member_not_found', message.guild.id), 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
+        
+        await replyMsg.edit({ embeds: [createEmbed('Unmute', `${THEME.icons.loading} Levée des sanctions...`, 'loading')] });
+
         const summary = [];
+        let successCount = 0;
 
         for (const targetMember of members) {
             try {
@@ -60,23 +72,43 @@ module.exports = {
                 }
 
                 if (!performed && !actionText) {
-                    summary.push(await t('moderation.error_summary', message.guild.id, { user: targetMember.user.tag, error: await t('moderation.not_muted', message.guild.id) }));
+                    summary.push(`${THEME.icons.error} **${targetMember.user.tag}**: ${await t('moderation.not_muted', message.guild.id)}`);
                 } else {
                     // Log Sanction
                     await addSanction(message.guild.id, targetMember.id, message.author.id, 'unmute', reason);
-                    summary.push(await t('moderation.unmute_success_details', message.guild.id, { user: targetMember.user.tag, details: actionText }));
+                    successCount++;
+                    summary.push(`${THEME.icons.success} **${targetMember.user.tag}**: ${actionText}`);
                 }
 
             } catch (err) {
                 console.error(err);
-                summary.push(await t('moderation.error_summary', message.guild.id, { user: targetMember.user.tag, error: await t('moderation.error_internal', message.guild.id) }));
+                summary.push(`${THEME.icons.error} **${targetMember.user.tag}**: ${await t('moderation.error_internal', message.guild.id)}`);
             }
         }
 
-        const summaryText = summary.join('\n');
-        if (summaryText.length > 2000) {
-             return sendV2Message(client, message.channel.id, await t('moderation.action_performed_bulk', message.guild.id, { count: members.length }), []);
+        // Final Result Construction
+        let finalDescription = '';
+        let type = 'default';
+
+        if (members.length === 1 && successCount === 1) {
+            const target = members[0];
+            type = 'success';
+            finalDescription = 
+                `${THEME.separators.line}\n` +
+                `👤 **Membre :** ${target.user.tag}\n` +
+                `📌 **Action :** UNMUTE\n` +
+                `✏️ **Détails :** ${summary[0].replace(/.*: /, '')}\n\n` +
+                `${THEME.icons.success} **Action effectuée avec succès**\n` +
+                `${THEME.separators.line}`;
+        } else {
+            type = successCount > 0 ? (successCount === members.length ? 'success' : 'warning') : 'error';
+            finalDescription = summary.join('\n');
+            if (finalDescription.length > 4000) {
+                finalDescription = finalDescription.substring(0, 4000) + '...';
+            }
         }
-        return sendV2Message(client, message.channel.id, summaryText || await t('moderation.no_action', message.guild.id), []);
+
+        const finalEmbed = createEmbed('Unmute', finalDescription, type);
+        await replyMsg.edit({ embeds: [finalEmbed] });
     }
 };

@@ -1,6 +1,6 @@
-const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const Form = require('../database/models/Form');
-const { replyV2Interaction, sendV2Message } = require('../utils/componentUtils');
+const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 
 module.exports = (client) => {
@@ -32,7 +32,7 @@ module.exports = (client) => {
                 const formId = interaction.customId.replace('form_start_', '');
                 const form = await Form.findOne({ guild_id: interaction.guild.id, form_id: formId });
 
-                if (!form) return replyV2Interaction(client, interaction, await t('forms.handler.not_found', guildId), [], true);
+                if (!form) return interaction.reply({ embeds: [createEmbed(await t('forms.handler.not_found', guildId), '', 'error')], ephemeral: true });
 
                 // We can only show 5 inputs in a modal. 
                 // If more than 5 questions, we need pagination or limit it. 
@@ -67,7 +67,7 @@ module.exports = (client) => {
 
                 const questions = questionsRaw.split('|').map(q => q.trim()).filter(q => q.length > 0);
 
-                if (questions.length === 0) return replyV2Interaction(client, interaction, await t('forms.handler.questions_required', guildId), [], true);
+                if (questions.length === 0) return interaction.reply({ embeds: [createEmbed(await t('forms.handler.questions_required', guildId), '', 'error')], ephemeral: true });
 
                 const newForm = new Form({
                     guild_id: interaction.guild.id,
@@ -78,7 +78,7 @@ module.exports = (client) => {
                 });
 
                 await newForm.save();
-                await replyV2Interaction(client, interaction, await t('forms.handler.create_success', guildId, { title }), [], true);
+                await interaction.reply({ embeds: [createEmbed(await t('forms.handler.create_success', guildId, { title }), '', 'success')], ephemeral: true });
                 await interaction.message.delete().catch(() => {});
             }
 
@@ -87,13 +87,16 @@ module.exports = (client) => {
                 const formId = interaction.customId.replace('form_submit_', '');
                 const form = await Form.findOne({ guild_id: interaction.guild.id, form_id: formId });
 
-                if (!form) return replyV2Interaction(client, interaction, await t('forms.handler.not_found', guildId), [], true);
+                if (!form) return interaction.reply({ embeds: [createEmbed(await t('forms.handler.not_found', guildId), '', 'error')], ephemeral: true });
 
                 const logChannel = interaction.guild.channels.cache.get(form.log_channel_id);
-                if (!logChannel) return replyV2Interaction(client, interaction, await t('forms.handler.log_channel_not_found', guildId), [], true);
+                if (!logChannel) return interaction.reply({ embeds: [createEmbed(await t('forms.handler.log_channel_not_found', guildId), '', 'error')], ephemeral: true });
 
-                const embed = new EmbedBuilder()
-                    .setTitle(await t('forms.handler.new_submission_title', guildId, { title: form.title }))
+                const embed = createEmbed(
+                    await t('forms.handler.new_submission_title', guildId, { title: form.title }),
+                    '',
+                    'default'
+                )
                     .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
                     .setColor('#00ffaa')
                     .setTimestamp()
@@ -105,7 +108,7 @@ module.exports = (client) => {
                 });
 
                 await logChannel.send({ embeds: [embed] });
-                await replyV2Interaction(client, interaction, await t('forms.handler.submission_sent', guildId), [], true);
+                await interaction.reply({ embeds: [createEmbed(await t('forms.handler.submission_sent', guildId), '', 'success')], ephemeral: true });
             }
         }
     });

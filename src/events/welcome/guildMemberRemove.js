@@ -1,6 +1,5 @@
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
 
 module.exports = {
     name: 'guildMemberRemove',
@@ -21,7 +20,7 @@ module.exports = {
                 .replace(/{server}/g, member.guild.name)
                 .replace(/{count}/g, member.guild.memberCount.toString());
 
-            await sendV2Message(client, channel.id, message, []);
+            await channel.send({ content: message }).catch(() => {});
 
         } catch (error) {
             console.error(`Error in goodbye event for guild ${member.guild.id}:`, error);

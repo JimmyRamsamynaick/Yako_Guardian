@@ -1,5 +1,5 @@
 const Form = require('../../database/models/Form');
-const { sendV2Message, createV2Payload } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { t } = require('../../utils/i18n');
 
@@ -9,24 +9,21 @@ module.exports = {
     category: 'Modmail',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('formulaire.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('formulaire.permission', message.guild.id), '', 'error')] });
         }
 
         const sub = args[0] ? args[0].toLowerCase() : null;
         const formId = args[1];
 
         if (!sub) {
-            return sendV2Message(client, message.channel.id, 
-                await t('formulaire.usage', message.guild.id), 
-                []
-            );
+            return message.channel.send({ embeds: [createEmbed(await t('formulaire.usage', message.guild.id), '', 'info')] });
         }
 
         if (sub === 'create') {
-            if (!formId) return sendV2Message(client, message.channel.id, await t('modmail.formulaire.missing_id', message.guild.id), []);
+            if (!formId) return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.missing_id', message.guild.id), '', 'error')] });
             
             const existing = await Form.findOne({ guild_id: message.guild.id, form_id: formId });
-            if (existing) return sendV2Message(client, message.channel.id, await t('modmail.formulaire.exists', message.guild.id), []);
+            if (existing) return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.exists', message.guild.id), '', 'error')] });
 
             // Start creation flow via Button -> Modal
             // We can't open a Modal from a Message directly (needs interaction).
@@ -36,27 +33,27 @@ module.exports = {
                 new ButtonBuilder().setCustomId(`form_config_${formId}`).setLabel(await t('modmail.formulaire.btn_config', message.guild.id)).setStyle(ButtonStyle.Primary)
             );
 
-            return sendV2Message(client, message.channel.id, await t('modmail.formulaire.config_msg', message.guild.id, { id: formId }), [row]);
+            return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.config_msg', message.guild.id, { id: formId }), '', 'info')], components: [row] });
         }
 
         if (sub === 'delete') {
-            if (!formId) return sendV2Message(client, message.channel.id, await t('modmail.formulaire.missing_id', message.guild.id), []);
+            if (!formId) return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.missing_id', message.guild.id), '', 'error')] });
             await Form.deleteOne({ guild_id: message.guild.id, form_id: formId });
-            return sendV2Message(client, message.channel.id, await t('modmail.formulaire.deleted', message.guild.id, { id: formId }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.deleted', message.guild.id, { id: formId }), '', 'success')] });
         }
 
         if (sub === 'list') {
             const forms = await Form.find({ guild_id: message.guild.id });
-            if (forms.length === 0) return sendV2Message(client, message.channel.id, await t('modmail.formulaire.list_empty', message.guild.id), []);
+            if (forms.length === 0) return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.list_empty', message.guild.id), '', 'info')] });
             
             const list = forms.map(f => `- **${f.form_id}**: ${f.title} (${f.questions.length} questions)`).join('\n');
-            return sendV2Message(client, message.channel.id, await t('modmail.formulaire.list_title', message.guild.id, { list }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.list_title', message.guild.id, { list }), '', 'info')] });
         }
 
         if (sub === 'post') {
-            if (!formId) return sendV2Message(client, message.channel.id, await t('modmail.formulaire.missing_id', message.guild.id), []);
+            if (!formId) return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.missing_id', message.guild.id), '', 'error')] });
             const form = await Form.findOne({ guild_id: message.guild.id, form_id: formId });
-            if (!form) return sendV2Message(client, message.channel.id, await t('modmail.formulaire.not_found', message.guild.id), []);
+            if (!form) return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.not_found', message.guild.id), '', 'error')] });
 
             const targetChannel = message.mentions.channels.first() || message.guild.channels.cache.get(args[2]) || message.channel;
 
@@ -64,8 +61,8 @@ module.exports = {
                 new ButtonBuilder().setCustomId(`form_start_${formId}`).setLabel(form.title).setStyle(ButtonStyle.Success).setEmoji('📝')
             );
 
-            await targetChannel.send({ content: await t('modmail.formulaire.post_content', message.guild.id, { title: form.title }), components: [row] });
-            return sendV2Message(client, message.channel.id, await t('modmail.formulaire.posted', message.guild.id, { channel: targetChannel }), []);
+            await targetChannel.send({ embeds: [createEmbed(await t('modmail.formulaire.post_content', message.guild.id, { title: form.title }), '', 'info')], components: [row] });
+            return message.channel.send({ embeds: [createEmbed(await t('modmail.formulaire.posted', message.guild.id, { channel: targetChannel }), '', 'success')] });
         }
     }
 };

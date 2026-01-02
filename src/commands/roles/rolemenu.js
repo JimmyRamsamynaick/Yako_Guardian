@@ -1,7 +1,7 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const RoleMenu = require('../../database/models/RoleMenu');
 const { updateDashboard } = require('../../handlers/roleMenuHandler');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -10,7 +10,7 @@ module.exports = {
     category: 'Roles',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('roles.rolemenu.permission_admin', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.rolemenu.permission_admin', message.guild.id), '', 'error')] });
         }
 
         const menuName = args[0];
@@ -19,10 +19,10 @@ module.exports = {
             // List existing menus
             const menus = await RoleMenu.find({ guildId: message.guild.id });
             if (menus.length === 0) {
-                return sendV2Message(client, message.channel.id, await t('roles.rolemenu.no_menus', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('roles.rolemenu.no_menus', message.guild.id), '', 'error')] });
             }
             const list = menus.map(m => `- **${m.name}** (ID: ${m.id})`).join('\n');
-            return sendV2Message(client, message.channel.id, await t('roles.rolemenu.list_menus', message.guild.id, { list }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.rolemenu.list_menus', message.guild.id, { list }), '', 'info')] });
         }
 
         let menu = await RoleMenu.findOne({ guildId: message.guild.id, name: menuName });
@@ -75,6 +75,6 @@ module.exports = {
             new ButtonBuilder().setCustomId(`rolemenu_dashboard_${menu.id}`).setLabel(await t('roles.rolemenu.btn_refresh', message.guild.id)).setStyle(ButtonStyle.Secondary)
         );
 
-        return sendV2Message(client, message.channel.id, content, [row1, row2, row3]);
+        return message.channel.send({ embeds: [createEmbed(await t('roles.rolemenu.dashboard_title', message.guild.id), content, 'info')], components: [row1, row2, row3] });
     }
 };

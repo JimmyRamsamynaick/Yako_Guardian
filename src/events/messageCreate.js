@@ -5,6 +5,7 @@ const { db } = require('../database');
 const AutoReact = require('../database/models/AutoReact');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const CustomCommand = require('../database/models/CustomCommand');
+const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 
 module.exports = {
@@ -59,6 +60,78 @@ module.exports = {
         // Get guild settings (prefix)
         const config = await getGuildConfig(message.guild.id);
 
+        // --- LEVEL SYSTEM ---
+        if (config.community?.levels?.enabled) {
+            const Level = require('../database/models/Level');
+            let userLevel = await Level.findOne({ guildId: message.guild.id, userId: message.author.id });
+            if (!userLevel) {
+                userLevel = new Level({ guildId: message.guild.id, userId: message.author.id });
+            }
+
+            const now = Date.now();
+            if (now - userLevel.lastMessageTimestamp > 60000) { // 1 min cooldown
+                const xpGain = Math.floor(Math.random() * 10) + 15; // 15-25 XP
+                userLevel.xp += xpGain;
+                userLevel.lastMessageTimestamp = now;
+
+                const nextLevelXp = 5 * (userLevel.level ** 2) + 50 * userLevel.level + 100;
+                if (userLevel.xp >= nextLevelXp) {
+                    userLevel.level++;
+                    userLevel.xp -= nextLevelXp; // Optional: Keep overflow or reset? Usually accumulate. 
+                    // Let's use accumulated XP for rank, but here we just check threshold.
+                    // Simplified formula: XP needed for next level = 5*lvl^2 + 50*lvl + 100.
+                    // Better: Calculate total XP for level N. 
+                    // Let's keep it simple: if current XP > threshold -> Level Up.
+                    
+                    if (config.community.levels.channelId) {
+                        const channel = message.guild.channels.cache.get(config.community.levels.channelId) || message.channel;
+                        const msg = config.community.levels.message || await t('level.levelup_default', message.guild.id);
+                        const content = msg.replace(/{user}/g, message.author.toString()).replace(/{level}/g, userLevel.level);
+                        channel.send(content).catch(() => {});
+                    }
+                }
+                await userLevel.save();
+            }
+        }
+        // --- END LEVEL SYSTEM ---
+
+        // --- AUTO THREAD ---
+        if (config.automations?.autothread?.enabled && config.automations.autothread.channels.includes(message.channel.id)) {
+            // Create thread
+            // Check permissions
+            if (message.channel.permissionsFor(message.guild.members.me).has(PermissionsBitField.Flags.CreatePublicThreads)) {
+                 message.startThread({
+                    name: `${message.author.username} - Thread`,
+                    autoArchiveDuration: 1440 // 24h
+                }).catch(() => {});
+            }
+        }
+        // --- END AUTO THREAD ---
+
+        // --- AUTO SLOWMODE ---
+        if (config.automations?.autoslowmode?.enabled) {
+            const { limit, time, duration } = config.automations.autoslowmode;
+            if (limit && time && duration) {
+                const now = Date.now();
+                let msgs = slowmodeMap.get(message.channel.id) || [];
+                // Filter out old timestamps
+                msgs = msgs.filter(t => now - t < time);
+                msgs.push(now);
+                slowmodeMap.set(message.channel.id, msgs);
+
+                if (msgs.length > limit) {
+                    // Trigger Slowmode
+                    if (message.channel.rateLimitPerUser < duration) {
+                        if (message.channel.permissionsFor(message.guild.members.me).has(PermissionsBitField.Flags.ManageChannels)) {
+                            await message.channel.setRateLimitPerUser(duration, 'AutoSlowmode: Anti-Flood triggered').catch(() => {});
+                            slowmodeMap.set(message.channel.id, []); 
+                        }
+                    }
+                }
+            }
+        }
+        // --- END AUTO SLOWMODE ---
+
         // --- Automod Check ---
         const { checkAutomod } = require('../utils/moderation/automod');
         if (await checkAutomod(client, message, config)) return;
@@ -89,9 +162,8 @@ module.exports = {
 
         // 1. Standard Command
         if (command) {
-            const { sendV2Message } = require('../utils/componentUtils');
             if (!isOwner && !freeCommands.includes(command.name) && !checkSubscription(message.guild.id)) {
-                return sendV2Message(client, message.channel.id, await t('common.license_required', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(await t('common.license_required', message.guild.id), '', 'error')] });
             }
 
             // --- PERMISSION LEVEL SYSTEM (1-5) ---
@@ -136,9 +208,9 @@ module.exports = {
 
             if (userLevel < requiredLevel) {
                 if (requiredLevel === 10) {
-                     return sendV2Message(client, message.channel.id, await t('common.owner_only', message.guild.id), []);
+                     return message.channel.send({ embeds: [createEmbed(await t('common.owner_only', message.guild.id), '', 'error')] });
                 }
-                return sendV2Message(client, message.channel.id, await t('common.permission_denied_level', message.guild.id, { required: requiredLevel, user: userLevel }), []);
+                return message.channel.send({ embeds: [createEmbed(await t('common.permission_denied_level', message.guild.id, { required: requiredLevel, user: userLevel }), '', 'error')] });
             }
             // --- END PERMISSION SYSTEM ---
 
@@ -178,7 +250,7 @@ module.exports = {
                     // Role ID
                     else {
                         if (!message.member.roles.cache.has(reqPerm) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !isOwner) {
-                             return sendV2Message(client, message.channel.id, await t('common.custom_permission_denied', message.guild.id), []);
+                             return message.channel.send({ embeds: [createEmbed(await t('common.custom_permission_denied', message.guild.id), '', 'error')] });
                         }
                     }
                 }
@@ -190,19 +262,18 @@ module.exports = {
                 }
             } catch (error) {
                 logger.error(`Error executing command ${command.name}:`, error);
-                sendV2Message(client, message.channel.id, await t('common.execution_error', message.guild.id), []);
+                message.channel.send({ embeds: [createEmbed(await t('common.execution_error', message.guild.id), '', 'error')] });
             }
         } 
         // 2. Custom Command
         else {
             const customCmd = await CustomCommand.findOne({ guildId: message.guild.id, trigger: commandName });
             if (customCmd) {
-                const { sendV2Message } = require('../utils/componentUtils');
                 if (!isOwner && !checkSubscription(message.guild.id)) {
-                    return sendV2Message(client, message.channel.id, await t('common.custom_command_license', message.guild.id), []);
+                    return message.channel.send({ embeds: [createEmbed(await t('common.custom_command_license', message.guild.id), '', 'error')] });
                 }
                 // await message.channel.send(customCmd.response);
-                await sendV2Message(client, message.channel.id, customCmd.response, []);
+                await message.channel.send({ embeds: [createEmbed(customCmd.response, '', 'info')] });
             }
         }
     },

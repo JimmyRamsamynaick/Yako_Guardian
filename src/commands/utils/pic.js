@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -11,10 +11,12 @@ module.exports = {
         try {
             user = await client.users.fetch(userId);
         } catch {
-            return sendV2Message(client, message.channel.id, await t('pic.not_found', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('pic.not_found', message.guild.id), '', 'error')] });
         }
 
         const url = user.displayAvatarURL({ size: 4096, extension: 'png' });
-        await sendV2Message(client, message.channel.id, (await t('pic.title', message.guild.id, { tag: user.tag })) + `\n${url}`, []);
+        const embed = createEmbed((await t('pic.title', message.guild.id, { tag: user.tag })), '', 'info');
+        embed.setImage(url);
+        await message.channel.send({ embeds: [embed] });
     }
 };

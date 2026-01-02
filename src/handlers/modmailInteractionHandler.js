@@ -1,7 +1,7 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, RoleSelectMenuBuilder, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { createTicket } = require('../utils/modmailUtils');
-const { updateV2Interaction, replyV2Interaction, sendV2Message } = require('../utils/componentUtils');
+const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 
 async function handleModmailInteraction(client, interaction) {
@@ -33,14 +33,14 @@ async function handleModmailInteraction(client, interaction) {
         const guildId = interaction.values[0];
         const targetGuild = client.guilds.cache.get(guildId);
         
-        if (!targetGuild) return replyV2Interaction(client, interaction, await t('modmail.handler.server_not_found', interaction.guild.id), [], true);
+        if (!targetGuild) return interaction.reply({ embeds: [createEmbed(await t('modmail.handler.server_not_found', interaction.guild.id), '', 'error')], ephemeral: true });
 
         try {
             await createTicket(client, interaction.user, targetGuild, await t('modmail.handler.ticket_created_select', targetGuild.id));
             // Update the menu to show success
-            await updateV2Interaction(client, interaction, await t('modmail.ticket_created', targetGuild.id, { server: targetGuild.name }), []);
+            await interaction.update({ embeds: [createEmbed(await t('modmail.ticket_created', targetGuild.id, { server: targetGuild.name }), '', 'success')], components: [] });
         } catch (e) {
-            await replyV2Interaction(client, interaction, await t('modmail.ticket_error', targetGuild.id, { error: e.message }), [], true);
+            await interaction.reply({ embeds: [createEmbed(await t('modmail.ticket_error', targetGuild.id, { error: e.message }), '', 'error')], ephemeral: true });
         }
         return;
     }
@@ -51,11 +51,11 @@ async function handleModmailInteraction(client, interaction) {
         const ticket = await ActiveTicket.findOne({ channelId: interaction.channelId });
         
         if (!ticket) {
-            return replyV2Interaction(client, interaction, await t('modmail.ticket_inactive', interaction.guild.id), [], true);
+            return interaction.reply({ embeds: [createEmbed(await t('modmail.ticket_inactive', interaction.guild.id), '', 'error')], ephemeral: true });
         }
 
         if (ticket.claimedBy) {
-            return replyV2Interaction(client, interaction, await t('modmail.ticket_already_claimed', interaction.guild.id, { user: `<@${ticket.claimedBy}>` }), [], true);
+            return interaction.reply({ embeds: [createEmbed(await t('modmail.ticket_already_claimed', interaction.guild.id, { user: `<@${ticket.claimedBy}>` }), '', 'error')], ephemeral: true });
         }
 
         ticket.claimedBy = interaction.user.id;
@@ -74,7 +74,7 @@ async function handleModmailInteraction(client, interaction) {
             console.error("Failed to update claim button:", e);
         }
 
-        await replyV2Interaction(client, interaction, await t('modmail.ticket_claimed', interaction.guild.id, { user: interaction.user.toString() }));
+        await interaction.reply({ embeds: [createEmbed(await t('modmail.ticket_claimed', interaction.guild.id, { user: interaction.user.toString() }), '', 'success')] });
         return;
     }
 
@@ -92,7 +92,7 @@ async function handleModmailInteraction(client, interaction) {
             // We use the guild's language for the DM notification
             if (user) user.send(await t('modmail.ticket_closed_dm', ticket.guildId, { server: interaction.guild.name })).catch(() => {});
         } else {
-            replyV2Interaction(client, interaction, await t('modmail.ticket_inactive', interaction.guild.id), [], true);
+            interaction.reply({ embeds: [createEmbed(await t('modmail.ticket_inactive', interaction.guild.id), '', 'error')], ephemeral: true });
         }
         return;
     }
@@ -153,11 +153,13 @@ async function showModmailMenu(client, interaction, config) {
                 .setPlaceholder(await t('modmail.placeholder_role', guildId))
         );
 
+    const embed = createEmbed(content, '', 'info');
+
     if (interaction.type === 3) {
-        await updateV2Interaction(client, interaction, content, [rowControls, rowCategory, rowRole]);
+        await interaction.update({ embeds: [embed], components: [rowControls, rowCategory, rowRole] });
     } else {
         // Message
-        await sendV2Message(client, interaction.channel.id, content, [rowControls, rowCategory, rowRole]);
+        await interaction.channel.send({ embeds: [embed], components: [rowControls, rowCategory, rowRole] });
     }
 }
 
@@ -188,10 +190,12 @@ async function showReportMenu(client, interaction, config) {
                 .setChannelTypes(ChannelType.GuildText)
         );
 
+    const embed = createEmbed(content, '', 'info');
+
     if (interaction.type === 3) { // Component
-        await updateV2Interaction(client, interaction, content, [rowControls, rowChannel]);
+        await interaction.update({ embeds: [embed], components: [rowControls, rowChannel] });
     } else {
-        await sendV2Message(client, interaction.channel.id, content, [rowControls, rowChannel]);
+        await interaction.channel.send({ embeds: [embed], components: [rowControls, rowChannel] });
     }
 }
 
@@ -199,7 +203,7 @@ async function showReportMenu(client, interaction, config) {
 async function handleReportContext(client, interaction) {
     const config = await getGuildConfig(interaction.guild.id);
     if (!config.report || !config.report.enabled || !config.report.channelId) {
-        return replyV2Interaction(client, interaction, await t('report.disabled', interaction.guild.id), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('report.disabled', interaction.guild.id), '', 'error')], ephemeral: true });
     }
 
     const message = interaction.targetMessage;
@@ -228,12 +232,12 @@ async function handleReportModal(client, interaction) {
     
     const config = await getGuildConfig(guildId);
     if (!config.report || !config.report.channelId) {
-        return replyV2Interaction(client, interaction, await t('report.config_invalid', guildId), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('report.config_invalid', guildId), '', 'error')], ephemeral: true });
     }
 
     const logChannel = interaction.guild.channels.cache.get(config.report.channelId);
     if (!logChannel) {
-        return replyV2Interaction(client, interaction, await t('report.channel_not_found', guildId), [], true);
+        return interaction.reply({ embeds: [createEmbed(await t('report.channel_not_found', guildId), '', 'error')], ephemeral: true });
     }
 
     // Fetch reported message if possible (to get content/author)
@@ -266,9 +270,9 @@ async function handleReportModal(client, interaction) {
         );
 
     // Using V2 for the log message too? Yes.
-    await sendV2Message(client, logChannel.id, reportContent, [row]);
+    await logChannel.send({ embeds: [createEmbed(reportContent, '', 'error')], components: [row] });
 
-    await replyV2Interaction(client, interaction, await t('modmail.handler.report_sent', guildId), [], true);
+    await interaction.reply({ embeds: [createEmbed(await t('modmail.handler.report_sent', guildId), '', 'success')], ephemeral: true });
 }
 
 module.exports = { handleModmailInteraction, showModmailMenu, showReportMenu, handleReportContext };

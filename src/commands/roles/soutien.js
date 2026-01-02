@@ -1,8 +1,7 @@
 const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
-
-const { sendV2Message } = require('../../utils/componentUtils');
 
 module.exports = {
     name: 'soutien',
@@ -10,7 +9,7 @@ module.exports = {
     category: 'Roles',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('roles.soutien.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.soutien.permission', message.guild.id), '', 'error')] });
         }
 
         const sub = args[0]?.toLowerCase();
@@ -23,38 +22,39 @@ module.exports = {
         const soutien = config.soutien || { enabled: false };
 
         if (!sub || sub === 'info') {
-            return sendV2Message(client, message.channel.id, await t('roles.soutien.info', message.guild.id, {
+            const content = await t('roles.soutien.info', message.guild.id, {
                 enabled: soutien.enabled ? '✅' : '❌',
                 role: soutien.roleId ? `<@&${soutien.roleId}>` : await t('common.not_defined', message.guild.id),
                 status: soutien.statusText || await t('common.not_defined', message.guild.id)
-            }), []);
+            });
+            return message.channel.send({ embeds: [createEmbed(await t('roles.soutien.title', message.guild.id), content, 'info')] });
         }
 
         if (sub === 'on') {
             config.soutien.enabled = true;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('roles.soutien.enabled', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.soutien.enabled', message.guild.id), '', 'success')] });
         }
         if (sub === 'off') {
             config.soutien.enabled = false;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('roles.soutien.disabled', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.soutien.disabled', message.guild.id), '', 'success')] });
         }
 
         if (sub === 'role') {
             const role = message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
-            if (!role) return sendV2Message(client, message.channel.id, await t('roles.soutien.invalid_role', message.guild.id), []);
+            if (!role) return message.channel.send({ embeds: [createEmbed(await t('roles.soutien.invalid_role', message.guild.id), '', 'error')] });
             config.soutien.roleId = role.id;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('roles.soutien.role_set', message.guild.id, { role: role.name }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.soutien.role_set', message.guild.id, { role: role.name }), '', 'success')] });
         }
 
         if (sub === 'status' || sub === 'statut') {
             const text = args.slice(1).join(' ');
-            if (!text) return sendV2Message(client, message.channel.id, await t('roles.soutien.invalid_text', message.guild.id), []);
+            if (!text) return message.channel.send({ embeds: [createEmbed(await t('roles.soutien.invalid_text', message.guild.id), '', 'error')] });
             config.soutien.statusText = text;
             await config.save();
-            return sendV2Message(client, message.channel.id, await t('roles.soutien.status_set', message.guild.id, { text }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.soutien.status_set', message.guild.id, { text }), '', 'success')] });
         }
     }
 };

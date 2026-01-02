@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const BotOwner = require('../../database/models/BotOwner');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const { t } = require('../../utils/i18n');
@@ -19,25 +19,49 @@ module.exports = {
         // --- CLEAR OWNERS ---
         if (commandName === 'owner' && sub === 'clear') {
             if (rootOwnerId && message.author.id !== rootOwnerId) {
-                return sendV2Message(client, message.channel.id, await t('owner.root_owner_only', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('owner.root_owner_only', message.guild.id),
+                    '',
+                    'error'
+                )] });
             }
             
             // Confirm button could be added here for UX, but simple command for now
             const deleted = await BotOwner.deleteMany({});
-            return sendV2Message(client, message.channel.id, await t('owner.owners_cleared', message.guild.id, { count: deleted.deletedCount }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('owner.owners_cleared', message.guild.id, { count: deleted.deletedCount }),
+                '',
+                'success'
+            )] });
         }
 
         // --- UNOWNER (Remove) ---
         if (commandName === 'unowner') {
             const targetId = args[0]?.replace(/[<@!>]/g, '');
-            if (!targetId || !targetId.match(/^\d+$/)) return sendV2Message(client, message.channel.id, await t('owner.usage_unowner', message.guild.id), []);
+            if (!targetId || !targetId.match(/^\d+$/)) return message.channel.send({ embeds: [createEmbed(
+                await t('owner.usage_unowner', message.guild.id),
+                '',
+                'error'
+            )] });
 
-            if (rootOwnerId && targetId === rootOwnerId) return sendV2Message(client, message.channel.id, await t('owner.remove_root_error', message.guild.id), []);
+            if (rootOwnerId && targetId === rootOwnerId) return message.channel.send({ embeds: [createEmbed(
+                await t('owner.remove_root_error', message.guild.id),
+                '',
+                'error'
+            )] });
 
             const deleted = await BotOwner.findOneAndDelete({ userId: targetId });
-            if (!deleted) return sendV2Message(client, message.channel.id, await t('owner.not_owner', message.guild.id), []);
+            if (!deleted) return message.channel.send({ embeds: [createEmbed(
+                await t('owner.not_owner', message.guild.id),
+                '',
+                'error'
+            )] });
 
-            return sendV2Message(client, message.channel.id, await t('owner.unowner_success', message.guild.id, { user: `<@${targetId}>` }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('owner.unowner_success', message.guild.id, { user: `<@${targetId}>` }),
+                '',
+                'success'
+            )] });
         }
 
         // --- OWNER ADD ---
@@ -51,24 +75,48 @@ module.exports = {
             }
 
             if (targetId) {
-                if (await isBotOwner(targetId)) return sendV2Message(client, message.channel.id, await t('owner.already_owner', message.guild.id), []);
+                if (await isBotOwner(targetId)) return message.channel.send({ embeds: [createEmbed(
+                    await t('owner.already_owner', message.guild.id),
+                    '',
+                    'warning'
+                )] });
 
                 await BotOwner.create({ userId: targetId, addedBy: message.author.id });
-                return sendV2Message(client, message.channel.id, await t('owner.owner_added', message.guild.id, { user: `<@${targetId}>` }), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('owner.owner_added', message.guild.id, { user: `<@${targetId}>` }),
+                    '',
+                    'success'
+                )] });
             }
         }
 
         // --- OWNER DEL/REMOVE ---
         if (commandName === 'owner' && (sub === 'del' || sub === 'remove') && args[1]) {
              const targetId = args[1].replace(/[<@!>]/g, '');
-             if (!targetId.match(/^\d+$/)) return sendV2Message(client, message.channel.id, await t('owner.usage_owner_del', message.guild.id), []);
+             if (!targetId.match(/^\d+$/)) return message.channel.send({ embeds: [createEmbed(
+                 await t('owner.usage_owner_del', message.guild.id),
+                 '',
+                 'error'
+             )] });
 
-             if (rootOwnerId && targetId === rootOwnerId) return sendV2Message(client, message.channel.id, await t('owner.remove_root_error', message.guild.id), []);
+             if (rootOwnerId && targetId === rootOwnerId) return message.channel.send({ embeds: [createEmbed(
+                 await t('owner.remove_root_error', message.guild.id),
+                 '',
+                 'error'
+             )] });
 
              const deleted = await BotOwner.findOneAndDelete({ userId: targetId });
-             if (!deleted) return sendV2Message(client, message.channel.id, await t('owner.not_owner', message.guild.id), []);
+             if (!deleted) return message.channel.send({ embeds: [createEmbed(
+                 await t('owner.not_owner', message.guild.id),
+                 '',
+                 'error'
+             )] });
 
-             return sendV2Message(client, message.channel.id, await t('owner.unowner_success', message.guild.id, { user: `<@${targetId}>` }), []);
+             return message.channel.send({ embeds: [createEmbed(
+                 await t('owner.unowner_success', message.guild.id, { user: `<@${targetId}>` }),
+                 '',
+                 'success'
+             )] });
         }
 
         // --- OWNER LIST (Default) ---
@@ -82,6 +130,10 @@ module.exports = {
              content += lines.join('\n');
         }
 
-        return sendV2Message(client, message.channel.id, content, []);
+        return message.channel.send({ embeds: [createEmbed(
+            content,
+            '',
+            'info'
+        )] });
     }
 };

@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -8,6 +8,6 @@ module.exports = {
     async run(client, message, args) {
         const content = await t('changelogs.content', message.guild.id);
         const title = await t('changelogs.title', message.guild.id);
-        await sendV2Message(client, message.channel.id, `${title}\n\n${content}`, []);
+        await message.channel.send({ embeds: [createEmbed(`${title}\n\n${content}`, '', 'info')] });
     }
 };

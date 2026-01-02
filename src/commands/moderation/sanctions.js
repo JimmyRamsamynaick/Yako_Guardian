@@ -1,6 +1,6 @@
-const { PermissionsBitField, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getSanctions } = require('../../utils/moderation/sanctionUtils');
-const { sendV2Message, updateV2Interaction } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -10,20 +10,22 @@ module.exports = {
     usage: 'sanctions <membre>',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-            return sendV2Message(client, message.channel.id, await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
         }
 
         const targetMember = message.mentions.members.first() || await message.guild.members.fetch(args[0]).catch(() => null);
         const userId = targetMember ? targetMember.id : args[0];
 
         if (!userId) {
-            return sendV2Message(client, message.channel.id, await t('moderation.user_not_found', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.user_not_found', message.guild.id), 'error')] });
         }
+
+        const replyMsg = await message.channel.send({ embeds: [createEmbed('Sanctions', `${THEME.icons.loading} Récupération de l'historique...`, 'loading')] });
 
         const sanctions = await getSanctions(message.guild.id, userId);
 
         if (sanctions.length === 0) {
-            return sendV2Message(client, message.channel.id, await t('moderation.sanctions_none', message.guild.id, { user: userId }), []);
+            return replyMsg.edit({ embeds: [createEmbed('Historique Vierge', await t('moderation.sanctions_none', message.guild.id, { user: userId }), 'success')] });
         }
 
         // Pagination
@@ -35,11 +37,16 @@ module.exports = {
             const start = page * itemsPerPage;
             const currentSanctions = sanctions.slice(start, start + itemsPerPage);
 
-            const embed = new EmbedBuilder()
-                .setTitle(await t('moderation.sanctions_title', message.guild.id, { user: targetMember ? targetMember.user.tag : userId }))
-                .setColor('#ff0000')
-                .setThumbnail(targetMember ? targetMember.user.displayAvatarURL({ dynamic: true }) : null)
-                .setFooter({ text: await t('moderation.sanctions_page_footer', message.guild.id, { current: page + 1, total: totalPages, count: sanctions.length }) });
+            const embed = createEmbed(
+                await t('moderation.sanctions_title', message.guild.id, { user: targetMember ? targetMember.user.tag : userId }),
+                `${THEME.separators.line}\n**Total:** ${sanctions.length} sanction(s)\n${THEME.separators.line}`,
+                'primary',
+                { footer: await t('moderation.sanctions_page_footer', message.guild.id, { current: page + 1, total: totalPages, count: sanctions.length }) }
+            );
+
+            if (targetMember) {
+                embed.setThumbnail(targetMember.user.displayAvatarURL({ dynamic: true }));
+            }
 
             for (const s of currentSanctions) {
                 const moderator = await client.users.fetch(s.moderatorId).catch(() => null);
@@ -75,10 +82,10 @@ module.exports = {
             components.push(row);
         }
 
-        const msg = await message.channel.send({ embeds: [embed], components });
+        await replyMsg.edit({ embeds: [embed], components });
 
         if (totalPages > 1) {
-            const collector = msg.createMessageComponentCollector({ time: 60000 });
+            const collector = replyMsg.createMessageComponentCollector({ time: 60000 });
 
             collector.on('collect', async (i) => {
                 if (i.user.id !== message.author.id) {

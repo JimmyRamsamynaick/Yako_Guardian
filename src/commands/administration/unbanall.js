@@ -1,4 +1,4 @@
-const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -7,7 +7,11 @@ module.exports = {
     category: 'Administration',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('unbanall.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('unbanall.permission', message.guild.id),
+                '',
+                'error'
+            )] });
         }
 
         const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
@@ -17,43 +21,55 @@ module.exports = {
             new ButtonBuilder().setCustomId('unbanall_cancel').setLabel(await t('unbanall.btn_cancel', message.guild.id)).setStyle(ButtonStyle.Secondary)
         );
 
-        const msg = await sendV2Message(client, message.channel.id, 
-            await t('unbanall.warning', message.guild.id), 
-            [row]
-        );
+        const msg = await message.channel.send({
+            embeds: [createEmbed(
+                await t('unbanall.warning', message.guild.id),
+                '',
+                'warning'
+            )],
+            components: [row]
+        });
 
-        // Note: sendV2Message returns a raw message object, not a DJS Message object with createMessageComponentCollector
-        // We need to fetch the message as a DJS object or use the interaction handler.
-        // However, for this specific command which uses a collector, it's better to stick to DJS channel.send if we need the collector on the message.
-        // BUT, we must use V2 components.
-        // Problem: DJS v14 Message object doesn't support V2 components natively in channel.send if we want to use the collector on it easily?
-        // Actually, sendV2Message uses REST. We can fetch the message via channel.messages.fetch(msg.id).
-        
-        const fetchedMsg = await message.channel.messages.fetch(msg.id);
-        const collector = fetchedMsg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 15000 });
+        const collector = msg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 15000 });
 
         collector.on('collect', async i => {
-            if (i.user.id !== message.author.id) return replyV2Interaction(client, i, await t('unbanall.not_allowed', message.guild.id), [], true);
+            if (i.user.id !== message.author.id) {
+                return i.reply({ content: await t('unbanall.not_allowed', message.guild.id), ephemeral: true });
+            }
 
             if (i.customId === 'unbanall_confirm') {
-                await updateV2Interaction(client, i, await t('unbanall.progress', message.guild.id), []);
+                await i.update({
+                    embeds: [createEmbed(await t('unbanall.progress', message.guild.id), '', 'loading')],
+                    components: []
+                });
                 
                 try {
                     const bans = await message.guild.bans.fetch();
-                    if (bans.size === 0) return updateV2Interaction(client, i, await t('unbanall.no_bans', message.guild.id), []);
+                    if (bans.size === 0) {
+                        return i.editReply({
+                            embeds: [createEmbed(await t('unbanall.no_bans', message.guild.id), '', 'info')]
+                        });
+                    }
 
                     let count = 0;
                     for (const [id, ban] of bans) {
                         await message.guild.members.unban(id);
                         count++;
                     }
-                    await updateV2Interaction(client, i, await t('unbanall.success', message.guild.id, { count: count }), []);
+                    await i.editReply({
+                        embeds: [createEmbed(await t('unbanall.success', message.guild.id, { count: count }), '', 'success')]
+                    });
                 } catch (e) {
                     console.error(e);
-                    await updateV2Interaction(client, i, await t('unbanall.error', message.guild.id), []);
+                    await i.editReply({
+                        embeds: [createEmbed(await t('unbanall.error', message.guild.id), '', 'error')]
+                    });
                 }
             } else {
-                await updateV2Interaction(client, i, await t('unbanall.cancelled', message.guild.id), []);
+                await i.update({
+                    embeds: [createEmbed(await t('unbanall.cancelled', message.guild.id), '', 'error')],
+                    components: []
+                });
             }
         });
     }

@@ -1,5 +1,5 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -10,10 +10,10 @@ module.exports = {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
 
         const content = args.join(' ');
-        if (!content) return sendV2Message(client, message.channel.id, await t('say.usage', message.guild.id), []);
+        if (!content) return message.channel.send({ embeds: [createEmbed(await t('say.usage', message.guild.id), '', 'info')] });
 
         message.delete().catch(() => {});
         // message.channel.send(content);
-        await sendV2Message(client, message.channel.id, content, []);
+        await message.channel.send({ embeds: [createEmbed(content, '', 'info')] });
     }
 };

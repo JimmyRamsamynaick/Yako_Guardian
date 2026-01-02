@@ -1,5 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -27,6 +27,6 @@ module.exports = {
                     .setURL(websiteUrl)
             );
 
-        sendV2Message(client, message.channel.id, content, [row]);
+        message.channel.send({ embeds: [createEmbed('Premium', content, 'info')], components: [row] });
     }
 };

@@ -1,5 +1,5 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'helpall',
@@ -48,6 +48,6 @@ module.exports = {
         // Level 5
         if (levels['5'].length > 0) content += (await t('helpall.level5', message.guild.id)) + `\n${levels['5'].map(c => `\`${c}\``).join(', ')}\n\n`;
         
-        return sendV2Message(client, message.channel.id, content, []);
+        return message.channel.send({ embeds: [createEmbed('Help All', content, 'info')] });
     }
 };

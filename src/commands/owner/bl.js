@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const GlobalBlacklist = require('../../database/models/GlobalBlacklist');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const { t } = require('../../utils/i18n');
@@ -17,28 +17,52 @@ module.exports = {
         // --- UNBL ---
         if (commandName === 'unbl') {
             const targetId = args[0]?.replace(/[<@!>]/g, '');
-            if (!targetId || !targetId.match(/^\d+$/)) return sendV2Message(client, message.channel.id, await t('bl.usage_unbl', message.guild.id), []);
+            if (!targetId || !targetId.match(/^\d+$/)) return message.channel.send({ embeds: [createEmbed(
+                await t('bl.usage_unbl', message.guild.id),
+                '',
+                'error'
+            )] });
 
             const deleted = await GlobalBlacklist.findOneAndDelete({ userId: targetId });
-            if (!deleted) return sendV2Message(client, message.channel.id, await t('bl.not_blacklisted', message.guild.id), []);
+            if (!deleted) return message.channel.send({ embeds: [createEmbed(
+                await t('bl.not_blacklisted', message.guild.id),
+                '',
+                'error'
+            )] });
 
-            return sendV2Message(client, message.channel.id, await t('bl.unbl_success', message.guild.id, { user: `<@${targetId}>` }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('bl.unbl_success', message.guild.id, { user: `<@${targetId}>` }),
+                '',
+                'success'
+            )] });
         }
 
         // --- BL INFO ---
         if (commandName === 'blinfo') {
              const targetId = args[0]?.replace(/[<@!>]/g, '');
-             if (!targetId) return sendV2Message(client, message.channel.id, await t('bl.usage_blinfo', message.guild.id), []);
+             if (!targetId) return message.channel.send({ embeds: [createEmbed(
+                 await t('bl.usage_blinfo', message.guild.id),
+                 '',
+                 'info'
+             )] });
 
              const bl = await GlobalBlacklist.findOne({ userId: targetId });
-             if (!bl) return sendV2Message(client, message.channel.id, await t('bl.info_not_blacklisted', message.guild.id), []);
+             if (!bl) return message.channel.send({ embeds: [createEmbed(
+                 await t('bl.info_not_blacklisted', message.guild.id),
+                 '',
+                 'info'
+             )] });
 
-             return sendV2Message(client, message.channel.id, await t('bl.bl_info', message.guild.id, { 
+             return message.channel.send({ embeds: [createEmbed(
+                 await t('bl.bl_info', message.guild.id, { 
                  user: `<@${bl.userId}>`,
                  reason: bl.reason,
                  moderator: `<@${bl.addedBy}>`,
                  date: bl.addedAt.toLocaleDateString()
-             }), []);
+             }),
+                 '',
+                 'info'
+             )] });
         }
 
         // --- BL LIST ---
@@ -55,19 +79,35 @@ module.exports = {
                      content += bls.slice(0, 15).map(b => `• <@${b.userId}> | ${b.reason}`).join('\n');
                      if (count > 15) content += await t('bl.bl_more', message.guild.id, { count: count - 15 });
                  }
-                 return sendV2Message(client, message.channel.id, content, []);
+                 return message.channel.send({ embeds: [createEmbed(
+                     content,
+                     '',
+                     'info'
+                 )] });
              }
         }
 
         // --- BL DEL/REMOVE ---
         if (commandName === 'bl' && (sub === 'del' || sub === 'remove') && args[1]) {
             const targetId = args[1].replace(/[<@!>]/g, '');
-            if (!targetId || !targetId.match(/^\d+$/)) return sendV2Message(client, message.channel.id, await t('bl.usage_bl_del', message.guild.id), []);
+            if (!targetId || !targetId.match(/^\d+$/)) return message.channel.send({ embeds: [createEmbed(
+                await t('bl.usage_bl_del', message.guild.id),
+                '',
+                'error'
+            )] });
 
             const deleted = await GlobalBlacklist.findOneAndDelete({ userId: targetId });
-            if (!deleted) return sendV2Message(client, message.channel.id, await t('bl.not_blacklisted', message.guild.id), []);
+            if (!deleted) return message.channel.send({ embeds: [createEmbed(
+                await t('bl.not_blacklisted', message.guild.id),
+                '',
+                'error'
+            )] });
 
-            return sendV2Message(client, message.channel.id, await t('bl.unbl_success', message.guild.id, { user: `<@${targetId}>` }), []);
+            return message.channel.send({ embeds: [createEmbed(
+                await t('bl.unbl_success', message.guild.id, { user: `<@${targetId}>` }),
+                '',
+                'success'
+            )] });
         }
 
         // --- BL ADD ---
@@ -86,10 +126,18 @@ module.exports = {
             if (targetId) {
                 if (!targetId.match(/^\d+$/)) return; // Should not happen if regex passed
 
-                if (await GlobalBlacklist.findOne({ userId: targetId })) return sendV2Message(client, message.channel.id, await t('bl.already_blacklisted', message.guild.id), []);
+                if (await GlobalBlacklist.findOne({ userId: targetId })) return message.channel.send({ embeds: [createEmbed(
+                    await t('bl.already_blacklisted', message.guild.id),
+                    '',
+                    'warning'
+                )] });
                 
                 await GlobalBlacklist.create({ userId: targetId, reason, addedBy: message.author.id });
-                sendV2Message(client, message.channel.id, await t('bl.bl_added', message.guild.id, { user: `<@${targetId}>`, reason }), []);
+                message.channel.send({ embeds: [createEmbed(
+                    await t('bl.bl_added', message.guild.id, { user: `<@${targetId}>`, reason }),
+                    '',
+                    'success'
+                )] });
 
                 // Trigger Global Ban
                 const banReason = await t('antiraid.reasons.global_blacklist', message.guild.id, { reason });

@@ -1,6 +1,6 @@
 const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
-const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -8,7 +8,7 @@ module.exports = {
     description: 'Configure la publication automatique',
     async execute(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('autopublish.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('autopublish.permission', message.guild.id), '', 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -24,10 +24,12 @@ async function showAutoPublishMenu(client, interaction, config) {
     const status = enabled ? await t('autopublish.status_on', guildId) : await t('autopublish.status_off', guildId);
     const channelList = channels.length > 0 ? channels.map(c => `<#${c}>`).join(', ') : await t('autopublish.channels_none', guildId);
     
-    const content = (await t('autopublish.menu_title', guildId)) + `\n\n` +
+    const description = (await t('autopublish.menu_title', guildId)) + `\n\n` +
                     `${status}\n` +
                     `${channelList}\n\n` +
                     (await t('autopublish.description', guildId));
+    
+    const embed = createEmbed(description, '', 'info');
                     
     const rowControls = new ActionRowBuilder()
         .addComponents(
@@ -47,10 +49,10 @@ async function showAutoPublishMenu(client, interaction, config) {
                 .setMaxValues(25)
         );
 
-    if (interaction.type === 3) { // Component interaction
-        await updateV2Interaction(client, interaction, content, [rowControls, rowChannel]);
+    if (interaction.isMessageComponent && interaction.isMessageComponent()) {
+        await interaction.update({ embeds: [embed], components: [rowControls, rowChannel] });
     } else {
-        await sendV2Message(client, interaction.channel.id, content, [rowControls, rowChannel]);
+        await interaction.channel.send({ embeds: [embed], components: [rowControls, rowChannel] });
     }
 }
 

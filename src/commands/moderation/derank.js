@@ -1,6 +1,6 @@
 const { PermissionsBitField, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { t } = require('../../utils/i18n');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'derank',
@@ -9,16 +9,16 @@ module.exports = {
     usage: 'derank <user>',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-            return sendV2Message(client, message.channel.id, await t('common.permission_missing', message.guild.id, { perm: 'ManageRoles' }), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ManageRoles' }), 'error')] });
         }
 
         const targetMember = message.mentions.members.first() || await message.guild.members.fetch(args[0]).catch(() => null);
         if (!targetMember) {
-            return sendV2Message(client, message.channel.id, await t('moderation.member_not_found', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.member_not_found', message.guild.id), 'error')] });
         }
 
         if (targetMember.roles.highest.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, await t('moderation.role_hierarchy', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.role_hierarchy', message.guild.id), 'error')] });
         }
 
         // Confirmation
@@ -37,8 +37,14 @@ module.exports = {
                     .setStyle(ButtonStyle.Secondary)
             );
 
+        const confirmEmbed = createEmbed(
+            'Confirmation Requise',
+            `${THEME.icons.warning} ${await t('moderation.derank_confirm', message.guild.id, { user: targetMember.user.tag })}\n\nCette action retirera **tous** les rôles du membre.`,
+            'warning'
+        );
+
         const msg = await message.channel.send({
-            content: await t('moderation.derank_confirm', message.guild.id, { user: targetMember.user.tag }),
+            embeds: [confirmEmbed],
             components: [row]
         });
 
@@ -48,6 +54,11 @@ module.exports = {
         collector.on('collect', async i => {
             if (i.customId === confirmId) {
                 try {
+                    await i.update({ 
+                        embeds: [createEmbed('Derank', `${THEME.icons.loading} Suppression des rôles en cours...`, 'loading')], 
+                        components: [] 
+                    });
+
                     const rolesToRemove = targetMember.roles.cache.filter(role => 
                         role.name !== '@everyone' && 
                         !role.managed && 
@@ -55,18 +66,37 @@ module.exports = {
                     );
 
                     await targetMember.roles.remove(rolesToRemove);
-                    await i.update({ content: await t('moderation.derank_success', message.guild.id, { user: targetMember.user.tag, count: rolesToRemove.size }), components: [] });
+                    
+                    await msg.edit({ 
+                        embeds: [createEmbed(
+                            'Derank Effectué', 
+                            `${THEME.icons.success} ${await t('moderation.derank_success', message.guild.id, { user: targetMember.user.tag, count: rolesToRemove.size })}`, 
+                            'success'
+                        )],
+                        components: []
+                    });
                 } catch (err) {
                     console.error(err);
-                    await i.update({ content: await t('moderation.derank_error', message.guild.id), components: [] });
+                    await msg.edit({ 
+                        embeds: [createEmbed('Erreur', await t('moderation.derank_error', message.guild.id), 'error')], 
+                        components: [] 
+                    });
                 }
             } else {
-                await i.update({ content: await t('moderation.derank_cancelled', message.guild.id), components: [] });
+                await i.update({ 
+                    embeds: [createEmbed('Annulé', await t('moderation.derank_cancelled', message.guild.id), 'error')], 
+                    components: [] 
+                });
             }
         });
 
         collector.on('end', async collected => {
-            if (collected.size === 0) msg.edit({ content: await t('moderation.derank_timeout', message.guild.id), components: [] }).catch(() => {});
+            if (collected.size === 0) {
+                msg.edit({ 
+                    embeds: [createEmbed('Expiré', await t('moderation.derank_timeout', message.guild.id), 'error')], 
+                    components: [] 
+                }).catch(() => {});
+            }
         });
     }
 };

@@ -1,4 +1,57 @@
 {
+    "settings": {
+        "title": "⚙️ Configuration du Serveur - {{guild}}",
+        "category_general": "🌐 Général",
+        "category_moderation": "🛡️ Modération",
+        "category_automod": "🤖 AutoMod",
+        "category_antiraid": "⚔️ Anti-Raid",
+        "category_logs": "📜 Logs",
+        "field_prefix": "**Préfixe:** `{{prefix}}`",
+        "field_lang": "**Langue:** `{{lang}}`",
+        "field_muterole": "**MuteRole:** {{role}}",
+        "field_autodelete": "**AutoDelete:** {{state}}",
+        "field_antispam": "**AntiSpam:** {{state}}",
+        "field_antilink": "**AntiLink:** {{state}}",
+        "field_badwords": "**BadWords:** {{state}}",
+        "field_raidlog": "**RaidLog:** {{state}}",
+        "field_modlog": "**ModLog:** {{state}}",
+        "field_secur": "**SecurInvite:** {{state}}",
+        "footer": "Utilisez +set <option> <valeur> pour modifier."
+    },
+    "clear": {
+        "usage_limit": "❌ Usage: `+clear limit <nombre>`",
+        "limit_success": "✅ Limite de suppression définie sur **{{count}}** messages.",
+        "limit_invalid": "❌ Nombre invalide."
+    },
+    "muterole": {
+        "title": "🔇 Rôle Mute Actuel",
+        "not_set": "❌ Aucun rôle Mute configuré.",
+        "set_usage": "❌ Usage: `+set muterole <@role/ID>`",
+        "set_success": "✅ Rôle Mute défini sur **{{role}}**.",
+        "current": "Le rôle Mute est: **{{role}}**"
+    },
+    "logs": {
+        "usage": "❌ Usage: `+log <status/test/ignore/export/config>`",
+        "status_title": "📊 Statut des Logs",
+        "status_active": "✅ Actif dans {{channel}}",
+        "status_inactive": "❌ Inactif",
+        "test_sent": "✅ Log de test envoyé dans {{channel}}.",
+        "test_error": "❌ Impossible d'envoyer le log (Salon invalide ?).",
+        "ignore_usage": "❌ Usage: `+log ignore <add/del> <@user/@role>`",
+        "ignore_added": "✅ **{{target}}** est maintenant ignoré des logs.",
+        "ignore_removed": "✅ **{{target}}** n'est plus ignoré des logs.",
+        "export_usage": "❌ Usage: `+log export <type>` (Non implémenté en démo).",
+        "export_feature": "📦 Cette fonctionnalité sera disponible prochainement (Premium).",
+        "config_title": "🔧 Configuration des Logs",
+        "config_desc": "Sélectionnez un type de log ci-dessous pour le configurer.",
+        "interactive_title": "⚙️ Config: {{type}}",
+        "interactive_desc": "**État:** {{status}}\n**Salon:** {{channel}}\n\nUtilisez les boutons ci-dessous pour modifier.",
+        "interactive_enabled": "Activé ✅",
+        "interactive_disabled": "Désactivé ❌",
+        "interactive_toggled": "✅ Log **{{type}}** basculé sur **{{state}}**.",
+        "interactive_channel_prompt": "📝 Mentionnez le salon ou envoyez son ID.",
+        "interactive_channel_success": "✅ Salon pour **{{type}}** défini sur {{channel}}."
+    },
     "suggestion": {
         "permission_admin": "❌ Vous n'avez pas la permission (Administrator requis).",
         "not_configured": "❌ Le système de suggestions n'est pas configuré.",
@@ -88,6 +141,56 @@
         "success": "✅ Ticket renommé en **{{name}}**.",
         "error": "❌ Impossible de renommer le salon (Rate limit ou Permissions)."
     },
+    "tickets": {
+        "handler": {
+            "error_not_configured": "❌ Le système de tickets n'est pas configuré sur ce serveur.",
+            "dashboard_categories_title": "Gestion des catégories",
+            "btn_add_cat": "Ajouter",
+            "btn_del_cat": "Supprimer",
+            "btn_refresh": "Rafraîchir",
+            "btn_set_transcript": "Définir Transcript",
+            "btn_manage_roles": "Gérer Rôles",
+            "btn_send_panel": "Envoyer Panel",
+            "dashboard_none": "Aucun",
+            "dashboard_title": "Configuration des Tickets",
+            "dashboard_transcript": "Transcript",
+            "dashboard_roles": "Rôles Staff",
+            "dashboard_none_roles": "Aucun",
+            "modal_transcript_title": "Définir le salon Transcript",
+            "modal_transcript_label": "ID du salon",
+            "modal_role_title": "Définir les rôles Staff",
+            "modal_role_label": "ID des rôles (séparés par virgule)",
+            "modal_send_title": "Envoyer le Panel",
+            "modal_send_label": "ID du salon",
+            "modal_add_cat_title": "Ajouter une catégorie",
+            "modal_cat_name": "Nom",
+            "modal_cat_emoji": "Emoji",
+            "modal_cat_parent": "ID Catégorie Discord",
+            "modal_cat_roles": "ID Rôles spécifiques",
+            "modal_cat_desc": "Description",
+            "error_limit": "❌ Limite de catégories atteinte (25).",
+            "modal_del_cat_title": "Supprimer une catégorie",
+            "modal_del_cat_label": "Nom de la catégorie",
+            "cat_not_found": "❌ Catégorie introuvable.",
+            "error_channel_invalid": "❌ Salon invalide.",
+            "panel_default_btn": "Ouvrir un ticket",
+            "panel_sent": "✅ Panel envoyé dans <#{{channel}}>.",
+            "ticket_closing": "🔒 Fermeture du ticket dans 5 secondes...",
+            "error_ticket_db": "❌ Ticket introuvable en base de données.",
+            "error_already_claimed": "❌ Ce ticket est déjà pris en charge par {{user}}.",
+            "ticket_claimed": "🙋‍♂️ Ticket pris en charge par {{user}}.",
+            "ticket_welcome": "👋 Bonjour {{user}},\nUn membre du staff va prendre en charge votre demande.",
+            "btn_close": "Fermer",
+            "btn_claim": "Prendre en charge"
+        },
+        "panel": {
+            "title": "Support & Tickets",
+            "description": "Pour ouvrir un ticket, veuillez cliquer sur le bouton ci-dessous.",
+            "placeholder": "Sélectionnez une catégorie...",
+            "created": "✅ Ticket créé: {{channel}}",
+            "error_create": "❌ Impossible de créer le ticket."
+        }
+    },
     "common": {
         "yes": "Oui",
         "no": "Non",
@@ -119,6 +222,144 @@
         "page": "Page",
         "button_no_permission": "❌ Vous ne pouvez pas utiliser ces boutons.",
         "permission_denied_simple": "❌ Vous n'avez pas la permission."
+    },
+    "join": {
+        "usage": "❌ Usage: `+join <settings/dm/role>`",
+        "settings_title": "📥 Paramètres d'Arrivée",
+        "settings_dm": "**DM de Bienvenue:** {{state}}",
+        "settings_role": "**Autorole:** {{role}}",
+        "settings_channel": "**Salon:** {{channel}}",
+        "settings_message": "**Message:**",
+        "dm_usage": "❌ Usage: `+join dm <on/off>`",
+        "dm_success": "✅ DM de bienvenue: **{{state}}**",
+        "role_usage": "❌ Usage: `+join role <@role/ID/off>`",
+        "role_success": "✅ Autorole défini sur **{{role}}**",
+        "role_disabled": "✅ Autorole désactivé."
+    },
+    "leave": {
+        "usage": "❌ Usage: `+leave <settings/message>`",
+        "settings_title": "📤 Paramètres de Départ",
+        "settings_channel": "**Salon:** {{channel}}",
+        "settings_message": "**Message:**",
+        "message_usage": "❌ Usage: `+leave message <on/off>`",
+        "message_success": "✅ Message de départ: **{{state}}**"
+    },
+    "security": {
+        "status_title": "🛡️ Statut de Sécurité",
+        "captcha_title": "🧩 Captcha",
+        "captcha_status": "**État:** {{state}}\n**Difficulté:** {{diff}}\n**Rôle:** {{role}}\n**Bypass:** {{bypass}}",
+        "antibot_title": "🤖 Anti-Bot",
+        "antibot_status": "**État:** {{state}}",
+        "antiflood_title": "🌊 Anti-Flood Join",
+        "antiflood_status": "**État:** {{state}}\n**Limite:** {{limit}}/{{time}}s"
+    },
+    "captcha": {
+        "usage": "❌ Usage: `+captcha <difficulty/role/bypass>`",
+        "diff_usage": "❌ Usage: `+captcha difficulty <easy/medium/hard>`",
+        "diff_success": "✅ Difficulté Captcha définie sur **{{diff}}**.",
+        "role_usage": "❌ Usage: `+captcha role <@role/ID>`",
+        "role_success": "✅ Rôle de vérification défini sur **{{role}}**.",
+        "bypass_usage": "❌ Usage: `+captcha bypass <add/del> <@role/ID>`",
+        "bypass_added": "✅ Rôle **{{role}}** ajouté au bypass Captcha.",
+        "bypass_removed": "✅ Rôle **{{role}}** retiré du bypass Captcha."
+    },
+    "antibot": {
+        "usage": "❌ Usage: `+antibot <on/off>`",
+        "success": "✅ Anti-Bot: **{{state}}**"
+    },
+    "antiflood": {
+        "usage": "❌ Usage: `+antiflood join <on/off>`",
+        "success": "✅ Anti-Flood Join: **{{state}}**"
+    },
+    "rank": {
+        "title": "Rang de {{user}}",
+        "level": "Niveau",
+        "xp": "XP",
+        "rank": "Rang",
+        "no_data": "Aucune donnée de niveau.",
+        "disabled": "❌ Le système de niveaux est désactivé."
+    },
+    "leaderboard": {
+        "title": "Classement - {{guild}}",
+        "empty": "Aucune donnée.",
+        "footer": "Page {{page}}/{{pages}}",
+        "description": "Affiche le classement du serveur"
+    },
+    "rep": {
+        "success": "✅ Tu as donné un point de réputation à **{{user}}** !",
+        "cooldown": "❌ Tu dois attendre **{{time}}** avant de redonner de la réputation.",
+        "self": "❌ Tu ne peux pas te donner de la réputation à toi-même.",
+        "bot": "❌ Les bots ne peuvent pas recevoir de réputation.",
+        "check": "**{{user}}** a **{{rep}}** points de réputation."
+    },
+    "afk": {
+        "set": "💤 **{{user}}** est maintenant AFK : {{reason}}",
+        "removed": "👋 **{{user}}** n'est plus AFK. ({{time}})",
+        "notify": "💤 **{{user}}** est AFK : {{reason}} (depuis {{time}})"
+    },
+    "automation": {
+        "usage": "**Utilisation:** `+automation <autonick/autothread/autoslowmode> [args]`",
+        "autonick_usage": "**Utilisation:** `+automation autonick <set/disable> [format]`\nVariables: `{username}`",
+        "autonick_set": "✅ AutoNick configuré : `{{format}}`",
+        "autonick_disabled": "✅ AutoNick désactivé.",
+        "autothread_usage": "**Utilisation:** `+automation autothread <add/remove/list> [channel]`",
+        "autothread_added": "✅ AutoThread activé pour {{channel}}.",
+        "autothread_removed": "✅ AutoThread désactivé pour {{channel}}.",
+        "autothread_list": "📝 **Salons AutoThread :**\n{{channels}}",
+        "autoslowmode_usage": "**Utilisation:** `+automation autoslowmode <set/disable> [limit] [time]`\nLimite: nombre de messages, Temps: intervalle en secondes.",
+        "autoslowmode_set": "✅ AutoSlowmode configuré : Si > {{limit}} messages en {{time}}s -> Slowmode {{duration}}s.",
+        "autoslowmode_disabled": "✅ AutoSlowmode désactivé."
+    },
+    "poll": {
+        "usage": "❌ Usage: `+poll <question> [\"Option 1\" \"Option 2\" ...]`",
+        "title": "📊 Sondage",
+        "footer": "Proposé par {{user}}",
+        "too_many_options": "❌ Vous ne pouvez pas mettre plus de 10 options."
+    },
+    "announce": {
+        "usage": "❌ Usage: `+announce <message>`",
+        "title": "📢 Annonce"
+    },
+    "countdown": {
+        "usage": "❌ Usage: `+countdown <date/heure> [événement]`",
+        "invalid_date": "❌ Format de date invalide.",
+        "past_date": "❌ Cette date est déjà passée.",
+        "ends_in": "Fin dans:"
+    },
+    "translate": {
+        "usage": "❌ Usage: `+translate <lang> <texte>`",
+        "error": "❌ Erreur lors de la traduction."
+    },
+    "level": {
+        "no_data": "❌ Aucune donnée pour **{{user}}**.",
+        "title": "Niveau de {{user}}",
+        "levelup_default": "🎉 Félicitations {user}, tu passes au niveau **{level}** !",
+        "no_leaderboard": "❌ Classement vide.",
+        "leaderboard_title": "🏆 Classement du Serveur"
+    },
+
+    "giveaway": {
+        "usage": "❌ Usage: `+giveaway <start/end/reroll/list> [args]`",
+        "start_usage": "❌ Usage: `+giveaway start <durée> <gagnants> <prix>`",
+        "start_success": "✅ Giveaway lancé dans {{channel}} !",
+        "end_usage": "❌ Usage: `+giveaway end <messageID>`",
+        "end_success": "✅ Giveaway terminé.",
+        "reroll_usage": "❌ Usage: `+giveaway reroll <messageID>`",
+        "reroll_success": "✅ Nouveau gagnant tiré: {{winner}}",
+        "list_title": "🎉 Giveaways en cours",
+        "list_empty": "Aucun giveaway en cours.",
+        "not_found": "❌ Giveaway introuvable.",
+        "already_ended": "❌ Ce giveaway est déjà terminé.",
+        "embed_title": "🎉 GIVEAWAY 🎉",
+        "embed_prize": "**Prix:** {{prize}}",
+        "embed_winners": "**Gagnants:** {{count}}",
+        "embed_ends": "**Fin:** <t:{{time}}:R> (<t:{{time}}:f>)",
+        "embed_host": "**Hôte:** {{host}}",
+        "embed_footer": "Termine à",
+        "ended_title": "🎉 GIVEAWAY TERMINÉ 🎉",
+        "ended_winners": "Gagnant(s): {{winners}}",
+        "no_participants": "Personne n'a participé.",
+        "no_valid_winners": "Aucun gagnant valide n'a pu être tiré."
     },
     "moderation": {
         "sanction_added": "✅ Sanction ajoutée pour **{{user}}**.",
@@ -732,6 +973,9 @@
     },
     "help": {
         "category_title": "📂 Catégorie : {{category}}",
+        "handler": {
+            "select_footer": "Utilisez le menu pour changer de catégorie"
+        },
         "placeholder": "Sélectionnez une catégorie",
         "cat_antiraid": "Antiraid",
         "cat_antiraid_desc": "Modules de protection (Antibot, Antiraid, etc.)",
@@ -767,6 +1011,10 @@
         "cat_tickets_desc": "Système de tickets de support",
         "cat_voice": "Vocal",
         "cat_voice_desc": "Salons temporaires, modération vocale",
+        "cat_community": "Communauté",
+        "cat_community_desc": "Niveaux, Réputation, AFK...",
+        "cat_giveaway": "Giveaway",
+        "cat_giveaway_desc": "Gestion des concours",
         "btn_antiraid": "Antiraid",
         "btn_config": "Config",
         "btn_utils": "Utils",
@@ -852,6 +1100,7 @@
         "description": "Retire le mute d'un membre",
         "usage": "**Utilisation:** `+unmute <user> [raison]`"
     },
+
     "kick": {
         "description": "Expulse un membre",
         "usage": "**Utilisation:** `+kick <user> [raison]`"
@@ -953,18 +1202,31 @@
         "usage": "**Usage:** `+clear <owners/bl/perms/customs>`"
     },
     "serverinfo": {
-        "title": "**Info Serveur**",
-        "name": "Nom: {{name}}",
-        "id": "ID: {{id}}",
-        "owner": "Propriétaire: {{tag}} ({{id}})",
-        "created": "Créé le: {{date}}",
-        "members": "Membres: {{count}}",
-        "channels": "Salons: {{total}} (Texte: {{text}} | Vocal: {{voice}})",
-        "roles": "Rôles: {{count}}",
-        "emojis": "Émojis: {{count}}",
-        "boosts": "Boosts: {{count}} (Niveau {{level}})",
+        "title": "**Info Serveur: {{name}}**",
         "description": "Informations complètes du serveur",
-        "usage": "**Utilisation:** **Utilisation:** `+serverinfo`"
+        "usage": "**Utilisation:** `+serverinfo`",
+        "section_general": "__**Informations Générales**__",
+        "section_stats": "__**Statistiques**__",
+        "name": "**Nom:** {{name}}",
+        "id": "**ID:** {{id}}",
+        "owner": "**Propriétaire:** {{tag}}",
+        "created": "**Création:** {{date}}",
+        "members": "**Membres:** {{count}}",
+        "channels": "**Salons:** {{total}} (📝 {{text}} | 🔊 {{voice}})",
+        "roles": "**Rôles:** {{count}}",
+        "emojis": "**Émojis:** {{count}}",
+        "boosts": "**Boosts:** Niveau {{level}} ({{count}} Boosts)",
+        "security": "**Sécurité:** {{level}}",
+        "section_config": "__**⚙️ Configuration**__",
+        "section_features": "__**✨ Fonctionnalités**__",
+        "vanity": "**URL Perso:** {{url}}",
+        "rules": "**Règlement:** {{channel}}",
+        "system": "**Système:** {{channel}}",
+        "afk": "**AFK:** {{channel}} ({{timeout}}s)",
+        "links": "🔗 **Liens:** {{links}}",
+        "link_icon": "Icône",
+        "link_banner": "Bannière",
+        "link_splash": "Splash"
     },
     "userinfo": {
         "not_found": "❌ Utilisateur introuvable.",
@@ -974,9 +1236,16 @@
         "bot": "**Bot:** {{isBot}}",
         "yes": "Oui",
         "no": "Non",
-        "avatar_link": "[Avatar]",
-        "banner_link": "[Bannière]",
-        "title": "**Info Utilisateur: {{username}}**"
+        "avatar_link": "Avatar",
+        "banner_link": "Bannière",
+        "title": "**Info Utilisateur: {{username}}**",
+        "joined": "**Rejoint:** {{date}}",
+        "roles": "**Rôles ({{count}}):** {{roles}}",
+        "badges": "**Badges:** {{badges}}",
+        "mutual_servers": "**Serveurs en commun ({{count}}):** {{guilds}}",
+        "none": "Aucun",
+        "section_general": "__**Informations Générales**__",
+        "section_server": "__**Informations Serveur**__"
     },
     "pic": {
         "not_found": "❌ Utilisateur introuvable.",
@@ -1422,6 +1691,7 @@
         "usage": "**Utilisation:** `server list`",
         "description": "Liste les serveurs où le bot est présent (Owner)",
         "server_list_title": "**Liste des serveurs ({{current}}/{{total}})**\nTotal: {{count}}\n\n{{content}}",
+        "server_list_item": "`{{id}}` - **{{name}}** ({{members}} membres) - Owner: `{{ownerId}}`",
         "usage_invite": "❌ Utilisation: `+invite <GuildID>`",
         "server_not_found": "❌ Serveur introuvable.",
         "create_invite_error": "❌ Impossible de créer une invitation (Permissions ?).",
@@ -1429,7 +1699,51 @@
         "invite_error": "❌ Erreur: {{error}}",
         "usage_leave": "❌ Utilisation: `+leave <GuildID>`",
         "leave_success": "✅ J'ai quitté le serveur **{{guildName}}**.",
-        "leave_error": "❌ Erreur: {{error}}"
+        "leave_error": "❌ Erreur: {{error}}",
+        "usage_info": "❌ Usage: `+server info <ID>`",
+        "info_title": "ℹ️ Infos Serveur: {{name}}",
+        "info_owner": "Propriétaire",
+        "info_members": "Membres",
+        "info_created": "Créé le",
+        "info_joined": "Rejoint le",
+        "info_channels": "Salons",
+        "usage_stats": "❌ Usage: `+server stats`",
+        "stats_title": "📊 Statistiques Globales",
+        "stats_guilds": "Serveurs",
+        "stats_users": "Utilisateurs",
+        "stats_uptime": "Uptime",
+        "stats_ram": "RAM",
+        "usage_blacklist": "❌ Usage: `+server blacklist <add/del> <ID>`",
+        "blacklist_added": "✅ Serveur **{{id}}** blacklisté.",
+        "blacklist_removed": "✅ Serveur **{{id}}** déblacklisté."
+    },
+    "mp": {
+        "mp_settings_success": "✅ Paramètre MP global mis à jour: **{{status}}**",
+        "mp_settings_status": "ℹ️ Statut actuel des MP globaux: **{{status}}**",
+        "usage_mp": "❌ Utilisation: `+mp <settings/blacklist/autoreply/history/ID> [message]`",
+        "user_not_found": "❌ Utilisateur introuvable.",
+        "mp_author": "Message de {{botName}}",
+        "mp_sent": "✅ Message envoyé à **{{user}}**.",
+        "mp_error": "❌ Erreur lors de l'envoi: {{error}}",
+        "usage_discussion": "❌ Utilisation: `+discussion <ID>`",
+        "discussion_title": "Infos Discussion: {{user}}",
+        "discussion_fields_id": "ID",
+        "discussion_fields_created": "Créé le",
+        "discussion_fields_mutuals": "Serveurs en commun",
+        "discussion_none": "Aucun",
+        "discussion_desc": "Utilisez `+mp <ID> <message>` pour répondre.",
+        "settings_title": "⚙️ Configuration MP Bot",
+        "setting_enabled": "Modmail (MP)",
+        "setting_autoreply": "Réponse Auto",
+        "setting_message": "Message Auto",
+        "usage_blacklist": "❌ Usage: `+mp blacklist <add/del> <ID>`",
+        "blacklist_added": "✅ **{{user}}** ajouté à la blacklist MP.",
+        "blacklist_removed": "✅ **{{user}}** retiré de la blacklist MP.",
+        "usage_autoreply": "❌ Usage: `+mp autoreply <on/off> [message]`",
+        "autoreply_updated": "✅ Réponse Auto: **{{state}}**",
+        "usage_history": "❌ Usage: `+mp history <ID>`",
+        "history_empty": "ℹ️ Aucun historique pour cet utilisateur.",
+        "history_title": "📜 Historique MP: {{user}}"
     },
     "massiverole": {
         "permission_admin": "❌ Permission Administrateur requise.",
@@ -2035,54 +2349,7 @@
             "label_field_inline": "Inline (true/false)"
         }
     },
-    "tickets": {
-        "handler": {
-            "modal_category_title": "ID de la Catégorie",
-            "modal_category_label": "Entrez l'ID de la catégorie",
-            "modal_transcript_title": "Canal de Transcript",
-            "modal_transcript_label": "Entrez l'ID du salon textuel",
-            "modal_role_title": "Gestion des Rôles Staff",
-            "modal_role_label": "Entrez l'ID du rôle",
-            "modal_send_title": "Envoyer le Panel",
-            "modal_send_label": "Entrez l'ID du salon où envoyer",
-            "dashboard_none": "Aucun",
-            "dashboard_title": "Configuration des Tickets",
-            "dashboard_category": "Catégorie",
-            "dashboard_transcript": "Transcript",
-            "dashboard_roles": "Rôles Staff",
-            "dashboard_none_roles": "Aucun rôle défini",
-            "btn_set_category": "Définir Catégorie",
-            "btn_set_transcript": "Définir Transcript",
-            "btn_manage_roles": "Gérer Rôles",
-            "btn_send_panel": "Envoyer Panel",
-            "btn_refresh": "Rafraîchir",
-            "btn_close": "Fermer",
-            "btn_claim": "Claim",
-            "error_category_invalid": "❌ ID de catégorie invalide.",
-            "error_channel_invalid": "❌ ID de salon invalide.",
-            "error_role_invalid": "❌ ID de rôle invalide.",
-            "panel_default_btn": "Ouvrir un ticket",
-            "panel_default_title": "Support Ticket",
-            "panel_default_desc": "Cliquez sur le bouton ci-dessous pour ouvrir un ticket.",
-            "panel_sent": "✅ Panel envoyé dans {{channel}}.",
-            "error_not_configured": "❌ Le système de tickets n'est pas configuré.",
-            "ticket_welcome": "Bonjour {{user}}, un membre du staff va s'occuper de vous.",
-            "ticket_created": "✅ Ticket créé : {{channel}}",
-            "error_creation": "❌ Erreur lors de la création du ticket.",
-            "error_ticket_inactive": "❌ Ce ticket n'est pas actif.",
-            "error_already_claimed": "❌ Ce ticket est déjà pris en charge par {{user}}.",
-            "ticket_claimed": "✅ Ticket pris en charge par {{user}}.",
-            "error_ticket_db": "❌ Ticket introuvable en base de données.",
-            "ticket_closing": "🔒 Fermeture du ticket dans 5 secondes...",
-            "transcript_title": "TRANSCRIPT DE TICKET",
-            "transcript_id": "ID Salon",
-            "transcript_creator": "Créateur",
-            "transcript_closed_by": "Fermé par",
-            "transcript_error": "Erreur lors de la récupération des messages.",
-            "transcript_embed_title": "Ticket Fermé",
-            "transcript_embed_desc": "Le ticket **{{channel}}** de {{user}} a été fermé."
-        }
-    },
+
     "forms": {
         "handler": {
             "config_title": "Configuration Formulaire",
@@ -2350,5 +2617,70 @@
             "discriminator": "**Discriminator:** `{{old}}` ➔ `{{new}}`",
             "avatar": "**Avatar:** [Ancien]({{old}}) ➔ [Nouveau]({{new}})"
         }
+    },
+    "roles": {
+        "rolemenu": {
+            "permission_admin": "❌ Vous devez être administrateur pour utiliser cette commande.",
+            "no_menus": "❌ Aucun menu de rôles trouvé.",
+            "list_menus": "📝 **Menus de rôles existants :**\n{{list}}",
+            "default_title": "Menu de Rôles",
+            "default_description": "Sélectionnez vos rôles ci-dessous.",
+            "dashboard_content": "**Menu:** {{name}}\n**Titre:** {{title}}\n**Description:** {{description}}\n**Type:** {{type}}\n**Options:** {{options_count}}\n\n{{options_list}}",
+            "btn_title": "Modifier Titre",
+            "btn_description": "Modifier Description",
+            "btn_type": "Type: {{type}}",
+            "btn_add_option": "Ajouter Option",
+            "btn_del_option": "Supprimer Option",
+            "btn_send": "Envoyer le Menu",
+            "btn_delete": "Supprimer le Menu",
+            "btn_refresh": "Rafraîchir"
+        },
+        "handler": {
+            "permission_denied": "❌ Permission refusée.",
+            "menu_not_found": "❌ Menu introuvable.",
+            "modal_title_title": "Modifier le Titre",
+            "modal_title_label": "Nouveau Titre",
+            "modal_desc_title": "Modifier la Description",
+            "modal_desc_label": "Nouvelle Description",
+            "modal_option_title": "Ajouter une Option",
+            "modal_option_label": "Label",
+            "modal_option_emoji": "Emoji (optionnel)",
+            "modal_option_role": "ID du Rôle",
+            "modal_option_desc": "Description (optionnel)",
+            "error_no_options": "❌ Aucune option à supprimer.",
+            "select_del_placeholder": "Choisir une option à supprimer...",
+            "select_del_msg": "Sélectionnez l'option à supprimer :",
+            "modal_send_title": "Envoyer le Menu",
+            "modal_send_channel": "ID du Salon",
+            "menu_deleted": "✅ Menu supprimé.",
+            "error_role_invalid": "❌ Rôle invalide ou introuvable.",
+            "error_send_no_options": "❌ Impossible d'envoyer un menu sans options.",
+            "error_channel_invalid": "❌ Salon invalide.",
+            "select_user_placeholder": "Sélectionnez vos rôles...",
+            "menu_sent": "✅ Menu envoyé dans {{channel}}.",
+            "error_send": "❌ Erreur lors de l'envoi : {{error}}",
+            "option_deleted": "✅ Option supprimée.",
+            "dashboard_title": "Configuration : {{name}}",
+            "btn_title": "Titre",
+            "dashboard_desc_none": "Aucun",
+            "btn_desc": "Description",
+            "btn_type": "Type",
+            "dashboard_options": "Options",
+            "btn_add_option": "Ajouter",
+            "btn_del_option": "Supprimer",
+            "btn_send": "Envoyer",
+            "btn_delete": "Supprimer Menu",
+            "btn_refresh": "Rafraîchir",
+            "error_required_roles": "❌ Vous n'avez pas les rôles requis pour cette option.",
+            "roles_updated": "✅ Vos rôles ont été mis à jour.",
+            "role_removed": "✅ Rôle {{role}} retiré.",
+            "role_added": "✅ Rôle {{role}} ajouté."
+        }
+    },
+    "yako": {
+        "title": "🆘 Support Yako Guardian",
+        "description": "Besoin d'aide ou envie de rejoindre la communauté ?\nCliquez sur le lien ci-dessous ou sur le bouton pour rejoindre le serveur de support !\n\n🔗 **Lien:** {{link}}",
+        "button": "Rejoindre le Support",
+        "message": "Rejoignez le serveur de support: https://discord.gg/sferTT73tZ"
     }
 }

@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const { db } = require('../../database');
 const { t } = require('../../utils/i18n');
@@ -15,7 +15,11 @@ module.exports = {
         if (commandName === 'reset' && args[0] === 'server') {
             // Check Owner or Guild Owner
             if (message.author.id !== message.guild.ownerId && !(await isBotOwner(message.author.id))) {
-                return sendV2Message(client, message.channel.id, await t('reset.server_owner_only', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('reset.server_owner_only', message.guild.id),
+                    '',
+                    'error'
+                )] });
             }
 
             // Confirm
@@ -25,7 +29,14 @@ module.exports = {
                 new ButtonBuilder().setCustomId('cancel_reset').setLabel(await t('reset.cancel_label', message.guild.id)).setStyle(ButtonStyle.Secondary)
             );
 
-            return sendV2Message(client, message.channel.id, await t('reset.warning_server', message.guild.id), [row]);
+            return message.channel.send({ 
+                embeds: [createEmbed(
+                    await t('reset.warning_server', message.guild.id),
+                    '',
+                    'warning'
+                )],
+                components: [row]
+            });
         }
 
         // --- RESET ALL (Owner Only) ---
@@ -38,7 +49,14 @@ module.exports = {
                 new ButtonBuilder().setCustomId('cancel_reset').setLabel(await t('reset.cancel_label', message.guild.id)).setStyle(ButtonStyle.Secondary)
             );
 
-            return sendV2Message(client, message.channel.id, await t('reset.warning_all', message.guild.id), [row]);
+            return message.channel.send({ 
+                embeds: [createEmbed(
+                    await t('reset.warning_all', message.guild.id),
+                    '',
+                    'warning'
+                )],
+                components: [row]
+            });
         }
     }
 };

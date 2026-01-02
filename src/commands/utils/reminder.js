@@ -1,6 +1,6 @@
 const Reminder = require('../../database/models/Reminder');
 const { parseDuration, formatDuration } = require('../../utils/timeUtils');
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
 
 module.exports = {
@@ -21,14 +21,14 @@ module.exports = {
 
 async function createReminder(client, message, args) {
     if (args.length < 2) {
-        return sendV2Message(client, message.channel.id, await t('reminder.usage', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed(await t('reminder.usage', message.guild.id), '', 'info')] });
     }
 
     const durationStr = args[0];
     const duration = parseDuration(durationStr);
 
     if (!duration) {
-        return sendV2Message(client, message.channel.id, await t('reminder.invalid_duration', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed(await t('reminder.invalid_duration', message.guild.id), '', 'error')] });
     }
 
     const content = args.slice(1).join(' ');
@@ -43,10 +43,10 @@ async function createReminder(client, message, args) {
             expiresAt: expiresAt
         });
 
-        sendV2Message(client, message.channel.id, await t('reminder.success', message.guild.id, { duration: formatDuration(duration), content: content }), []);
+        message.channel.send({ embeds: [createEmbed(await t('reminder.success', message.guild.id, { duration: formatDuration(duration), content: content }), '', 'success')] });
     } catch (e) {
         console.error(e);
-        sendV2Message(client, message.channel.id, await t('reminder.error', message.guild.id), []);
+        message.channel.send({ embeds: [createEmbed(await t('reminder.error', message.guild.id), '', 'error')] });
     }
 }
 
@@ -54,7 +54,7 @@ async function listReminders(client, message) {
     const reminders = await Reminder.find({ userId: message.author.id, guildId: message.guild.id }).sort({ expiresAt: 1 });
 
     if (reminders.length === 0) {
-        return sendV2Message(client, message.channel.id, await t('reminder.empty', message.guild.id), []);
+        return message.channel.send({ embeds: [createEmbed(await t('reminder.empty', message.guild.id), '', 'info')] });
     }
 
     let content = (await t('reminder.list_title', message.guild.id)) + "\n\n";
@@ -65,5 +65,5 @@ async function listReminders(client, message) {
         content += `**${i + 1}.** "${rem.content}" (${timeStr})\n`;
     }
 
-    sendV2Message(client, message.channel.id, content, []);
+    message.channel.send({ embeds: [createEmbed(content, '', 'info')] });
 }

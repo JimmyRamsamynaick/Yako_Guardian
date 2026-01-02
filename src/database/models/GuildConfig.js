@@ -27,11 +27,29 @@ const GuildConfigSchema = new mongoose.Schema({
         channelId: String,
         message: String, // Type 17 text
         // image: String // Type 17 media
+        dm: { type: Boolean, default: false },
+        roleId: String
     },
     goodbye: {
         enabled: { type: Boolean, default: false },
         channelId: String,
         message: String
+    },
+
+    // Security
+    security: {
+        captcha: {
+            enabled: { type: Boolean, default: false },
+            difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+            roleId: String, // Role given AFTER captcha
+            bypassRoles: [String]
+        },
+        antibot: { type: Boolean, default: false },
+        antiflood: { // Join flood
+            enabled: { type: Boolean, default: false },
+            limit: { type: Number, default: 5 },
+            time: { type: Number, default: 10000 } // 10s
+        }
     },
 
     // Autodelete
@@ -155,6 +173,53 @@ const GuildConfigSchema = new mongoose.Schema({
     public: {
         enabled: { type: Boolean, default: false },
         channels: [String]
+    },
+
+    // Automations
+    automations: {
+        autorole: {
+            enabled: { type: Boolean, default: false },
+            roleId: String,
+            botRoleId: String
+        },
+        autonick: {
+            enabled: { type: Boolean, default: false },
+            format: String
+        },
+        autothread: {
+            enabled: { type: Boolean, default: false },
+            channels: [String]
+        },
+        autoslowmode: {
+            enabled: { type: Boolean, default: false },
+            limit: Number,
+            time: Number,
+            duration: Number
+        }
+    },
+
+    // Community
+    community: {
+        levels: {
+            enabled: { type: Boolean, default: false },
+            channelId: String,
+            message: String
+        },
+        rep: {
+            enabled: { type: Boolean, default: false }
+        }
+    },
+    
+    clearLimit: { type: Number, default: 100 },
+
+    // Advanced Logs
+    logs: {
+        mod: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
+        message: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
+        voice: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
+        boost: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
+        role: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
+        raid: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] }
     }
 });
 

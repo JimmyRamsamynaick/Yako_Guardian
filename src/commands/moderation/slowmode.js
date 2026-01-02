@@ -1,4 +1,4 @@
-const { sendV2Message } = require('../../utils/componentUtils');
+const { createEmbed, THEME } = require('../../utils/design');
 const { PermissionsBitField } = require('discord.js');
 const { t } = require('../../utils/i18n');
 
@@ -9,14 +9,14 @@ module.exports = {
     aliases: ['slow'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-            return sendV2Message(client, message.channel.id, await t('slowmode.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('slowmode.permission', message.guild.id), 'error')] });
         }
 
         const durationStr = args[0];
         let channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[1]) || message.channel;
 
         if (!durationStr) {
-            return sendV2Message(client, message.channel.id, await t('slowmode.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Utilisation Incorrecte', await t('slowmode.usage', message.guild.id), 'warning')] });
         }
 
         let seconds = 0;
@@ -25,7 +25,7 @@ module.exports = {
         } else {
             const match = durationStr.match(/^(\d+)(s|m|h)?$/);
             if (!match) {
-                return sendV2Message(client, message.channel.id, await t('slowmode.invalid_duration', message.guild.id), []);
+                return message.channel.send({ embeds: [createEmbed('Erreur', await t('slowmode.invalid_duration', message.guild.id), 'error')] });
             }
             const amount = parseInt(match[1]);
             const unit = match[2] || 's';
@@ -36,19 +36,21 @@ module.exports = {
         }
 
         if (seconds > 21600) { // 6 hours
-            return sendV2Message(client, message.channel.id, await t('slowmode.limit_exceeded', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed('Erreur', await t('slowmode.limit_exceeded', message.guild.id), 'error')] });
         }
+
+        const replyMsg = await message.channel.send({ embeds: [createEmbed('Slowmode', `${THEME.icons.loading} Configuration du salon...`, 'loading')] });
 
         try {
             await channel.setRateLimitPerUser(seconds);
             if (seconds === 0) {
-                return sendV2Message(client, message.channel.id, await t('slowmode.disabled', message.guild.id, { channel: channel.toString() }), []);
+                await replyMsg.edit({ embeds: [createEmbed('Succès', await t('slowmode.disabled', message.guild.id, { channel: channel.toString() }), 'success')] });
             } else {
-                return sendV2Message(client, message.channel.id, await t('slowmode.set', message.guild.id, { duration: durationStr, channel: channel.toString() }), []);
+                await replyMsg.edit({ embeds: [createEmbed('Succès', await t('slowmode.set', message.guild.id, { duration: durationStr, channel: channel.toString() }), 'success')] });
             }
         } catch (e) {
             console.error(e);
-            return sendV2Message(client, message.channel.id, await t('slowmode.error', message.guild.id), []);
+            await replyMsg.edit({ embeds: [createEmbed('Erreur', await t('slowmode.error', message.guild.id), 'error')] });
         }
     }
 };

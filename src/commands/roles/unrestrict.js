@@ -1,7 +1,7 @@
-const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const RoleMenu = require('../../database/models/RoleMenu');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'unrestrict',
@@ -9,13 +9,13 @@ module.exports = {
     category: 'Roles',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, await t('roles.unrestrict.permission', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.unrestrict.permission', message.guild.id), '', 'error')] });
         }
 
         const query = args.join(' ');
 
         if (!query) {
-            return sendV2Message(client, message.channel.id, await t('roles.unrestrict.usage', message.guild.id), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.unrestrict.usage', message.guild.id), '', 'error')] });
         }
 
         // Case insensitive regex for query
@@ -36,7 +36,7 @@ module.exports = {
 
             if (index !== -1) {
                 if (foundMenu) {
-                    return sendV2Message(client, message.channel.id, await t('roles.unrestrict.multiple_matches', message.guild.id, { query: query }), []);
+                    return message.channel.send({ embeds: [createEmbed(await t('roles.unrestrict.multiple_matches', message.guild.id, { query: query }), '', 'error')] });
                 }
                 foundMenu = menu;
                 foundOptionIndex = index;
@@ -44,12 +44,12 @@ module.exports = {
         }
 
         if (!foundMenu) {
-            return sendV2Message(client, message.channel.id, await t('roles.unrestrict.no_option_found', message.guild.id, { query: query }), []);
+            return message.channel.send({ embeds: [createEmbed(await t('roles.unrestrict.no_option_found', message.guild.id, { query: query }), '', 'error')] });
         }
 
         foundMenu.options[foundOptionIndex].requiredRoles = [];
         await foundMenu.save();
 
-        return sendV2Message(client, message.channel.id, await t('roles.unrestrict.success', message.guild.id, { option: foundMenu.options[foundOptionIndex].label, menu: foundMenu.name }), []);
+        return message.channel.send({ embeds: [createEmbed(await t('roles.unrestrict.success', message.guild.id, { option: foundMenu.options[foundOptionIndex].label, menu: foundMenu.name }), '', 'success')] });
     }
 };

@@ -1,5 +1,5 @@
 const { db } = require('../../database');
-const { AuditLogEvent, PermissionsBitField, EmbedBuilder } = require('discord.js');
+const { AuditLogEvent, PermissionsBitField } = require('discord.js');
 const logger = require('../logger');
 const { checkSubscription } = require('../subscription');
 const { t } = require('../i18n');
@@ -112,9 +112,7 @@ async function logAction(guild, title, description, color, settings) {
     if (settings.raid_log_channel) {
         const channel = guild.channels.cache.get(settings.raid_log_channel);
         if (channel) {
-            const embed = new EmbedBuilder()
-                .setTitle(await t('antiraid.log_title', guild.id, { title }))
-                .setDescription(description)
+            const embed = createEmbed(await t('antiraid.log_title', guild.id, { title }), description, 'default')
                 .setColor(color)
                 .setTimestamp();
                 // .setFooter handled below
