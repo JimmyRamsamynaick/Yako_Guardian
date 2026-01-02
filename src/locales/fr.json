@@ -86,6 +86,9 @@
         "error": "❌ Impossible de renommer le salon (Rate limit ou Permissions)."
     },
     "common": {
+        "admin_only": "❌ Cette commande est réservée aux administrateurs.",
+        "permission_missing": "❌ Il me manque la permission `{{perm}}` pour effectuer cette action.",
+        "role_not_found": "❌ Rôle introuvable.",
         "error_admin_only": "❌ Vous devez être administrateur pour utiliser cette commande.",
         "success": "✅",
         "error": "❌",
@@ -519,7 +522,7 @@
             "moderation": "__**🔨 Modération**__\n\n`{{prefix}}slowmode <temps>` - *Mode lent*\n`{{prefix}}autodelete <temps>` - *Auto suppression*",
             "modmail": "__**📨 Modmail**__\n\n`{{prefix}}modmail <open/close>` - *Gérer modmail*\n`{{prefix}}report <membre> <raison>` - *Signaler membre*\n`{{prefix}}formulaire` - *Configurer formulaire*\n`{{prefix}}openmodmail` - *Ouvrir ticket*",
             "notifications": "__**🔔 Notifications**__\n\n`{{prefix}}join <salon> <message>` - *Message bienvenue*\n`{{prefix}}leave <salon> <message>` - *Message départ*\n`{{prefix}}twitch <salon> <streamer>` - *Alerte Twitch*",
-            "owner": "__**👑 Owner**__\n\n`{{prefix}}owner <add/remove> <user>` - *Gérer owners*\n`{{prefix}}genkey <durée>` - *Générer clé*\n`{{prefix}}servers` - *Liste serveurs*\n`{{prefix}}leave` - *Quitter serveur*\n`{{prefix}}mp <user> <message>` - *DM membre*\n`{{prefix}}bl <user>` - *Blacklist globale*\n`{{prefix}}invite` - *Inviter bot*\n`{{prefix}}reset` - *Reset serveur*\n`{{prefix}}update` - *Mise à jour*\n`{{prefix}}globalset <opt> <val>` - *Config globale*",
+            "owner": "__**👑 Owner**__\n\n`{{prefix}}owner <add/remove> <user>` - *Gérer owners*\n`{{prefix}}genkey <durée>` - *Générer clé*\n`{{prefix}}servers` - *Liste serveurs*\n`{{prefix}}leaveserver` - *Quitter serveur*\n`{{prefix}}mp <user> <message>` - *DM membre*\n`{{prefix}}bl <user>` - *Blacklist globale*\n`{{prefix}}invite` - *Inviter bot*\n`{{prefix}}reset` - *Reset serveur*\n`{{prefix}}update` - *Mise à jour*\n`{{prefix}}globalset <opt> <val>` - *Config globale*",
             "roles": "__**🎭 Rôles**__\n\n`{{prefix}}massiverole <add/remove> <role>` - *Rôle massif*\n`{{prefix}}unmassiverole <role>` - *Retirer rôle massif*\n`{{prefix}}temprole <user> <role> <temps>` - *Rôle temporaire*\n`{{prefix}}untemprole <user> <role>` - *Retirer rôle temporaire*\n`{{prefix}}rolemenu` - *Menu rôles*\n`{{prefix}}soutien` - *Rôle soutien*\n`{{prefix}}restrict` - *Restriction*\n`{{prefix}}unrestrict <option>` - *Retirer restriction*",
             "suggestion": "__**💡 Suggestions**__\n\n`{{prefix}}suggestion <salon>` - *Système suggestions*",
             "tickets": "__**🎫 Tickets**__\n\n`{{prefix}}ticket` - *Panel ticket*\n`{{prefix}}add <user>` - *Ajouter membre*\n`{{prefix}}remove <user>` - *Retirer membre*\n`{{prefix}}close` - *Fermer ticket*\n`{{prefix}}rename <nom>` - *Renommer ticket*\n`{{prefix}}claim` - *Prendre en charge*\n`{{prefix}}del` - *Supprimer ticket*",
@@ -1478,12 +1481,12 @@
     },
     "join": {
         "description": "Configure les messages de bienvenue",
-        "usage": "**Utilisation:** +join",
+        "usage": "**Utilisation:** `+join settings` ou `+join <salon> <message>`",
         "permission": "❌ Vous n'avez pas la permission."
     },
     "leave": {
         "description": "Configure les messages de départ",
-        "usage": "**Utilisation:** +leave",
+        "usage": "**Utilisation:** `+leave settings` ou `+leave <salon> <message>`",
         "permission": "❌ Vous n'avez pas la permission.",
         "missing_id": "❌ ID manquant.",
         "guild_not_found": "❌ Serveur introuvable.",
@@ -1818,5 +1821,10 @@
             "new_submission_title": "Nouvelle Réponse : {{title}}",
             "submission_sent": "✅ Votre réponse a été envoyée."
         }
+    },
+    "leaveserver": {
+        "missing_id": "❌ Vous devez spécifier l'ID du serveur.",
+        "guild_not_found": "❌ Serveur introuvable ou le bot n'est pas dessus.",
+        "success": "✅ J'ai quitté le serveur **{{name}}** (`{{id}}`)."
     }
 }

@@ -86,6 +86,9 @@
         "error": "❌ Unable to rename channel (Rate limit or Permissions)."
     },
     "common": {
+        "admin_only": "❌ This command is reserved for administrators.",
+        "permission_missing": "❌ I am missing the `{{perm}}` permission to perform this action.",
+        "role_not_found": "❌ Role not found.",
         "error_admin_only": "❌ You must be an administrator to use this command.",
         "success": "✅",
         "error": "❌",
@@ -405,7 +408,11 @@
             "banned": "⚠️ **SECURITY ALERT** | 🔨 **Member Banned**\n👤 **User:** {{user}} (`{{id}}`)\n❓ **Reason:** {{reason}}\n🔢 **Rate:** {{count}}/{{limit}} in {{time}}s",
             "deranked": "⚠️ **SECURITY ALERT** | 🔽 **Member Deranked**\n👤 **User:** {{user}} (`{{id}}`)\n❓ **Reason:** {{reason}}\n🔢 **Rate:** {{count}}/{{limit}} in {{time}}s",
             "kicked_desc": "Kicked by Anti-Raid system.",
-            "deranked_desc": "Deranked by Anti-Raid system."
+            "deranked_desc": "Deranked by Anti-Raid system.",
+            "banned_desc": "Banned by Anti-Raid system.",
+            "failed": "❌ Action failed.",
+            "ban_failed_desc": "Failed to ban.",
+            "kick_failed_desc": "Failed to kick."
         }
     },
     "formulaire": {
@@ -1480,16 +1487,19 @@
     },
     "join": {
         "description": "Configure welcome messages",
-        "usage": "**Usage:** +join",
+        "usage": "**Usage:** `+join settings` or `+join <channel> <message>`",
         "permission": "❌ You do not have permission."
+    },
+    "leaveserver": {
+        "description": "Leave a server (Owner)",
+        "missing_id": "❌ Missing ID.",
+        "guild_not_found": "❌ Server not found.",
+        "success": "✅ Operation successful: Bot left {{guildName}}."
     },
     "leave": {
         "description": "Configure leave messages",
-        "usage": "**Usage:** +leave",
-        "permission": "❌ You do not have permission.",
-        "missing_id": "❌ Missing ID.",
-        "guild_not_found": "❌ Server not found.",
-        "success": "✅ Operation successful."
+        "usage": "**Usage:** `+leave settings` or `+leave <channel> <message>`",
+        "permission": "❌ You do not have permission."
     },
     "twitch": {
         "description": "Configure Twitch alerts",
@@ -1820,5 +1830,10 @@
             "new_submission_title": "New Submission: {{title}}",
             "submission_sent": "✅ Your submission has been sent."
         }
+    },
+    "leaveserver": {
+        "missing_id": "❌ You must specify the server ID.",
+        "guild_not_found": "❌ Server not found or the bot is not on it.",
+        "success": "✅ I left the server **{{name}}** (`{{id}}`)."
     }
 }
