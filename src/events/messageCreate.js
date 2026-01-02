@@ -58,6 +58,12 @@ module.exports = {
 
         // Get guild settings (prefix)
         const config = await getGuildConfig(message.guild.id);
+
+        // --- Automod Check ---
+        const { checkAutomod } = require('../utils/moderation/automod');
+        if (await checkAutomod(client, message, config)) return;
+        // --- End Automod Check ---
+
         let prefix = config.prefix || client.config.prefix;
 
         // Auto Publish

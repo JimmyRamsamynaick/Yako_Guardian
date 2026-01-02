@@ -534,6 +534,72 @@
         "usage": "**Utilisation:** `+help`",
         "empty_category": "Cette catégorie est vide."
     },
+    "settings": {
+        "description": "Affiche le tableau de bord de configuration",
+        "usage": "**Utilisation:** `+settings`",
+        "title": "**⚙️ Configuration du Serveur**",
+        "footer": "Utilisez les boutons pour naviguer"
+    },
+    "timeout": {
+        "description": "Active/Désactive l'utilisation du Timeout Discord au lieu du rôle Mute",
+        "usage": "**Utilisation:** `+timeout <on/off>`",
+        "success": "✅ Système de Timeout: **{{status}}**"
+    },
+    "muterole": {
+        "description": "Définit le rôle Mute",
+        "usage": "**Utilisation:** `+muterole <rôle>`",
+        "current": "Rôle Mute actuel: {{role}}",
+        "success": "✅ Rôle Mute défini sur: **{{role}}**"
+    },
+    "antispam": {
+        "description": "Configure le système anti-spam",
+        "usage": "**Utilisation:** `+antispam <on/off>` ou `+antispam <nombre>/<temps>`",
+        "success_state": "✅ Anti-Spam: **{{status}}**",
+        "success_config": "✅ Anti-Spam configuré: **{{limit}}** messages en **{{time}}**"
+    },
+    "antilink": {
+        "description": "Configure le système anti-liens",
+        "usage": "**Utilisation:** `+antilink <on/off> [invite/all]`",
+        "success": "✅ Anti-Link: **{{status}}** (Mode: **{{mode}}**)"
+    },
+    "badwords": {
+        "description": "Gère les mots interdits",
+        "usage": "**Utilisation:** `+badwords <on/off>` ou `+badwords <add/del/list>`",
+        "success_state": "✅ Badwords: **{{status}}**"
+    },
+    "unban": {
+        "description": "Débannit un utilisateur",
+        "usage": "**Utilisation:** `+unban <id_utilisateur> [raison]`"
+    },
+    "unmute": {
+        "description": "Retire le mute d'un membre",
+        "usage": "**Utilisation:** `+unmute <user> [raison]`"
+    },
+    "kick": {
+        "description": "Expulse un membre",
+        "usage": "**Utilisation:** `+kick <user> [raison]`"
+    },
+    "ban": {
+        "description": "Bannit un membre",
+        "usage": "**Utilisation:** `+ban <user> [raison]`"
+    },
+    "mute": {
+        "description": "Mute un membre temporairement",
+        "usage": "**Utilisation:** `+mute <user> <durée> [raison]`"
+    },
+    "warn": {
+        "description": "Avertit un membre ou affiche les avertissements",
+        "usage": "**Utilisation:** `+warn <user> [reason]` ou `+warn list [user]`"
+    },
+    "unwarn": {
+        "description": "Retire un avertissement",
+        "usage": "**Utilisation:** `+unwarn <user> [index/all]`"
+    },
+    "punish": {
+        "description": "Configure les sanctions automatiques",
+        "usage": "**Utilisation:** `+punish <add/remove/list>`\nEx: `+punish add 3 timeout 1h`",
+        "success_add": "✅ Configuré: **{{count}}** strikes ➔ **{{action}}**"
+    },
     "punition": {
         "usage": "**Utilisation:** `+punition <antiraid/all> <derank/kick/ban>`",
         "invalid_sanction": "❌ Sanction invalide (derank/kick/ban).",

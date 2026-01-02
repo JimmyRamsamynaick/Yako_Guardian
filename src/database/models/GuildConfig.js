@@ -89,6 +89,59 @@ const GuildConfigSchema = new mongoose.Schema({
     suggestion: {
         enabled: { type: Boolean, default: false },
         channelId: String
+    },
+
+    // --- NEW MODERATION SYSTEM ---
+    moderation: {
+        muteRole: String,
+        timeoutEnabled: { type: Boolean, default: true },
+        
+        antispam: {
+            enabled: { type: Boolean, default: false },
+            limit: { type: Number, default: 5 },
+            time: { type: Number, default: 5000 },
+            ignoredChannels: [String],
+            ignoredRoles: [String]
+        },
+
+        antilink: {
+            enabled: { type: Boolean, default: false },
+            mode: { type: String, default: 'invite', enum: ['invite', 'all'] },
+            ignoredChannels: [String],
+            ignoredRoles: [String]
+        },
+
+        massmention: {
+            enabled: { type: Boolean, default: false },
+            limit: { type: Number, default: 5 },
+            ignoredChannels: [String],
+            ignoredRoles: [String]
+        },
+
+        badwords: {
+            enabled: { type: Boolean, default: false },
+            list: [String],
+            ignoredChannels: [String],
+            ignoredRoles: [String]
+        },
+
+        strikes: {
+            seniorityThreshold: { type: Number, default: 604800000 }, // 7 days
+            punishments: [{
+                count: Number,
+                action: { type: String, enum: ['kick', 'ban', 'mute', 'timeout', 'warn'] },
+                duration: Number // ms
+            }]
+        },
+
+        nodeRankRoles: [String],
+        picOnlyChannels: [String]
+    },
+
+    // Public Channels (Generic "Public" mode, behavior defined by commands)
+    public: {
+        enabled: { type: Boolean, default: false },
+        channels: [String]
     }
 });
 

@@ -89,9 +89,13 @@ async function updateV2Interaction(client, interaction, content, components, emb
     try {
         // 1. Defer Update (only if not already deferred/replied)
         if (!interaction.deferred && !interaction.replied) {
-            await client.rest.post(Routes.interactionCallback(interaction.id, interaction.token), {
-                body: { type: 6 } // DEFERRED_UPDATE_MESSAGE
-            });
+            try {
+                await client.rest.post(Routes.interactionCallback(interaction.id, interaction.token), {
+                    body: { type: 6 } // DEFERRED_UPDATE_MESSAGE
+                });
+            } catch (ignore) {
+                // If it fails (e.g. already ack), just proceed to edit
+            }
         }
 
         // 2. Edit Message via Webhook
