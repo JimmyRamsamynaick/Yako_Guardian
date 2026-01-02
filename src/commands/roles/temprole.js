@@ -1,6 +1,7 @@
 const TempRole = require('../../database/models/TempRole');
 const { sendV2Message } = require('../../utils/componentUtils');
 const ms = require('ms'); // We need to install 'ms' if not present, or use a helper function. 
+const { t } = require('../../utils/i18n');
 // Assuming 'ms' is not installed, I'll write a simple parser or assume it is available. 
 // Usually I should check package.json. If not, I'll use a simple regex parser.
 
@@ -24,7 +25,7 @@ module.exports = {
     async run(client, message, args) {
         // Permissions
         if (!message.member.permissions.has('ManageRoles') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission `Gérer les rôles`.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.temprole.permission_manage_roles', message.guild.id), []);
         }
 
         const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
@@ -33,20 +34,19 @@ module.exports = {
 
         if (!member || !role || !durationStr) {
             return sendV2Message(client, message.channel.id, 
-                "**Utilisation:** `+temprole <@membre> <@role> <durée>`\n" +
-                "Exemple: `+temprole @User @Vip 1d` (1d = 1 jour, 1h = 1 heure, 30m = 30 minutes)", 
+                await t('roles.temprole.usage', message.guild.id), 
                 []
             );
         }
 
         const durationMs = parseDuration(durationStr);
         if (!durationMs) {
-            return sendV2Message(client, message.channel.id, "❌ Format de durée invalide. Utilisez s/m/h/d (ex: 30m, 1h, 1d).", []);
+            return sendV2Message(client, message.channel.id, await t('roles.temprole.invalid_duration', message.guild.id), []);
         }
 
         // Check hierarchy
         if (role.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Vous ne pouvez pas gérer un rôle supérieur ou égal au vôtre.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.temprole.role_hierarchy_error', message.guild.id), []);
         }
 
         try {
@@ -64,17 +64,17 @@ module.exports = {
             await newTempRole.save();
 
             sendV2Message(client, message.channel.id, 
-                `✅ **Rôle Temporaire Ajouté**\n` +
-                `👤 **Membre:** ${member.user.tag}\n` +
-                `🛡️ **Rôle:** ${role.name}\n` +
-                `⏳ **Durée:** ${durationStr}\n` +
-                `📅 **Expire:** <t:${Math.floor(expiresAt.getTime() / 1000)}:R>`, 
+                `${await t('roles.temprole.success_title', message.guild.id)}\n` +
+                `${await t('roles.temprole.success_member', message.guild.id, { user: member.user.tag })}\n` +
+                `${await t('roles.temprole.success_role', message.guild.id, { role: role.name })}\n` +
+                `${await t('roles.temprole.success_duration', message.guild.id, { duration: durationStr })}\n` +
+                `${await t('roles.temprole.success_expires', message.guild.id, { time: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>` })}`, 
                 []
             );
 
         } catch (error) {
             console.error(error);
-            sendV2Message(client, message.channel.id, "❌ Une erreur est survenue lors de l'ajout du rôle.", []);
+            sendV2Message(client, message.channel.id, await t('roles.temprole.error', message.guild.id), []);
         }
     }
 };

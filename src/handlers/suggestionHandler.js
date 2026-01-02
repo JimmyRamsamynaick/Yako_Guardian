@@ -2,9 +2,11 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, 
 const Suggestion = require('../database/models/Suggestion');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../utils/componentUtils');
+const { t } = require('../utils/i18n');
 
 async function handleSuggestionButton(client, interaction) {
     const { customId, user, guild } = interaction;
+    const guildId = guild.id;
 
     // Settings
     if (customId === 'suggestion_settings_toggle') {
@@ -29,7 +31,7 @@ async function handleSuggestionButton(client, interaction) {
 
     const suggestion = await Suggestion.findById(suggestionId);
     if (!suggestion) {
-        return replyV2Interaction(client, interaction, "❌ Suggestion introuvable (peut-être supprimée).", [], true);
+        return replyV2Interaction(client, interaction, await t('suggestion.handler.not_found', guildId), [], true);
     }
 
     if (action === 'upvote' || action === 'downvote') {
@@ -60,7 +62,7 @@ async function handleSuggestionButton(client, interaction) {
     else if (action === 'approve' || action === 'reject' || action === 'delete') {
         // Permission check
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
-            return replyV2Interaction(client, interaction, "❌ Permission refusée.", [], true);
+            return replyV2Interaction(client, interaction, await t('suggestion.handler.permission_denied', guildId), [], true);
         }
 
         if (action === 'delete') {
@@ -76,37 +78,38 @@ async function handleSuggestionButton(client, interaction) {
 }
 
 async function updateSuggestionMessage(client, suggestion, interaction) {
+    const guildId = interaction.guildId;
     // Reconstruct message content
-    let authorName = "Utilisateur Inconnu";
+    let authorName = await t('suggestion.handler.unknown_user', guildId);
     try {
         const user = await client.users.fetch(suggestion.authorId);
         authorName = user.tag;
     } catch (e) {}
 
-    let statusEmoji = "⏳ En attente";
-    if (suggestion.status === 'approved') statusEmoji = "✅ Approuvée";
-    if (suggestion.status === 'rejected') statusEmoji = "❌ Rejetée";
+    let statusEmoji = await t('suggestion.handler.status_pending', guildId);
+    if (suggestion.status === 'approved') statusEmoji = await t('suggestion.handler.status_approved', guildId);
+    if (suggestion.status === 'rejected') statusEmoji = await t('suggestion.handler.status_rejected', guildId);
 
-    const content = `**💡 Suggestion**\n` +
-                    `Proposée par: **${authorName}**\n\n` +
+    const content = `**${await t('suggestion.handler.embed_title', guildId)}**\n` +
+                    `${await t('suggestion.handler.proposed_by', guildId, { author: authorName })}\n\n` +
                     `${suggestion.content}\n\n` +
-                    `📊 **Votes:**\n` +
+                    `${await t('suggestion.handler.votes', guildId)}\n` +
                     `👍 ${suggestion.upvotes}  |  👎 ${suggestion.downvotes}\n\n` +
-                    `Statut: **${statusEmoji}**`;
+                    `${await t('suggestion.handler.status', guildId, { status: statusEmoji })}`;
 
     // Buttons
     const row = new ActionRowBuilder();
     if (suggestion.status === 'pending') {
         row.addComponents(
-            new ButtonBuilder().setCustomId(`suggestion_upvote_${suggestion._id}`).setLabel('Pour').setStyle(ButtonStyle.Success).setEmoji('👍'),
-            new ButtonBuilder().setCustomId(`suggestion_downvote_${suggestion._id}`).setLabel('Contre').setStyle(ButtonStyle.Danger).setEmoji('👎')
+            new ButtonBuilder().setCustomId(`suggestion_upvote_${suggestion._id}`).setLabel(await t('suggestion.handler.btn_upvote', guildId)).setStyle(ButtonStyle.Success).setEmoji('👍'),
+            new ButtonBuilder().setCustomId(`suggestion_downvote_${suggestion._id}`).setLabel(await t('suggestion.handler.btn_downvote', guildId)).setStyle(ButtonStyle.Danger).setEmoji('👎')
         );
         
         // Admin buttons
         const rowAdmin = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`suggestion_approve_${suggestion._id}`).setLabel('Approuver').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId(`suggestion_reject_${suggestion._id}`).setLabel('Rejeter').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId(`suggestion_delete_${suggestion._id}`).setLabel('Supprimer').setStyle(ButtonStyle.Danger)
+            new ButtonBuilder().setCustomId(`suggestion_approve_${suggestion._id}`).setLabel(await t('suggestion.handler.btn_approve', guildId)).setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId(`suggestion_reject_${suggestion._id}`).setLabel(await t('suggestion.handler.btn_reject', guildId)).setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`suggestion_delete_${suggestion._id}`).setLabel(await t('suggestion.handler.btn_delete', guildId)).setStyle(ButtonStyle.Danger)
         );
 
         if (interaction.isMessageComponent && interaction.isMessageComponent()) {
@@ -126,7 +129,7 @@ async function updateSuggestionMessage(client, suggestion, interaction) {
         const rowDisabled = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`suggestion_upvote_${suggestion._id}`).setLabel(`${suggestion.upvotes}`).setStyle(ButtonStyle.Secondary).setEmoji('👍').setDisabled(true),
             new ButtonBuilder().setCustomId(`suggestion_downvote_${suggestion._id}`).setLabel(`${suggestion.downvotes}`).setStyle(ButtonStyle.Secondary).setEmoji('👎').setDisabled(true),
-            new ButtonBuilder().setCustomId(`suggestion_delete_${suggestion._id}`).setLabel('Supprimer').setStyle(ButtonStyle.Danger)
+            new ButtonBuilder().setCustomId(`suggestion_delete_${suggestion._id}`).setLabel(await t('suggestion.handler.btn_delete', guildId)).setStyle(ButtonStyle.Danger)
         );
         
         if (interaction.isMessageComponent && interaction.isMessageComponent()) {
@@ -136,20 +139,21 @@ async function updateSuggestionMessage(client, suggestion, interaction) {
 }
 
 async function showSuggestionSettings(client, interaction, config) {
+    const guildId = interaction.guildId;
     const sugg = config.suggestion || { enabled: false };
-    const status = sugg.enabled ? "✅ Activé" : "❌ Désactivé";
-    const channel = sugg.channelId ? `<#${sugg.channelId}>` : "Non défini";
+    const status = sugg.enabled ? await t('suggestion.handler.settings_status_enabled', guildId) : await t('suggestion.handler.settings_status_disabled', guildId);
+    const channel = sugg.channelId ? `<#${sugg.channelId}>` : await t('suggestion.handler.settings_channel_none', guildId);
 
-    const content = `**💡 Configuration Suggestions**\n\n` +
-                    `État : **${status}**\n` +
-                    `Salon : ${channel}\n\n` +
-                    `Les membres peuvent utiliser \`+suggestion <message>\` pour poster une idée.`;
+    const content = `**${await t('suggestion.handler.settings_title', guildId)}**\n\n` +
+                    `${await t('suggestion.handler.settings_status_label', guildId, { status })}\n` +
+                    `${await t('suggestion.handler.settings_channel_label', guildId, { channel })}\n\n` +
+                    `${await t('suggestion.handler.settings_usage', guildId)}`;
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('suggestion_settings_toggle')
-                .setLabel(sugg.enabled ? 'Désactiver' : 'Activer')
+                .setLabel(sugg.enabled ? await t('suggestion.handler.settings_btn_disable', guildId) : await t('suggestion.handler.settings_btn_enable', guildId))
                 .setStyle(sugg.enabled ? ButtonStyle.Danger : ButtonStyle.Success)
         );
 
@@ -157,7 +161,7 @@ async function showSuggestionSettings(client, interaction, config) {
         .addComponents(
             new ChannelSelectMenuBuilder()
                 .setCustomId('suggestion_channel_select')
-                .setPlaceholder('Choisir le salon des suggestions')
+                .setPlaceholder(await t('suggestion.handler.settings_placeholder', guildId))
                 .setChannelTypes(ChannelType.GuildText)
         );
 

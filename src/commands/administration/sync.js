@@ -1,5 +1,6 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { ChannelType } = require('discord.js');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'sync',
@@ -7,7 +8,7 @@ module.exports = {
     category: 'Administration',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageChannels') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Gérer les salons` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('sync.permission', message.guild.id), []);
         }
 
         const target = args[0] ? args[0].toLowerCase() : 'channel'; // channel, category, all
@@ -20,15 +21,15 @@ module.exports = {
         const channel = message.channel;
 
         if (!channel.parent) {
-            return sendV2Message(client, message.channel.id, "❌ Ce salon n'est pas dans une catégorie.", []);
+            return sendV2Message(client, message.channel.id, await t('sync.no_category', message.guild.id), []);
         }
 
         try {
             await channel.lockPermissions();
-            sendV2Message(client, message.channel.id, `✅ Permissions synchronisées avec la catégorie **${channel.parent.name}**.`, []);
+            sendV2Message(client, message.channel.id, await t('sync.success', message.guild.id, { category: channel.parent.name }), []);
         } catch (e) {
             console.error(e);
-            sendV2Message(client, message.channel.id, "❌ Erreur lors de la synchronisation.", []);
+            sendV2Message(client, message.channel.id, await t('sync.error', message.guild.id), []);
         }
     }
 };

@@ -1,30 +1,30 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'voicekick',
     description: 'Déconnecter un membre d\'un salon vocal',
-    category: 'Vocal',
+    category: 'Voice',
     async run(client, message, args) {
         if (!message.member.permissions.has('MoveMembers') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Déplacer des membres` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('voicekick.permission', message.guild.id), []);
         }
 
         const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
 
         if (!member) {
-            return sendV2Message(client, message.channel.id, "**Utilisation:** `+voicekick <@membre>`", []);
+            return sendV2Message(client, message.channel.id, await t('voicekick.usage', message.guild.id), []);
         }
 
         if (!member.voice.channel) {
-            return sendV2Message(client, message.channel.id, "❌ Ce membre n'est pas en vocal.", []);
+            return sendV2Message(client, message.channel.id, await t('voicekick.not_in_voice', message.guild.id), []);
         }
 
         try {
             await member.voice.disconnect();
-            sendV2Message(client, message.channel.id, `✅ **${member.user.tag}** a été déconnecté du vocal.`, []);
+            return sendV2Message(client, message.channel.id, await t('voicekick.success', message.guild.id, { tag: member.user.tag }), []);
         } catch (e) {
-            console.error(e);
-            sendV2Message(client, message.channel.id, "❌ Impossible de déconnecter ce membre (Permissions insuffisantes ?).", []);
+            return sendV2Message(client, message.channel.id, await t('voicekick.error', message.guild.id), []);
         }
     }
 };

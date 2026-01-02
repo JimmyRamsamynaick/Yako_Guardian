@@ -1,6 +1,7 @@
 const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'autodelete',
@@ -8,7 +9,7 @@ module.exports = {
     category: 'Moderation',
     async execute(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission (Administrator requis).", []);
+            return sendV2Message(client, message.channel.id, await t('autodelete.admin_only', message.guild.id), []);
         }
 
         // +autodelete <moderation/snipe> <commande/reply> <on/off/durée>
@@ -17,11 +18,11 @@ module.exports = {
         const value = args[2]?.toLowerCase();
 
         if (!category || !type || !value) {
-            return sendV2Message(client, message.channel.id, "**Usage:** `+autodelete <moderation/snipe> <command/response> <on/off/durée>`\nEx: `+autodelete moderation command on` (Supprime la commande imméd.)\n`+autodelete moderation response 5s` (Supprime la réponse après 5s)", []);
+            return sendV2Message(client, message.channel.id, await t('autodelete.usage', message.guild.id), []);
         }
 
-        if (!['moderation', 'snipe'].includes(category)) return sendV2Message(client, message.channel.id, "❌ Catégorie invalide. Choix: `moderation`, `snipe`.", []);
-        if (!['command', 'response'].includes(type)) return sendV2Message(client, message.channel.id, "❌ Type invalide. Choix: `command`, `response`.", []);
+        if (!['moderation', 'snipe'].includes(category)) return sendV2Message(client, message.channel.id, await t('autodelete.invalid_category', message.guild.id), []);
+        if (!['command', 'response'].includes(type)) return sendV2Message(client, message.channel.id, await t('autodelete.invalid_type', message.guild.id), []);
 
         const config = await getGuildConfig(message.guild.id);
         
@@ -39,7 +40,7 @@ module.exports = {
         if (type === 'command') {
             if (value === 'on') config.autodelete[category].command = true;
             else if (value === 'off') config.autodelete[category].command = false;
-            else return sendV2Message(client, message.channel.id, "❌ Pour 'command', utilisez `on` ou `off`.", []);
+            else return sendV2Message(client, message.channel.id, await t('autodelete.command_bool_error', message.guild.id), []);
         } else {
             // response
             if (value === 'off') {
@@ -49,7 +50,7 @@ module.exports = {
                 if (value === 'on') ms = 5000; // Default 5s
                 else {
                     const match = value.match(/^(\d+)(s|m|h)?$/);
-                    if (!match) return sendV2Message(client, message.channel.id, "❌ Durée invalide. Ex: `5s`, `10s`.", []);
+                    if (!match) return sendV2Message(client, message.channel.id, await t('autodelete.invalid_duration_short', message.guild.id), []);
                     const amount = parseInt(match[1]);
                     const unit = match[2] || 's';
                     if (unit === 's') ms = amount * 1000;
@@ -61,7 +62,7 @@ module.exports = {
         }
 
         await config.save();
-        const msg = await sendV2Message(client, message.channel.id, `✅ Configuration AutoDelete mise à jour pour **${category} ${type}**.`, []);
+        const msg = await sendV2Message(client, message.channel.id, await t('autodelete.success', message.guild.id, { category, type }), []);
 
         // Autodelete Response (Recursion!)
         if (config.autodelete?.moderation?.response > 0) {

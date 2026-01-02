@@ -1,10 +1,12 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder, UserSelectMenuBuilder, PermissionsBitField } = require('discord.js');
 const ActiveTempVoc = require('../database/models/ActiveTempVoc');
 const { replyV2Interaction, updateV2Interaction, sendV2Message } = require('../utils/componentUtils');
+const { t } = require('../utils/i18n');
 
 async function handleTempVocInteraction(client, interaction) {
     try {
         const { customId, member, guild, channel } = interaction;
+        const guildId = guild.id;
         
         // Check if channel is temp voc
         const active = await ActiveTempVoc.findOne({ channelId: channel.id });
@@ -23,11 +25,11 @@ async function handleTempVocInteraction(client, interaction) {
         }
 
         if (!active) {
-            return replyV2Interaction(client, interaction, "❌ Ce n'est pas un salon temporaire.", [], true);
+            return replyV2Interaction(client, interaction, await t('tempvoc.handler.not_temp_voc', guildId), [], true);
         }
 
         if (active.ownerId !== member.id) {
-            return replyV2Interaction(client, interaction, "❌ Vous n'êtes pas le propriétaire de ce salon.", [], true);
+            return replyV2Interaction(client, interaction, await t('tempvoc.handler.not_owner', guildId), [], true);
         }
 
         // --- BUTTONS ---
@@ -35,11 +37,11 @@ async function handleTempVocInteraction(client, interaction) {
         if (customId === 'tempvoc_lock') {
             // Lock: Visible but Locked
             await channel.permissionOverwrites.edit(guild.id, { Connect: false, ViewChannel: true });
-            await replyV2Interaction(client, interaction, "🔒 Salon verrouillé (mais visible).", [], true);
+            await replyV2Interaction(client, interaction, await t('tempvoc.handler.locked', guildId), [], true);
         }
         else if (customId === 'tempvoc_unlock') {
             await channel.permissionOverwrites.edit(guild.id, { Connect: true, ViewChannel: true });
-            await replyV2Interaction(client, interaction, "🔓 Salon déverrouillé.", [], true);
+            await replyV2Interaction(client, interaction, await t('tempvoc.handler.unlocked', guildId), [], true);
         }
         else if (customId === 'tempvoc_hide') {
             // Toggle hide/unhide
@@ -69,45 +71,45 @@ async function handleTempVocInteraction(client, interaction) {
             const newStatus = !current;
             await channel.permissionOverwrites.edit(everyone, { ViewChannel: newStatus });
             
-            await replyV2Interaction(client, interaction, newStatus ? "👁️ Salon visible." : "👁️ Salon masqué.", [], true);
+            await replyV2Interaction(client, interaction, newStatus ? await t('tempvoc.handler.visible', guildId) : await t('tempvoc.handler.hidden', guildId), [], true);
         }
         else if (customId === 'tempvoc_purge') {
             const members = channel.members.filter(m => m.id !== member.id);
-            if (members.size === 0) return replyV2Interaction(client, interaction, "❌ Personne à kick.", [], true);
+            if (members.size === 0) return replyV2Interaction(client, interaction, await t('tempvoc.handler.purge_none', guildId), [], true);
             
             for (const [id, m] of members) {
                 if (m.voice) await m.voice.disconnect("Purge").catch(() => {});
             }
-            await replyV2Interaction(client, interaction, `💥 **${members.size}** membres ont été kick du vocal.`, [], true);
+            await replyV2Interaction(client, interaction, await t('tempvoc.handler.purge_success', guildId, { count: members.size }), [], true);
         }
         else if (customId === 'tempvoc_transfer') {
             const members = channel.members.filter(m => m.id !== member.id);
-            if (members.size === 0) return replyV2Interaction(client, interaction, "❌ Personne à qui transférer.", [], true);
+            if (members.size === 0) return replyV2Interaction(client, interaction, await t('tempvoc.handler.transfer_none', guildId), [], true);
 
             const select = new StringSelectMenuBuilder()
                 .setCustomId('tempvoc_select_transfer')
-                .setPlaceholder('Choisir le nouveau propriétaire')
+                .setPlaceholder(await t('tempvoc.handler.transfer_select_placeholder', guildId))
                 .addOptions(members.map(m => ({
                     label: m.user.tag,
                     value: m.id
                 })));
             
-            await replyV2Interaction(client, interaction, "Choisir le nouveau propriétaire", [new ActionRowBuilder().addComponents(select)], true);
+            await replyV2Interaction(client, interaction, await t('tempvoc.handler.transfer_msg', guildId), [new ActionRowBuilder().addComponents(select)], true);
         }
         else if (customId === 'tempvoc_wl') {
             // Show WL Management Menu
             const userSelect = new UserSelectMenuBuilder()
                 .setCustomId('tempvoc_select_wl')
-                .setPlaceholder('Gérer la Whitelist (Ajouter/Retirer)')
+                .setPlaceholder(await t('tempvoc.handler.wl_select_placeholder', guildId))
                 .setMinValues(1)
                 .setMaxValues(10);
 
             const currentWL = active.allowedUsers.length > 0 
                 ? active.allowedUsers.map(id => `<@${id}>`).join(', ') 
-                : "Personne";
+                : await t('tempvoc.handler.none', guildId);
 
             await replyV2Interaction(client, interaction, 
-                `**✅ Whitelist Actuelle:** ${currentWL}\nSélectionnez des membres pour les ajouter/retirer.`, 
+                await t('tempvoc.handler.wl_current', guildId, { list: currentWL }), 
                 [new ActionRowBuilder().addComponents(userSelect)], 
                 true
             );
@@ -115,16 +117,16 @@ async function handleTempVocInteraction(client, interaction) {
         else if (customId === 'tempvoc_bl') {
             const userSelect = new UserSelectMenuBuilder()
                 .setCustomId('tempvoc_select_bl')
-                .setPlaceholder('Gérer la Blacklist (Ajouter/Retirer)')
+                .setPlaceholder(await t('tempvoc.handler.bl_select_placeholder', guildId))
                 .setMinValues(1)
                 .setMaxValues(10);
 
             const currentBL = active.blockedUsers.length > 0 
                 ? active.blockedUsers.map(id => `<@${id}>`).join(', ') 
-                : "Personne";
+                : await t('tempvoc.handler.none', guildId);
 
             await replyV2Interaction(client, interaction, 
-                `**⛔ Blacklist Actuelle:** ${currentBL}\nSélectionnez des membres pour les ajouter/retirer.`, 
+                await t('tempvoc.handler.bl_current', guildId, { list: currentBL }), 
                 [new ActionRowBuilder().addComponents(userSelect)], 
                 true
             );
@@ -132,10 +134,10 @@ async function handleTempVocInteraction(client, interaction) {
         else if (customId === 'tempvoc_limit') {
             const modal = new ModalBuilder()
                 .setCustomId('tempvoc_modal_limit')
-                .setTitle('Définir la limite');
+                .setTitle(await t('tempvoc.handler.limit_modal_title', guildId));
             const input = new TextInputBuilder()
                 .setCustomId('limit')
-                .setLabel('Nombre (0 = illimité)')
+                .setLabel(await t('tempvoc.handler.limit_input_label', guildId))
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -144,10 +146,10 @@ async function handleTempVocInteraction(client, interaction) {
         else if (customId === 'tempvoc_rename') {
             const modal = new ModalBuilder()
                 .setCustomId('tempvoc_modal_rename')
-                .setTitle('Renommer le salon');
+                .setTitle(await t('tempvoc.handler.rename_modal_title', guildId));
             const input = new TextInputBuilder()
                 .setCustomId('name')
-                .setLabel('Nouveau nom')
+                .setLabel(await t('tempvoc.handler.rename_input_label', guildId))
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -156,33 +158,33 @@ async function handleTempVocInteraction(client, interaction) {
         else if (customId === 'tempvoc_kick') {
             const members = channel.members.filter(m => m.id !== member.id);
             if (members.size === 0) {
-                return replyV2Interaction(client, interaction, "❌ Personne à kick.", [], true);
+                return replyV2Interaction(client, interaction, await t('tempvoc.handler.kick_none', guildId), [], true);
             }
             
             const select = new StringSelectMenuBuilder()
                 .setCustomId('tempvoc_select_kick')
-                .setPlaceholder('Choisir un membre à kick')
+                .setPlaceholder(await t('tempvoc.handler.kick_select_placeholder', guildId))
                 .addOptions(members.map(m => ({
                     label: m.user.tag,
                     value: m.id
                 })));
             
-            await replyV2Interaction(client, interaction, "Choisir un membre à kick", [new ActionRowBuilder().addComponents(select)], true);
+            await replyV2Interaction(client, interaction, await t('tempvoc.handler.kick_msg', guildId), [new ActionRowBuilder().addComponents(select)], true);
         }
         
         // --- MODALS ---
         else if (customId === 'tempvoc_modal_limit') {
             const limit = parseInt(interaction.fields.getTextInputValue('limit'));
             if (isNaN(limit) || limit < 0 || limit > 99) {
-                return replyV2Interaction(client, interaction, "❌ Nombre invalide.", [], true);
+                return replyV2Interaction(client, interaction, await t('tempvoc.handler.limit_invalid', guildId), [], true);
             }
             await channel.setUserLimit(limit);
-            await replyV2Interaction(client, interaction, `✅ Limite définie à ${limit}.`, [], true);
+            await replyV2Interaction(client, interaction, await t('tempvoc.handler.limit_success', guildId, { limit }), [], true);
         }
         else if (customId === 'tempvoc_modal_rename') {
             const name = interaction.fields.getTextInputValue('name');
             await channel.setName(name);
-            await replyV2Interaction(client, interaction, `✅ Salon renommé en **${name}**.`, [], true);
+            await replyV2Interaction(client, interaction, await t('tempvoc.handler.rename_success', guildId, { name }), [], true);
         }
         
         // --- SELECTS ---
@@ -191,16 +193,16 @@ async function handleTempVocInteraction(client, interaction) {
             const target = channel.members.get(targetId);
             if (target) {
                 await target.voice.disconnect("Kicked by owner").catch(() => {});
-                await updateV2Interaction(client, interaction, `👋 ${target.user.tag} a été kick.`, []);
+                await updateV2Interaction(client, interaction, await t('tempvoc.handler.kick_success', guildId, { user: target.user.tag }), []);
             } else {
-                await updateV2Interaction(client, interaction, "❌ Membre introuvable.", []);
+                await updateV2Interaction(client, interaction, await t('tempvoc.handler.kick_member_not_found', guildId), []);
             }
         }
         else if (customId === 'tempvoc_select_transfer') {
             const targetId = interaction.values[0];
             const target = guild.members.cache.get(targetId); // Ensure member is fetched or use cache
             
-            if (!target) return updateV2Interaction(client, interaction, "❌ Membre introuvable.", []);
+            if (!target) return updateV2Interaction(client, interaction, await t('tempvoc.handler.transfer_member_not_found', guildId), []);
 
             active.ownerId = targetId;
             await active.save();
@@ -208,7 +210,7 @@ async function handleTempVocInteraction(client, interaction) {
             await channel.permissionOverwrites.edit(member.id, { Connect: null, ManageChannels: null, MoveMembers: null });
             await channel.permissionOverwrites.edit(targetId, { Connect: true, ManageChannels: true, MoveMembers: true });
 
-            await updateV2Interaction(client, interaction, `👑 Propriété transférée à ${target}.`, []);
+            await updateV2Interaction(client, interaction, await t('tempvoc.handler.transfer_success', guildId, { user: target.toString() }), []);
         }
         else if (customId === 'tempvoc_select_wl') {
             const targetIds = interaction.values;
@@ -231,10 +233,10 @@ async function handleTempVocInteraction(client, interaction) {
             await active.save();
             
             let msg = "";
-            if (added.length > 0) msg += `✅ Ajoutés à la WL: ${added.map(id => `<@${id}>`).join(', ')}\n`;
-            if (removed.length > 0) msg += `❌ Retirés de la WL: ${removed.map(id => `<@${id}>`).join(', ')}`;
+            if (added.length > 0) msg += await t('tempvoc.handler.wl_added', guildId, { list: added.map(id => `<@${id}>`).join(', ') }) + "\n";
+            if (removed.length > 0) msg += await t('tempvoc.handler.wl_removed', guildId, { list: removed.map(id => `<@${id}>`).join(', ') });
             
-            await updateV2Interaction(client, interaction, msg || "Aucun changement.", []);
+            await updateV2Interaction(client, interaction, msg || await t('tempvoc.handler.no_change', guildId), []);
         }
         else if (customId === 'tempvoc_select_bl') {
             const targetIds = interaction.values;
@@ -261,21 +263,21 @@ async function handleTempVocInteraction(client, interaction) {
             await active.save();
             
             let msg = "";
-            if (added.length > 0) msg += `⛔ Ajoutés à la BL: ${added.map(id => `<@${id}>`).join(', ')}\n`;
-            if (removed.length > 0) msg += `✅ Retirés de la BL: ${removed.map(id => `<@${id}>`).join(', ')}`;
+            if (added.length > 0) msg += await t('tempvoc.handler.bl_added', guildId, { list: added.map(id => `<@${id}>`).join(', ') }) + "\n";
+            if (removed.length > 0) msg += await t('tempvoc.handler.bl_removed', guildId, { list: removed.map(id => `<@${id}>`).join(', ') });
             
-            await updateV2Interaction(client, interaction, msg || "Aucun changement.", []);
+            await updateV2Interaction(client, interaction, msg || await t('tempvoc.handler.no_change', guildId), []);
         }
     } catch (error) {
         console.error("Error in handleTempVocInteraction:", error);
         if (!interaction.replied && !interaction.deferred) {
-            await replyV2Interaction(client, interaction, `❌ Une erreur est survenue: ${error.message}`, [], true).catch(() => {});
+            await replyV2Interaction(client, interaction, await t('tempvoc.handler.error', interaction.guild.id, { error: error.message }), [], true).catch(() => {});
         } else {
             // If deferred, we need to edit the deferred response
             try {
                 // Using updateV2Interaction logic for deferred error
                 // Actually replyV2Interaction also handles deferred.
-                await replyV2Interaction(client, interaction, `❌ Une erreur est survenue: ${error.message}`, [], true).catch(() => {});
+                await replyV2Interaction(client, interaction, await t('tempvoc.handler.error', interaction.guild.id, { error: error.message }), [], true).catch(() => {});
             } catch (e) {
                 console.error("Failed to send error message:", e);
             }

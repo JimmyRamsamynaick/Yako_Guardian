@@ -1,5 +1,6 @@
 const TempRole = require('../../database/models/TempRole');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'untemprole',
@@ -8,14 +9,14 @@ module.exports = {
     async run(client, message, args) {
         // Permissions
         if (!message.member.permissions.has('ManageRoles') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission `Gérer les rôles`.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.temprole.permission_manage_roles', message.guild.id), []);
         }
 
         const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
         const role = message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
 
         if (!member || !role) {
-            return sendV2Message(client, message.channel.id, "**Utilisation:** `+untemprole <@membre> <@role>`", []);
+            return sendV2Message(client, message.channel.id, await t('roles.untemprole.usage', message.guild.id), []);
         }
 
         try {
@@ -32,14 +33,14 @@ module.exports = {
             }
 
             if (result.deletedCount > 0) {
-                sendV2Message(client, message.channel.id, `✅ Rôle temporaire annulé et retiré pour ${member.user.tag}.`, []);
+                sendV2Message(client, message.channel.id, await t('roles.untemprole.success', message.guild.id, { user: member.user.tag }), []);
             } else {
-                sendV2Message(client, message.channel.id, `⚠️ Ce membre n'avait pas ce rôle enregistré comme temporaire, mais je l'ai retiré s'il l'avait.`, []);
+                sendV2Message(client, message.channel.id, await t('roles.untemprole.warning_not_temp', message.guild.id), []);
             }
 
         } catch (error) {
             console.error(error);
-            sendV2Message(client, message.channel.id, "❌ Erreur lors du retrait du rôle.", []);
+            sendV2Message(client, message.channel.id, await t('roles.untemprole.error', message.guild.id), []);
         }
     }
 };

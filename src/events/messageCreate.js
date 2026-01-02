@@ -5,6 +5,7 @@ const { db } = require('../database');
 const AutoReact = require('../database/models/AutoReact');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const CustomCommand = require('../database/models/CustomCommand');
+const { t } = require('../utils/i18n');
 
 module.exports = {
     name: 'messageCreate',
@@ -84,13 +85,13 @@ module.exports = {
         if (command) {
             const { sendV2Message } = require('../utils/componentUtils');
             if (!isOwner && !freeCommands.includes(command.name) && !checkSubscription(message.guild.id)) {
-                return sendV2Message(client, message.channel.id, "🔒 **Ce serveur n'a pas de licence active.**\nLa protection et la configuration sont désactivées.\nUtilisez `+activate <clé>` pour activer Yako Guardian Premium.\n*(Coût: 5€/mois/serveur)*", []);
+                return sendV2Message(client, message.channel.id, await t('common.license_required', message.guild.id), []);
             }
 
             // --- PERMISSION LEVEL SYSTEM (1-5) ---
             let userLevel = 0;
-            if (message.author.id === message.guild.ownerId) userLevel = 5;
-            else if (isOwner) userLevel = 10; // Bot Owner
+            if (isOwner) userLevel = 10; // Bot Owner
+            else if (message.author.id === message.guild.ownerId) userLevel = 5;
             else if (message.member.permissions.has(PermissionsBitField.Flags.Administrator)) userLevel = 4; // Admins default to Level 4 (can be overridden by Perm 5 assignment?)
             // Actually, let's keep Admins at 0/4? 
             // Better: If they have Admin perm, they should have high access. Let's say Level 4.
@@ -128,7 +129,10 @@ module.exports = {
             }
 
             if (userLevel < requiredLevel) {
-                return sendV2Message(client, message.channel.id, `❌ **Permission refusée.**\nCette commande requiert le **Niveau ${requiredLevel}** (Votre niveau: ${userLevel}).\nUtilisez \`+perms\` pour voir les niveaux.`, []);
+                if (requiredLevel === 10) {
+                     return sendV2Message(client, message.channel.id, await t('common.owner_only', message.guild.id), []);
+                }
+                return sendV2Message(client, message.channel.id, await t('common.permission_denied_level', message.guild.id, { required: requiredLevel, user: userLevel }), []);
             }
             // --- END PERMISSION SYSTEM ---
 
@@ -168,7 +172,7 @@ module.exports = {
                     // Role ID
                     else {
                         if (!message.member.roles.cache.has(reqPerm) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !isOwner) {
-                             return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission requise pour cette commande.", []);
+                             return sendV2Message(client, message.channel.id, await t('common.custom_permission_denied', message.guild.id), []);
                         }
                     }
                 }
@@ -180,7 +184,7 @@ module.exports = {
                 }
             } catch (error) {
                 logger.error(`Error executing command ${command.name}:`, error);
-                sendV2Message(client, message.channel.id, 'Une erreur est survenue lors de l\'exécution de la commande.', []);
+                sendV2Message(client, message.channel.id, await t('common.execution_error', message.guild.id), []);
             }
         } 
         // 2. Custom Command
@@ -189,7 +193,7 @@ module.exports = {
             if (customCmd) {
                 const { sendV2Message } = require('../utils/componentUtils');
                 if (!isOwner && !checkSubscription(message.guild.id)) {
-                    return sendV2Message(client, message.channel.id, "🔒 **Licence requise pour les commandes personnalisées.**", []);
+                    return sendV2Message(client, message.channel.id, await t('common.custom_command_license', message.guild.id), []);
                 }
                 // await message.channel.send(customCmd.response);
                 await sendV2Message(client, message.channel.id, customCmd.response, []);

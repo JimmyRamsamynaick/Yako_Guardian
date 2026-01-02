@@ -2,12 +2,13 @@ const { sendV2Message } = require('../../utils/componentUtils');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const { PermissionsBitField, ChannelType } = require('discord.js');
 const GlobalSettings = require('../../database/models/GlobalSettings');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
-    name: 'server',
+    name: 'servers',
     description: 'Gestion des serveurs (Owner)',
     category: 'Owner',
-    aliases: ['servers', 'invite', 'leave', 'secur'],
+    aliases: ['invite', 'leave', 'secur'],
     async run(client, message, args) {
         if (!await isBotOwner(message.author.id)) return;
 
@@ -18,7 +19,7 @@ module.exports = {
         if (commandName === 'secur' && sub === 'invite') {
             const state = args[1];
             if (!state || !['on', 'off'].includes(state.toLowerCase())) {
-                return sendV2Message(client, message.channel.id, "❌ Usage: `+secur invite <on/off>`\n*(Quitte automatiquement les serveurs ajoutés par quelqu'un d'autre que l'Owner)*", []);
+                return sendV2Message(client, message.channel.id, await t('servers.usage_secur', message.guild.id), []);
             }
 
             const isEnabled = state.toLowerCase() === 'on';
@@ -28,11 +29,11 @@ module.exports = {
                 { upsert: true, new: true }
             );
 
-            return sendV2Message(client, message.channel.id, `✅ **Secur Invite** est maintenant **${isEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉ'}**.\nLe bot quittera automatiquement les serveurs s'il n'est pas ajouté par un Owner ou le Propriétaire du serveur.`, []);
+            return sendV2Message(client, message.channel.id, await t('servers.secur_status', message.guild.id, { status: isEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉE' }), []);
         }
 
         // --- SERVER LIST ---
-        if (commandName === 'server' && (!sub || sub === 'list')) {
+        if (commandName === 'servers' && (!sub || sub === 'list')) {
             const guilds = client.guilds.cache.map(g => `• **${g.name}** (\`${g.id}\`) | 👥 ${g.memberCount} | 👑 <@${g.ownerId}>`);
             
             // Pagination if needed, but for now simple join
@@ -50,7 +51,7 @@ module.exports = {
             if (currentChunk) chunks.push(currentChunk);
 
             for (let i = 0; i < chunks.length; i++) {
-                await sendV2Message(client, message.channel.id, `**🌍 LISTE DES SERVEURS (${client.guilds.cache.size})** [${i+1}/${chunks.length}]\n\n${chunks[i]}`, []);
+                await sendV2Message(client, message.channel.id, await t('servers.server_list_title', message.guild.id, { count: client.guilds.cache.size, current: i+1, total: chunks.length, content: chunks[i] }), []);
             }
             return;
         }
@@ -58,37 +59,37 @@ module.exports = {
         // --- INVITE ---
         if (commandName === 'invite') {
             const guildId = args[0];
-            if (!guildId) return sendV2Message(client, message.channel.id, "❌ Usage: `+invite <ID>`", []);
+            if (!guildId) return sendV2Message(client, message.channel.id, await t('servers.usage_invite', message.guild.id), []);
 
             const guild = client.guilds.cache.get(guildId);
-            if (!guild) return sendV2Message(client, message.channel.id, "❌ Serveur introuvable.", []);
+            if (!guild) return sendV2Message(client, message.channel.id, await t('servers.server_not_found', message.guild.id), []);
 
             try {
                 // Try to find a channel to create invite
                 const channel = guild.channels.cache.find(c => c.type === ChannelType.GuildText && c.permissionsFor(guild.members.me).has(PermissionsBitField.Flags.CreateInstantInvite));
                 
-                if (!channel) return sendV2Message(client, message.channel.id, "❌ Impossible de créer une invitation (Pas de permissions ou pas de salon textuel accessible).", []);
+                if (!channel) return sendV2Message(client, message.channel.id, await t('servers.create_invite_error', message.guild.id), []);
 
                 const invite = await channel.createInvite({ maxAge: 300, maxUses: 1, unique: true });
-                return sendV2Message(client, message.channel.id, `✅ **Invitation pour ${guild.name}**\n${invite.url}`, []);
+                return sendV2Message(client, message.channel.id, await t('servers.invite_success', message.guild.id, { guildName: guild.name, url: invite.url }), []);
             } catch (e) {
-                return sendV2Message(client, message.channel.id, `❌ Erreur: ${e.message}`, []);
+                return sendV2Message(client, message.channel.id, await t('servers.invite_error', message.guild.id, { error: e.message }), []);
             }
         }
 
         // --- LEAVE ---
         if (commandName === 'leave') {
             const guildId = args[0];
-            if (!guildId) return sendV2Message(client, message.channel.id, "❌ Usage: `+leave <ID>`", []);
+            if (!guildId) return sendV2Message(client, message.channel.id, await t('servers.usage_leave', message.guild.id), []);
 
             const guild = client.guilds.cache.get(guildId);
-            if (!guild) return sendV2Message(client, message.channel.id, "❌ Serveur introuvable.", []);
+            if (!guild) return sendV2Message(client, message.channel.id, await t('servers.server_not_found', message.guild.id), []);
 
             try {
                 await guild.leave();
-                return sendV2Message(client, message.channel.id, `✅ J'ai quitté **${guild.name}**.`, []);
+                return sendV2Message(client, message.channel.id, await t('servers.leave_success', message.guild.id, { guildName: guild.name }), []);
             } catch (e) {
-                return sendV2Message(client, message.channel.id, `❌ Erreur: ${e.message}`, []);
+                return sendV2Message(client, message.channel.id, await t('servers.leave_error', message.guild.id, { error: e.message }), []);
             }
         }
     }

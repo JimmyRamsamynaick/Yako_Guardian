@@ -1,5 +1,6 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { getGuildConfig } = require('../../utils/mongoUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'snipe',
@@ -7,10 +8,12 @@ module.exports = {
     category: 'Utils',
     async run(client, message, args) {
         const snipe = client.snipes.get(message.channel.id);
-        if (!snipe) return sendV2Message(client, message.channel.id, "❌ Aucun message supprimé récemment.", []);
+        if (!snipe) return sendV2Message(client, message.channel.id, await t('snipe.empty', message.guild.id), []);
 
-        let content = `**De:** ${snipe.author} (<t:${Math.floor(snipe.date.getTime() / 1000)}:R>)\n**Contenu:** ${snipe.content}`;
-        if (snipe.image) content += `\n**Image:** ${snipe.image}`;
+        let content = (await t('snipe.from', message.guild.id, { author: snipe.author, date: `<t:${Math.floor(snipe.date.getTime() / 1000)}:R>` })) + "\n" +
+                      (await t('snipe.content', message.guild.id, { content: snipe.content }));
+        
+        if (snipe.image) content += "\n" + (await t('snipe.image', message.guild.id, { url: snipe.image }));
 
         const msg = await sendV2Message(client, message.channel.id, content, []);
 

@@ -1,18 +1,19 @@
 const { db } = require('../../database');
 const { EmbedBuilder } = require('discord.js');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'raidlog',
     aliases: ['logs'],
     run: async (client, message, args) => {
-        if (!args[0]) return sendV2Message(client, message.channel.id, 'Usage: +raidlog <on/off> [salon]', []);
+        if (!args[0]) return sendV2Message(client, message.channel.id, await t('raidlog.usage', message.guild.id), []);
         
         const state = args[0].toLowerCase();
         
         if (state === 'off') {
             db.prepare('UPDATE guild_settings SET raid_log_channel = NULL WHERE guild_id = ?').run(message.guild.id);
-            return sendV2Message(client, message.channel.id, 'Logs antiraid désactivés.', []);
+            return sendV2Message(client, message.channel.id, await t('raidlog.disabled', message.guild.id), []);
         }
         
         if (state === 'on') {
@@ -21,11 +22,11 @@ module.exports = {
             
             // Send Test Log
             const embed = new EmbedBuilder()
-                .setTitle('✅ Configuration des Logs')
-                .setDescription(`Les logs du serveur (Sécurité, Modération, Vocal, etc.) ont été configurés avec succès dans ce salon.\nCeci est un message de test.`)
+                .setTitle(await t('raidlog.test_title', message.guild.id))
+                .setDescription(await t('raidlog.test_desc', message.guild.id))
                 .setColor('#00FF00')
                 .setTimestamp()
-                .setFooter({ text: 'Yako Guardian Logs' });
+                .setFooter({ text: await t('raidlog.footer', message.guild.id) });
 
             // Note: sendV2Message does not support embeds in Type 17 natively in the same way, but let's see.
             // Actually, we can't send embed with Type 17 easily if we strictly use V2 payload structure for EVERYTHING.
@@ -39,7 +40,7 @@ module.exports = {
             
             channel.send({ embeds: [embed] }).catch(() => {});
 
-            return sendV2Message(client, message.channel.id, `✅ **Logs du serveur activés** avec succès dans ${channel}.\n_Un message de test a été envoyé dans le salon._`, []);
+            return sendV2Message(client, message.channel.id, await t('raidlog.success', message.guild.id, { channel: channel.toString() }), []);
         }
     }
 };

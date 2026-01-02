@@ -9,6 +9,7 @@ const {
     Routes
 } = require('discord.js');
 const { sendV2Message, replyV2Interaction, updateV2Interaction } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 // Cache to store embed drafts: userId -> { embedData, previewMessageId, previewToken }
 const embedDrafts = new Map();
@@ -22,9 +23,9 @@ async function updatePreview(client, draft, embed, interaction) {
                 Routes.webhookMessage(client.user.id, draft.previewToken, draft.previewMessageId), 
                 { 
                     body: { 
-                        content: "**[APERÇU]**", 
+                        content: await t('embed.preview', interaction.guildId), 
                         embeds: [embed] 
-                    } 
+                    }  
                 }
             );
             return; // Success, no need to send new one
@@ -37,7 +38,7 @@ async function updatePreview(client, draft, embed, interaction) {
     // Fallback: Send new ephemeral message
     try {
         const msg = await interaction.webhook.send({
-            content: "**[APERÇU]**",
+            content: await t('embed.preview', interaction.guildId),
             embeds: [embed],
             ephemeral: true,
             fetchReply: true
@@ -61,23 +62,23 @@ function getEmbedFromDraft(draft) {
     return embed;
 }
 
-function getControls() {
+async function getControls(guildId) {
     const row1 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('embed_edit_title').setLabel('Titre').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('embed_edit_desc').setLabel('Description').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('embed_edit_color').setLabel('Couleur').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('embed_edit_footer').setLabel('Footer').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId('embed_edit_title').setLabel(await t('embed.btn_title', guildId)).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('embed_edit_desc').setLabel(await t('embed.btn_desc', guildId)).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('embed_edit_color').setLabel(await t('embed.btn_color', guildId)).setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('embed_edit_footer').setLabel(await t('embed.btn_footer', guildId)).setStyle(ButtonStyle.Secondary)
     );
 
     const row2 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('embed_add_field').setLabel('Ajouter Champ').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('embed_clear_fields').setLabel('Vider Champs').setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId('embed_edit_image').setLabel('Image/Thumb').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId('embed_add_field').setLabel(await t('embed.btn_add_field', guildId)).setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('embed_clear_fields').setLabel(await t('embed.btn_clear_fields', guildId)).setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('embed_edit_image').setLabel(await t('embed.btn_image', guildId)).setStyle(ButtonStyle.Secondary)
     );
 
     const row3 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('embed_send').setLabel('ENVOYER').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('embed_cancel').setLabel('Annuler').setStyle(ButtonStyle.Danger)
+        new ButtonBuilder().setCustomId('embed_send').setLabel(await t('embed.btn_send', guildId)).setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('embed_cancel').setLabel(await t('embed.btn_cancel', guildId)).setStyle(ButtonStyle.Danger)
     );
     
     return [row1, row2, row3];
@@ -88,8 +89,8 @@ async function handleEmbedInteraction(client, interaction) {
     
     if (!draft && interaction.customId === 'embed_start') {
         draft = {
-            title: 'Nouveau Titre',
-            description: 'Description par défaut',
+            title: await t('embed.default_title', interaction.guildId),
+            description: await t('embed.default_description', interaction.guildId),
             color: '#2f3136',
             fields: [],
             footer: null,
@@ -99,7 +100,7 @@ async function handleEmbedInteraction(client, interaction) {
         embedDrafts.set(interaction.user.id, draft);
     } else if (!draft) {
         // Expired or missing
-        return replyV2Interaction(client, interaction, "❌ Session expirée. Veuillez relancer `+embed`.", [], true);
+        return replyV2Interaction(client, interaction, await t('embed.session_expired', interaction.guildId), [], true);
     }
 
     const { customId } = interaction;
@@ -110,8 +111,8 @@ async function handleEmbedInteraction(client, interaction) {
         const embed = getEmbedFromDraft(draft);
         // Reply with V2 UI
         await replyV2Interaction(client, interaction, 
-            "**🛠️ GÉNÉRATEUR D'EMBED**\nConfigurez votre embed ci-dessous. (Seul vous voyez ceci)\n_L'aperçu de l'embed est envoyé juste en dessous._", 
-            getControls(), 
+            await t('embed.generator_title', interaction.guildId) + "\n" + await t('embed.generator_desc', interaction.guildId), 
+            await getControls(interaction.guildId), 
             true
         );
         
@@ -128,7 +129,7 @@ async function handleEmbedInteraction(client, interaction) {
         // Send separate preview message (Epemeral)
         // Use webhook.send to bypass InteractionNotReplied check since we replied via REST manually
         const previewMsg = await interaction.webhook.send({ 
-            content: "**[APERÇU]**", 
+            content: await t('embed.preview', interaction.guildId), 
             embeds: [embed], 
             ephemeral: true,
             fetchReply: true
@@ -141,7 +142,7 @@ async function handleEmbedInteraction(client, interaction) {
 
     if (customId === 'embed_cancel') {
         embedDrafts.delete(interaction.user.id);
-        return updateV2Interaction(client, interaction, "❌ Création annulée.", [], []);
+        return updateV2Interaction(client, interaction, await t('embed.cancel_msg', interaction.guildId), [], []);
     }
 
     if (customId === 'embed_send') {
@@ -149,68 +150,68 @@ async function handleEmbedInteraction(client, interaction) {
         try {
             await interaction.channel.send({ embeds: [embed] });
             embedDrafts.delete(interaction.user.id);
-            return updateV2Interaction(client, interaction, "✅ Embed envoyé dans le salon !", [], []);
+            return updateV2Interaction(client, interaction, await t('embed.success', interaction.guildId), [], []);
         } catch (e) {
-            return replyV2Interaction(client, interaction, "❌ Erreur lors de l'envoi (Permissions ?)", [], true);
+            return replyV2Interaction(client, interaction, await t('embed.error_send', interaction.guildId), [], true);
         }
     }
 
     if (customId === 'embed_clear_fields') {
         draft.fields = [];
         const embed = getEmbedFromDraft(draft);
-        await updateV2Interaction(client, interaction, "**🛠️ GÉNÉRATEUR D'EMBED**", getControls());
+        await updateV2Interaction(client, interaction, await t('embed.generator_title', interaction.guildId), await getControls(interaction.guildId));
         await updatePreview(client, draft, embed, interaction);
         return;
     }
 
     // --- MODALS OPENING ---
     if (customId === 'embed_edit_title') {
-        const modal = new ModalBuilder().setCustomId('modal_embed_title').setTitle('Modifier le Titre');
+        const modal = new ModalBuilder().setCustomId('modal_embed_title').setTitle(await t('utils.embed.modal_title_title', interaction.guildId));
         modal.addComponents(new ActionRowBuilder().addComponents(
-            new TextInputBuilder().setCustomId('input_title').setLabel('Titre').setStyle(TextInputStyle.Short).setValue(draft.title || '')
+            new TextInputBuilder().setCustomId('input_title').setLabel(await t('utils.embed.label_title', interaction.guildId)).setStyle(TextInputStyle.Short).setValue(draft.title || '')
         ));
         await interaction.showModal(modal);
         return;
     }
     if (customId === 'embed_edit_desc') {
-        const modal = new ModalBuilder().setCustomId('modal_embed_desc').setTitle('Modifier la Description');
+        const modal = new ModalBuilder().setCustomId('modal_embed_desc').setTitle(await t('utils.embed.modal_desc_title', interaction.guildId));
         modal.addComponents(new ActionRowBuilder().addComponents(
-            new TextInputBuilder().setCustomId('input_desc').setLabel('Description').setStyle(TextInputStyle.Paragraph).setValue(draft.description || '')
+            new TextInputBuilder().setCustomId('input_desc').setLabel(await t('utils.embed.label_desc', interaction.guildId)).setStyle(TextInputStyle.Paragraph).setValue(draft.description || '')
         ));
         await interaction.showModal(modal);
         return;
     }
     if (customId === 'embed_edit_color') {
-        const modal = new ModalBuilder().setCustomId('modal_embed_color').setTitle('Modifier la Couleur');
+        const modal = new ModalBuilder().setCustomId('modal_embed_color').setTitle(await t('utils.embed.modal_color_title', interaction.guildId));
         modal.addComponents(new ActionRowBuilder().addComponents(
-            new TextInputBuilder().setCustomId('input_color').setLabel('Couleur (Hex)').setStyle(TextInputStyle.Short).setValue(draft.color || '#2f3136')
+            new TextInputBuilder().setCustomId('input_color').setLabel(await t('utils.embed.label_color', interaction.guildId)).setStyle(TextInputStyle.Short).setValue(draft.color || '#2f3136')
         ));
         await interaction.showModal(modal);
         return;
     }
     if (customId === 'embed_edit_footer') {
-        const modal = new ModalBuilder().setCustomId('modal_embed_footer').setTitle('Modifier le Footer');
+        const modal = new ModalBuilder().setCustomId('modal_embed_footer').setTitle(await t('utils.embed.modal_footer_title', interaction.guildId));
         modal.addComponents(new ActionRowBuilder().addComponents(
-            new TextInputBuilder().setCustomId('input_footer').setLabel('Texte du Footer').setStyle(TextInputStyle.Short).setValue(draft.footer || '')
+            new TextInputBuilder().setCustomId('input_footer').setLabel(await t('utils.embed.label_footer', interaction.guildId)).setStyle(TextInputStyle.Short).setValue(draft.footer || '')
         ));
         await interaction.showModal(modal);
         return;
     }
     if (customId === 'embed_edit_image') {
-        const modal = new ModalBuilder().setCustomId('modal_embed_image').setTitle('Images');
+        const modal = new ModalBuilder().setCustomId('modal_embed_image').setTitle(await t('utils.embed.modal_image_title', interaction.guildId));
         modal.addComponents(
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_image').setLabel('URL Image').setStyle(TextInputStyle.Short).setRequired(false).setValue(draft.image || '')),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_thumb').setLabel('URL Thumbnail').setStyle(TextInputStyle.Short).setRequired(false).setValue(draft.thumbnail || ''))
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_image').setLabel(await t('utils.embed.label_image_url', interaction.guildId)).setStyle(TextInputStyle.Short).setRequired(false).setValue(draft.image || '')),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_thumb').setLabel(await t('utils.embed.label_thumb_url', interaction.guildId)).setStyle(TextInputStyle.Short).setRequired(false).setValue(draft.thumbnail || ''))
         );
         await interaction.showModal(modal);
         return;
     }
     if (customId === 'embed_add_field') {
-        const modal = new ModalBuilder().setCustomId('modal_embed_field').setTitle('Ajouter un Champ');
+        const modal = new ModalBuilder().setCustomId('modal_embed_field').setTitle(await t('utils.embed.modal_field_title', interaction.guildId));
         modal.addComponents(
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_field_name').setLabel('Titre du champ').setStyle(TextInputStyle.Short)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_field_value').setLabel('Contenu').setStyle(TextInputStyle.Paragraph)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_field_inline').setLabel('Inline? (oui/non)').setStyle(TextInputStyle.Short).setRequired(false))
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_field_name').setLabel(await t('utils.embed.label_field_title', interaction.guildId)).setStyle(TextInputStyle.Short)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_field_value').setLabel(await t('utils.embed.label_field_value', interaction.guildId)).setStyle(TextInputStyle.Paragraph)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_field_inline').setLabel(await t('utils.embed.label_field_inline', interaction.guildId)).setStyle(TextInputStyle.Short).setRequired(false))
         );
         await interaction.showModal(modal);
         return;
@@ -244,7 +245,7 @@ async function handleEmbedInteraction(client, interaction) {
         }
 
         const embed = getEmbedFromDraft(draft);
-        await updateV2Interaction(client, interaction, "**🛠️ GÉNÉRATEUR D'EMBED**", getControls());
+        await updateV2Interaction(client, interaction, await t('embed.generator_title', interaction.guildId), await getControls(interaction.guildId));
         // Send updated preview
         await updatePreview(client, draft, embed, interaction);
         return;
@@ -258,10 +259,10 @@ module.exports = {
     async run(client, message, args) {
         await message.delete().catch(() => {});
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('embed_start').setLabel('🚀 Lancer le Créateur d\'Embed').setStyle(ButtonStyle.Primary)
+            new ButtonBuilder().setCustomId('embed_start').setLabel(await t('embed.trigger_btn', message.guild.id)).setStyle(ButtonStyle.Primary)
         );
         // We use sendV2Message for the trigger button
-        await sendV2Message(client, message.channel.id, "Cliquez ci-dessous pour créer un embed (Mode Privé).", [row]);
+        await sendV2Message(client, message.channel.id, await t('embed.trigger_msg', message.guild.id), [row]);
     },
     handleEmbedInteraction
 };

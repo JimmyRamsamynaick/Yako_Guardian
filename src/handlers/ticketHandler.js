@@ -2,10 +2,12 @@ const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../u
 const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, AttachmentBuilder } = require('discord.js');
 const TicketConfig = require('../database/models/TicketConfig');
 const ActiveTicket = require('../database/models/ActiveTicket');
+const { t } = require('../utils/i18n');
 
 // Handler for Ticket Settings Interactions
 async function handleTicketSettings(client, interaction) {
     const { customId, guild } = interaction;
+    const guildId = guild.id;
     const parts = customId.split('_');
     const action = parts[2]; // ticket_settings_action
 
@@ -15,10 +17,10 @@ async function handleTicketSettings(client, interaction) {
     if (action === 'category') {
         const modal = new ModalBuilder()
             .setCustomId('ticket_modal_category')
-            .setTitle('Définir la Catégorie');
+            .setTitle(await t('tickets.handler.modal_category_title', guildId));
         const input = new TextInputBuilder()
             .setCustomId('category_id')
-            .setLabel('ID de la Catégorie')
+            .setLabel(await t('tickets.handler.modal_category_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
         modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -27,10 +29,10 @@ async function handleTicketSettings(client, interaction) {
     else if (action === 'transcript') {
         const modal = new ModalBuilder()
             .setCustomId('ticket_modal_transcript')
-            .setTitle('Canal de Transcripts');
+            .setTitle(await t('tickets.handler.modal_transcript_title', guildId));
         const input = new TextInputBuilder()
             .setCustomId('channel_id')
-            .setLabel('ID du Salon')
+            .setLabel(await t('tickets.handler.modal_transcript_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
         modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -39,10 +41,10 @@ async function handleTicketSettings(client, interaction) {
     else if (action === 'role') {
         const modal = new ModalBuilder()
             .setCustomId('ticket_modal_role')
-            .setTitle('Ajouter/Retirer Rôle Staff');
+            .setTitle(await t('tickets.handler.modal_role_title', guildId));
         const input = new TextInputBuilder()
             .setCustomId('role_id')
-            .setLabel('ID du Rôle')
+            .setLabel(await t('tickets.handler.modal_role_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
         modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -51,10 +53,10 @@ async function handleTicketSettings(client, interaction) {
     else if (action === 'send') {
         const modal = new ModalBuilder()
             .setCustomId('ticket_modal_send')
-            .setTitle('Envoyer le Panel');
+            .setTitle(await t('tickets.handler.modal_send_title', guildId));
         const input = new TextInputBuilder()
             .setCustomId('channel_id')
-            .setLabel('ID du Salon')
+            .setLabel(await t('tickets.handler.modal_send_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
         modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -66,20 +68,23 @@ async function handleTicketSettings(client, interaction) {
 }
 
 async function updateTicketDashboard(client, interaction, config) {
-    const content = `**🎟️ Configuration Tickets**\n\n` +
-        `**Catégorie:** ${config.categoryId ? `<#${config.categoryId}>` : 'Non définie'}\n` +
-        `**Transcripts:** ${config.transcriptChannelId ? `<#${config.transcriptChannelId}>` : 'Non défini'}\n` +
-        `**Rôles Staff:** ${config.staffRoles.length > 0 ? config.staffRoles.map(r => `<@&${r}>`).join(', ') : 'Aucun'}\n`;
+    const guildId = interaction.guildId;
+    const notDefined = await t('tickets.handler.dashboard_none', guildId);
+
+    const content = `**${await t('tickets.handler.dashboard_title', guildId)}**\n\n` +
+        `**${await t('tickets.handler.dashboard_category', guildId)}:** ${config.categoryId ? `<#${config.categoryId}>` : notDefined}\n` +
+        `**${await t('tickets.handler.dashboard_transcript', guildId)}:** ${config.transcriptChannelId ? `<#${config.transcriptChannelId}>` : notDefined}\n` +
+        `**${await t('tickets.handler.dashboard_roles', guildId)}:** ${config.staffRoles.length > 0 ? config.staffRoles.map(r => `<@&${r}>`).join(', ') : await t('tickets.handler.dashboard_none_roles', guildId)}\n`;
 
     const row1 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket_settings_category').setLabel('Définit Catégorie').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('ticket_settings_transcript').setLabel('Définit Transcripts').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('ticket_settings_role').setLabel('Gérer Rôles Staff').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId('ticket_settings_category').setLabel(await t('tickets.handler.btn_set_category', guildId)).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('ticket_settings_transcript').setLabel(await t('tickets.handler.btn_set_transcript', guildId)).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('ticket_settings_role').setLabel(await t('tickets.handler.btn_manage_roles', guildId)).setStyle(ButtonStyle.Secondary)
     );
 
     const row2 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket_settings_send').setLabel('Envoyer Panel').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('ticket_settings_refresh').setLabel('Rafraîchir').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId('ticket_settings_send').setLabel(await t('tickets.handler.btn_send_panel', guildId)).setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('ticket_settings_refresh').setLabel(await t('tickets.handler.btn_refresh', guildId)).setStyle(ButtonStyle.Secondary)
     );
 
     // If it's a real component interaction, update it
@@ -99,6 +104,7 @@ async function updateTicketDashboard(client, interaction, config) {
 
 async function handleTicketModal(client, interaction) {
     const { customId, guild, fields } = interaction;
+    const guildId = guild.id;
     let config = await TicketConfig.findOne({ guildId: guild.id });
     if (!config) config = await TicketConfig.create({ guildId: guild.id });
 
@@ -106,7 +112,7 @@ async function handleTicketModal(client, interaction) {
         const catId = fields.getTextInputValue('category_id');
         const channel = guild.channels.cache.get(catId);
         if (!channel || channel.type !== ChannelType.GuildCategory) {
-            return replyV2Interaction(client, interaction, "❌ ID de catégorie invalide.", [], true);
+            return replyV2Interaction(client, interaction, await t('tickets.handler.error_category_invalid', guildId), [], true);
         }
         config.categoryId = catId;
         await config.save();
@@ -116,7 +122,7 @@ async function handleTicketModal(client, interaction) {
         const chanId = fields.getTextInputValue('channel_id');
         const channel = guild.channels.cache.get(chanId);
         if (!channel || !channel.isTextBased()) {
-            return replyV2Interaction(client, interaction, "❌ Salon invalide.", [], true);
+            return replyV2Interaction(client, interaction, await t('tickets.handler.error_channel_invalid', guildId), [], true);
         }
         config.transcriptChannelId = chanId;
         await config.save();
@@ -125,7 +131,7 @@ async function handleTicketModal(client, interaction) {
     else if (customId === 'ticket_modal_role') {
         const roleId = fields.getTextInputValue('role_id');
         if (!guild.roles.cache.has(roleId)) {
-            return replyV2Interaction(client, interaction, "❌ Rôle invalide.", [], true);
+            return replyV2Interaction(client, interaction, await t('tickets.handler.error_role_invalid', guildId), [], true);
         }
         if (config.staffRoles.includes(roleId)) {
             config.staffRoles = config.staffRoles.filter(r => r !== roleId);
@@ -139,25 +145,26 @@ async function handleTicketModal(client, interaction) {
         const chanId = fields.getTextInputValue('channel_id');
         const channel = guild.channels.cache.get(chanId);
         if (!channel || !channel.isTextBased()) {
-            return replyV2Interaction(client, interaction, "❌ Salon invalide.", [], true);
+            return replyV2Interaction(client, interaction, await t('tickets.handler.error_channel_invalid', guildId), [], true);
         }
 
         const btn = new ButtonBuilder()
             .setCustomId('ticket_create')
-            .setLabel(config.buttonLabel || 'Ouvrir un ticket')
+            .setLabel(config.buttonLabel || await t('tickets.handler.panel_default_btn', guildId))
             .setEmoji(config.buttonEmoji || '📩')
             .setStyle(ButtonStyle.Primary);
 
         const row = new ActionRowBuilder().addComponents(btn);
         
-        await sendV2Message(client, chanId, `**${config.panelTitle || 'Support Ticket'}**\n${config.panelDescription || 'Cliquez sur le bouton ci-dessous pour ouvrir un ticket.'}`, [row]);
+        await sendV2Message(client, chanId, `**${config.panelTitle || await t('tickets.handler.panel_default_title', guildId)}**\n${config.panelDescription || await t('tickets.handler.panel_default_desc', guildId)}`, [row]);
         
-        await replyV2Interaction(client, interaction, `✅ Panel envoyé dans <#${chanId}>.`, [], true);
+        await replyV2Interaction(client, interaction, await t('tickets.handler.panel_sent', guildId, { channel: `<#${chanId}>` }), [], true);
     }
 }
 
 async function handleTicketCreate(client, interaction) {
     const { guild, user } = interaction;
+    const guildId = guild.id;
     
     // Defer immediately to prevent timeout during channel creation
     if (!interaction.deferred && !interaction.replied) {
@@ -166,7 +173,7 @@ async function handleTicketCreate(client, interaction) {
 
     const config = await TicketConfig.findOne({ guildId: guild.id });
     if (!config || !config.categoryId) {
-        return replyV2Interaction(client, interaction, "❌ Le système de tickets n'est pas configuré (Catégorie manquante).", [], true);
+        return replyV2Interaction(client, interaction, await t('tickets.handler.error_not_configured', guildId), [], true);
     }
 
     config.ticketCount = (config.ticketCount || 0) + 1;
@@ -219,18 +226,19 @@ async function handleTicketCreate(client, interaction) {
             new ButtonBuilder().setCustomId('ticket_claim').setLabel('Claim').setStyle(ButtonStyle.Secondary).setEmoji('🙋‍♂️')
         );
 
-        await sendV2Message(client, channel.id, `👋 Bonjour <@${user.id}> ! Un membre du staff va s'occuper de vous.\n\nUtilisez les boutons ou les commandes \`+close\`, \`+claim\`.`, [row]);
+        await sendV2Message(client, channel.id, await t('tickets.handler.ticket_welcome', guildId, { user: `<@${user.id}>` }), [row]);
 
-        await replyV2Interaction(client, interaction, `✅ Ticket créé : <#${channel.id}>`, [], true);
+        await replyV2Interaction(client, interaction, await t('tickets.handler.ticket_created', guildId, { channel: `<#${channel.id}>` }), [], true);
 
     } catch (e) {
         console.error(e);
-        await replyV2Interaction(client, interaction, "❌ Erreur lors de la création du ticket.", [], true);
+        await replyV2Interaction(client, interaction, await t('tickets.handler.error_creation', guildId), [], true);
     }
 }
 
 async function handleTicketClaim(client, interaction) {
     const { channel, user } = interaction;
+    const guildId = interaction.guildId;
     
     // Defer just in case DB is slow
     if (!interaction.deferred && !interaction.replied) {
@@ -241,34 +249,35 @@ async function handleTicketClaim(client, interaction) {
     const ticket = await ActiveTicket.findOne({ channelId: channel.id });
     
     if (!ticket) {
-        return replyV2Interaction(client, interaction, "❌ Ce ticket n'est plus actif.", [], true);
+        return replyV2Interaction(client, interaction, await t('tickets.handler.error_ticket_inactive', guildId), [], true);
     }
     
     if (ticket.claimedBy) {
-        return replyV2Interaction(client, interaction, `❌ Déjà pris en charge par <@${ticket.claimedBy}>.`, [], true);
+        return replyV2Interaction(client, interaction, await t('tickets.handler.error_already_claimed', guildId, { user: `<@${ticket.claimedBy}>` }), [], true);
     }
     
     ticket.claimedBy = user.id;
     await ticket.save();
     
-    await replyV2Interaction(client, interaction, `🙋‍♂️ **Ticket pris en charge par** <@${user.id}>.`);
+    await replyV2Interaction(client, interaction, await t('tickets.handler.ticket_claimed', guildId, { user: `<@${user.id}>` }));
 }
 
 async function handleTicketClose(client, interaction) {
     const { channel, user, guild } = interaction;
+    const guildId = guild.id;
     const ticket = await ActiveTicket.findOne({ channelId: channel.id });
     
     if (!ticket) {
-        return replyV2Interaction(client, interaction, "❌ Ticket introuvable en base de données.", [], true);
+        return replyV2Interaction(client, interaction, await t('tickets.handler.error_ticket_db', guildId), [], true);
     }
 
-    await replyV2Interaction(client, interaction, "🔒 Fermeture du ticket dans 5 secondes...");
+    await replyV2Interaction(client, interaction, await t('tickets.handler.ticket_closing', guildId));
 
     // Transcript Logic (simplified from close.js)
-    let transcript = `TRANSCRIPT DU TICKET\n`;
-    transcript += `ID: ${ticket.channelId}\n`;
-    transcript += `Créateur: ${ticket.userId}\n`;
-    transcript += `Fermé par: ${user.tag}\n`;
+    let transcript = `${await t('tickets.handler.transcript_title', guildId)}\n`;
+    transcript += `${await t('tickets.handler.transcript_id', guildId)}: ${ticket.channelId}\n`;
+    transcript += `${await t('tickets.handler.transcript_creator', guildId)}: ${ticket.userId}\n`;
+    transcript += `${await t('tickets.handler.transcript_closed_by', guildId)}: ${user.tag}\n`;
     transcript += `-------------------------\n\n`;
 
     try {
@@ -278,7 +287,7 @@ async function handleTicketClose(client, interaction) {
         });
     } catch (e) {
         console.error("Error fetching messages for transcript:", e);
-        transcript += "\n[Erreur lors de la récupération des messages]";
+        transcript += `\n[${await t('tickets.handler.transcript_error', guildId)}]`;
     }
 
     const attachment = new AttachmentBuilder(Buffer.from(transcript, 'utf-8'), { name: `transcript-${ticket.channelId}.txt` });
@@ -289,7 +298,7 @@ async function handleTicketClose(client, interaction) {
         const transChannel = guild.channels.cache.get(config.transcriptChannelId);
         if (transChannel) {
             await transChannel.send({
-                content: `📕 **Ticket Fermé**\nTicket: ${channel.name}\nFermé par: <@${user.id}>`,
+                content: `${await t('tickets.handler.transcript_embed_title', guildId)}\n${await t('tickets.handler.transcript_embed_desc', guildId, { channel: channel.name, user: `<@${user.id}>` })}`,
                 files: [attachment]
             });
         }

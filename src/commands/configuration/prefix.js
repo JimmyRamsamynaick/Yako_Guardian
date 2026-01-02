@@ -1,6 +1,7 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { PermissionsBitField } = require('discord.js');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'prefix',
@@ -8,7 +9,7 @@ module.exports = {
     category: 'Configuration',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, "❌ Vous devez être administrateur pour changer le préfixe.", []);
+            return sendV2Message(client, message.channel.id, await t('prefix.permission', message.guild.id), []);
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -16,11 +17,11 @@ module.exports = {
 
         const newPrefix = args[0];
         if (!newPrefix) {
-            return sendV2Message(client, message.channel.id, `ℹ️ Préfixe actuel : \`${currentPrefix}\`\n**Usage:** \`${currentPrefix}prefix <nouveau>\``, []);
+            return sendV2Message(client, message.channel.id, await t('prefix.usage', message.guild.id, { prefix: currentPrefix }), []);
         }
 
         if (newPrefix.length > 5) {
-            return sendV2Message(client, message.channel.id, "❌ Le préfixe ne doit pas dépasser 5 caractères.", []);
+            return sendV2Message(client, message.channel.id, await t('prefix.length_error', message.guild.id), []);
         }
 
         config.prefix = newPrefix;
@@ -32,6 +33,6 @@ module.exports = {
         // We need to ensure the command handler respects per-guild prefix.
         // I will add a note to check commandHandler later.
 
-        return sendV2Message(client, message.channel.id, `✅ Le préfixe a été changé en : \`${newPrefix}\``, []);
+        return sendV2Message(client, message.channel.id, await t('prefix.success', message.guild.id, { prefix: newPrefix }), []);
     }
 };

@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'massiverole',
@@ -6,7 +7,7 @@ module.exports = {
     category: 'Rôles',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission Administrateur requise.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.massiverole.permission_admin', message.guild.id), []);
         }
 
         let action = 'add';
@@ -21,16 +22,19 @@ module.exports = {
         const type = args[roleArgIndex + 1] ? args[roleArgIndex + 1].toLowerCase() : 'all'; // all, humans, bots
 
         if (!role) {
-            return sendV2Message(client, message.channel.id, "**Utilisation:** `+massiverole <add/remove> <@role> [all/humans/bots]`", []);
+            return sendV2Message(client, message.channel.id, await t('roles.massiverole.usage', message.guild.id), []);
         }
 
         // Check hierarchy
         if (role.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Rôle trop élevé.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.massiverole.role_too_high', message.guild.id), []);
         }
 
-        const actionVerbe = action === 'add' ? 'Ajout' : 'Retrait';
-        await sendV2Message(client, message.channel.id, `⏳ ${actionVerbe} du rôle ${role.name} en cours... Cela peut prendre du temps.`, []);
+        if (action === 'add') {
+             await sendV2Message(client, message.channel.id, await t('roles.massiverole.processing_add', message.guild.id, { role: role.name }), []);
+        } else {
+             await sendV2Message(client, message.channel.id, await t('roles.massiverole.processing_remove', message.guild.id, { role: role.name }), []);
+        }
 
         let members;
         await message.guild.members.fetch(); // Ensure cache is full
@@ -69,7 +73,10 @@ module.exports = {
             }
         }
 
-        const actionPast = action === 'add' ? 'ajouté à' : 'retiré de';
-        sendV2Message(client, message.channel.id, `✅ Terminé ! Rôle ${actionPast} ${count} membres. (Échecs: ${errors})`, []);
+        if (action === 'add') {
+             sendV2Message(client, message.channel.id, await t('roles.massiverole.success_add', message.guild.id, { count: count, errors: errors }), []);
+        } else {
+             sendV2Message(client, message.channel.id, await t('roles.massiverole.success_remove', message.guild.id, { count: count, errors: errors }), []);
+        }
     }
 };

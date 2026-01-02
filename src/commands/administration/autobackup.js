@@ -1,5 +1,6 @@
 const AutoBackup = require('../../database/models/AutoBackup');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'autobackup',
@@ -7,7 +8,7 @@ module.exports = {
     category: 'Backups',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Administrateur` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('autobackup.permission', message.guild.id), []);
         }
 
         const days = parseInt(args[0]);
@@ -16,16 +17,19 @@ module.exports = {
             const current = await AutoBackup.findOne({ guild_id: message.guild.id });
             if (current) {
                 return sendV2Message(client, message.channel.id, 
-                    `**AutoBackup Actif**\nFréquence: Tous les ${current.frequency_days} jours.\nProchaine backup: <t:${Math.floor(current.next_backup.getTime()/1000)}:R>\n\nPour désactiver: \`+autobackup 0\``, 
+                    await t('autobackup.status', message.guild.id, { 
+                        days: current.frequency_days,
+                        time: Math.floor(current.next_backup.getTime()/1000)
+                    }), 
                     []
                 );
             }
-            return sendV2Message(client, message.channel.id, "**Utilisation:** `+autobackup <jours>` (ex: `+autobackup 1` pour tous les jours, `0` pour désactiver)", []);
+            return sendV2Message(client, message.channel.id, await t('autobackup.usage', message.guild.id), []);
         }
 
         if (days <= 0) {
             await AutoBackup.deleteOne({ guild_id: message.guild.id });
-            return sendV2Message(client, message.channel.id, "✅ AutoBackup désactivé.", []);
+            return sendV2Message(client, message.channel.id, await t('autobackup.disabled', message.guild.id), []);
         }
 
         const nextBackup = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
@@ -40,6 +44,9 @@ module.exports = {
             { upsert: true, new: true }
         );
 
-        sendV2Message(client, message.channel.id, `✅ AutoBackup activé ! Une sauvegarde sera créée tous les **${days}** jours.\nProchaine sauvegarde: <t:${Math.floor(nextBackup.getTime()/1000)}:R>`, []);
+        sendV2Message(client, message.channel.id, await t('autobackup.enabled', message.guild.id, { 
+            days: days,
+            time: Math.floor(nextBackup.getTime()/1000)
+        }), []);
     }
 };

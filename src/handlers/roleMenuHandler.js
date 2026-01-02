@@ -10,9 +10,11 @@ const {
 } = require('discord.js');
 const RoleMenu = require('../database/models/RoleMenu');
 const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../utils/componentUtils');
+const { t } = require('../utils/i18n');
 
 async function handleRoleMenuInteraction(client, interaction) {
     const { customId, guild, member } = interaction;
+    const guildId = guild.id;
 
     // --- USER INTERACTION (Role Assignment) ---
     if (customId.startsWith('rm_user_')) {
@@ -22,7 +24,7 @@ async function handleRoleMenuInteraction(client, interaction) {
 
     // --- CONFIGURATION (Admin Only) ---
     if (!member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return replyV2Interaction(client, interaction, "❌ Permission `Administrateur` requise.", [], true);
+        return replyV2Interaction(client, interaction, await t('roles.handler.permission_denied', guildId), [], true);
     }
 
     // Extract Menu ID if present (format: rolemenu_action_menuId)
@@ -32,7 +34,7 @@ async function handleRoleMenuInteraction(client, interaction) {
     if (action === 'dashboard') {
         const menuId = parts[2];
         const menu = await RoleMenu.findById(menuId);
-        if (!menu) return updateV2Interaction(client, interaction, "❌ Menu introuvable.", []);
+        if (!menu) return updateV2Interaction(client, interaction, await t('roles.handler.menu_not_found', guildId), []);
         await updateDashboard(client, interaction, menu);
     }
     else if (action === 'edit') {
@@ -42,10 +44,10 @@ async function handleRoleMenuInteraction(client, interaction) {
         if (target === 'title') {
             const modal = new ModalBuilder()
                 .setCustomId(`rolemenu_modal_title_${menuId}`)
-                .setTitle("Modifier le titre");
+                .setTitle(await t('roles.handler.modal_title_title', guildId));
             const input = new TextInputBuilder()
                 .setCustomId('title')
-                .setLabel("Nouveau titre")
+                .setLabel(await t('roles.handler.modal_title_label', guildId))
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -54,10 +56,10 @@ async function handleRoleMenuInteraction(client, interaction) {
         else if (target === 'desc') {
             const modal = new ModalBuilder()
                 .setCustomId(`rolemenu_modal_desc_${menuId}`)
-                .setTitle("Modifier la description");
+                .setTitle(await t('roles.handler.modal_desc_title', guildId));
             const input = new TextInputBuilder()
                 .setCustomId('desc')
-                .setLabel("Nouvelle description")
+                .setLabel(await t('roles.handler.modal_desc_label', guildId))
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -68,29 +70,29 @@ async function handleRoleMenuInteraction(client, interaction) {
         const menuId = parts[3]; // rolemenu_add_option_<menuId>
         const modal = new ModalBuilder()
             .setCustomId(`rolemenu_modal_option_${menuId}`)
-            .setTitle("Ajouter une option");
+            .setTitle(await t('roles.handler.modal_option_title', guildId));
         
         const labelInput = new TextInputBuilder()
             .setCustomId('label')
-            .setLabel("Label (Nom)")
+            .setLabel(await t('roles.handler.modal_option_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
         
         const emojiInput = new TextInputBuilder()
             .setCustomId('emoji')
-            .setLabel("Emoji (Optionnel)")
+            .setLabel(await t('roles.handler.modal_option_emoji', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(false);
 
         const roleInput = new TextInputBuilder()
             .setCustomId('role')
-            .setLabel("ID du Rôle")
+            .setLabel(await t('roles.handler.modal_option_role', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         const descInput = new TextInputBuilder()
             .setCustomId('desc')
-            .setLabel("Description (Optionnel)")
+            .setLabel(await t('roles.handler.modal_option_desc', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(false);
 
@@ -105,15 +107,15 @@ async function handleRoleMenuInteraction(client, interaction) {
     else if (action === 'del') {
         const menuId = parts[3]; // rolemenu_del_option_<menuId>
         const menu = await RoleMenu.findById(menuId);
-        if (!menu) return replyV2Interaction(client, interaction, "Menu introuvable.", [], true);
+        if (!menu) return replyV2Interaction(client, interaction, await t('roles.handler.menu_not_found', guildId), [], true);
 
         if (menu.options.length === 0) {
-            return replyV2Interaction(client, interaction, "Aucune option à supprimer.", [], true);
+            return replyV2Interaction(client, interaction, await t('roles.handler.error_no_options', guildId), [], true);
         }
 
         const select = new StringSelectMenuBuilder()
             .setCustomId(`rolemenu_select_del_${menuId}`)
-            .setPlaceholder("Choisir l'option à supprimer")
+            .setPlaceholder(await t('roles.handler.select_del_placeholder', guildId))
             .addOptions(
                 menu.options.map((opt, i) => ({
                     label: opt.label,
@@ -123,7 +125,7 @@ async function handleRoleMenuInteraction(client, interaction) {
                 }))
             );
         
-        await replyV2Interaction(client, interaction, "Choisissez l'option à supprimer :", [new ActionRowBuilder().addComponents(select)], true);
+        await replyV2Interaction(client, interaction, await t('roles.handler.select_del_msg', guildId), [new ActionRowBuilder().addComponents(select)], true);
     }
     else if (action === 'toggle') {
         const menuId = parts[3]; // rolemenu_toggle_type_<menuId>
@@ -136,10 +138,10 @@ async function handleRoleMenuInteraction(client, interaction) {
         const menuId = parts[2];
         const modal = new ModalBuilder()
             .setCustomId(`rolemenu_modal_send_${menuId}`)
-            .setTitle("Envoyer le menu");
+            .setTitle(await t('roles.handler.modal_send_title', guildId));
         const input = new TextInputBuilder()
             .setCustomId('channel_id')
-            .setLabel("ID du Salon")
+            .setLabel(await t('roles.handler.modal_send_channel', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
         modal.addComponents(new ActionRowBuilder().addComponents(input));
@@ -148,7 +150,7 @@ async function handleRoleMenuInteraction(client, interaction) {
     else if (action === 'delete') {
         const menuId = parts[2];
         await RoleMenu.findByIdAndDelete(menuId);
-        await updateV2Interaction(client, interaction, "✅ Menu supprimé avec succès.", []);
+        await updateV2Interaction(client, interaction, await t('roles.handler.menu_deleted', guildId), []);
     }
     
     // --- MODAL SUBMITS ---
@@ -156,7 +158,7 @@ async function handleRoleMenuInteraction(client, interaction) {
         const sub = parts[2]; // title, desc, option, send
         const menuId = parts[3];
         const menu = await RoleMenu.findById(menuId);
-        if (!menu) return replyV2Interaction(client, interaction, "Menu introuvable.", [], true);
+        if (!menu) return replyV2Interaction(client, interaction, await t('roles.handler.menu_not_found', guildId), [], true);
 
         if (sub === 'title') {
             menu.title = interaction.fields.getTextInputValue('title');
@@ -176,7 +178,7 @@ async function handleRoleMenuInteraction(client, interaction) {
 
             // Verify role
             if (!guild.roles.cache.has(roleId)) {
-                return replyV2Interaction(client, interaction, "❌ ID de rôle invalide.", [], true);
+                return replyV2Interaction(client, interaction, await t('roles.handler.error_role_invalid', guildId), [], true);
             }
 
             menu.options.push({ label, emoji, roleId, description: desc });
@@ -185,13 +187,13 @@ async function handleRoleMenuInteraction(client, interaction) {
         }
         else if (sub === 'send') {
             if (menu.options.length === 0) {
-                return replyV2Interaction(client, interaction, "❌ Vous devez ajouter au moins une option avant d'envoyer le menu.", [], true);
+                return replyV2Interaction(client, interaction, await t('roles.handler.error_send_no_options', guildId), [], true);
             }
             const channelId = interaction.fields.getTextInputValue('channel_id');
             const channel = guild.channels.cache.get(channelId);
             
             if (!channel || !channel.isTextBased()) {
-                return replyV2Interaction(client, interaction, "❌ Salon invalide.", [], true);
+                return replyV2Interaction(client, interaction, await t('roles.handler.error_channel_invalid', guildId), [], true);
             }
 
             // Construct Message
@@ -201,7 +203,7 @@ async function handleRoleMenuInteraction(client, interaction) {
             if (menu.type === 'select') {
                 const select = new StringSelectMenuBuilder()
                     .setCustomId(`rm_user_select_${menuId}`)
-                    .setPlaceholder("Sélectionnez vos rôles")
+                    .setPlaceholder(await t('roles.handler.select_user_placeholder', guildId))
                     .setMinValues(0) // Allow clearing
                     .setMaxValues(menu.options.length);
 
@@ -243,9 +245,9 @@ async function handleRoleMenuInteraction(client, interaction) {
                 menu.channelId = channel.id;
                 menu.messageId = msg.id;
                 await menu.save();
-                await replyV2Interaction(client, interaction, `✅ Menu envoyé dans <#${channel.id}> !`, [], true);
+                await replyV2Interaction(client, interaction, await t('roles.handler.menu_sent', guildId, { channel: `<#${channel.id}>` }), [], true);
             } catch (e) {
-                await replyV2Interaction(client, interaction, `❌ Erreur d'envoi: ${e.message}`, [], true);
+                await replyV2Interaction(client, interaction, await t('roles.handler.error_send', guildId, { error: e.message }), [], true);
             }
         }
     }
@@ -262,35 +264,36 @@ async function handleRoleMenuInteraction(client, interaction) {
                 menu.options.splice(index, 1);
                 await menu.save();
                 
-                await updateV2Interaction(client, interaction, "✅ Option supprimée.", []);
+                await updateV2Interaction(client, interaction, await t('roles.handler.option_deleted', guildId), []);
             }
         }
     }
 }
 
 async function updateDashboard(client, interaction, menu) {
-    const content = `**🛠️ Configuration RoleMenu: ${menu.name}**\n` +
-        `**Titre:** ${menu.title || 'Non défini'}\n` +
-        `**Description:** ${menu.description ? (menu.description.substring(0, 50) + '...') : 'Non définie'}\n` +
-        `**Type:** ${menu.type}\n` +
-        `**Options (${menu.options.length}):**\n` +
+    const guildId = interaction.guildId;
+    const content = `**${await t('roles.handler.dashboard_title', guildId, { name: menu.name })}**\n` +
+        `**${await t('roles.handler.btn_title', guildId)}:** ${menu.title || await t('roles.handler.dashboard_desc_none', guildId)}\n` +
+        `**${await t('roles.handler.btn_desc', guildId)}:** ${menu.description ? (menu.description.substring(0, 50) + '...') : await t('roles.handler.dashboard_desc_none', guildId)}\n` +
+        `**${await t('roles.handler.btn_type', guildId)}:** ${menu.type}\n` +
+        `**${await t('roles.handler.dashboard_options', guildId)} (${menu.options.length}):**\n` +
         menu.options.map((o, i) => `> ${i+1}. ${o.emoji ? o.emoji + ' ' : ''}${o.label} (<@&${o.roleId}>)`).join('\n');
 
     const row1 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`rolemenu_edit_title_${menu.id}`).setLabel('Titre').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`rolemenu_edit_desc_${menu.id}`).setLabel('Description').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId(`rolemenu_toggle_type_${menu.id}`).setLabel(`Type: ${menu.type}`).setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId(`rolemenu_edit_title_${menu.id}`).setLabel(await t('roles.handler.btn_title', guildId)).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`rolemenu_edit_desc_${menu.id}`).setLabel(await t('roles.handler.btn_desc', guildId)).setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId(`rolemenu_toggle_type_${menu.id}`).setLabel(`${await t('roles.handler.btn_type', guildId)}: ${menu.type}`).setStyle(ButtonStyle.Secondary)
     );
 
     const row2 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`rolemenu_add_option_${menu.id}`).setLabel('Ajouter Option').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`rolemenu_del_option_${menu.id}`).setLabel('Supprimer Option').setStyle(ButtonStyle.Danger)
+        new ButtonBuilder().setCustomId(`rolemenu_add_option_${menu.id}`).setLabel(await t('roles.handler.btn_add_option', guildId)).setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`rolemenu_del_option_${menu.id}`).setLabel(await t('roles.handler.btn_del_option', guildId)).setStyle(ButtonStyle.Danger)
     );
 
     const row3 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`rolemenu_send_${menu.id}`).setLabel('Envoyer le Menu').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`rolemenu_delete_${menu.id}`).setLabel('Supprimer le Menu').setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId(`rolemenu_dashboard_${menu.id}`).setLabel('Rafraîchir').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder().setCustomId(`rolemenu_send_${menu.id}`).setLabel(await t('roles.handler.btn_send', guildId)).setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`rolemenu_delete_${menu.id}`).setLabel(await t('roles.handler.btn_delete', guildId)).setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId(`rolemenu_dashboard_${menu.id}`).setLabel(await t('roles.handler.btn_refresh', guildId)).setStyle(ButtonStyle.Secondary)
     );
 
     if (interaction.isMessageComponent && interaction.isMessageComponent() || interaction.isModalSubmit && interaction.isModalSubmit()) {
@@ -302,12 +305,13 @@ async function updateDashboard(client, interaction, menu) {
 
 async function handleUserInteraction(client, interaction) {
     const { customId, member, values, guild } = interaction;
+    const guildId = guild.id;
     const parts = customId.split('_');
     const type = parts[2]; // select, btn
     const menuId = parts[3];
 
     const menu = await RoleMenu.findById(menuId);
-    if (!menu) return replyV2Interaction(client, interaction, "❌ Ce menu n'existe plus.", [], true);
+    if (!menu) return replyV2Interaction(client, interaction, await t('roles.handler.menu_not_found', guildId), [], true);
 
     if (type === 'select') {
         const selectedRoleIds = values;
@@ -318,7 +322,7 @@ async function handleUserInteraction(client, interaction) {
             if (option && option.requiredRoles && option.requiredRoles.length > 0) {
                 const hasRequired = member.roles.cache.some(r => option.requiredRoles.includes(r.id));
                 if (!hasRequired) {
-                    return replyV2Interaction(client, interaction, `🔒 Vous n'avez pas les rôles requis pour l'option ${option.emoji || option.label}.`, [], true);
+                    return replyV2Interaction(client, interaction, await t('roles.handler.error_required_roles', guildId, { option: option.emoji || option.label }), [], true);
                 }
             }
         }
@@ -330,7 +334,7 @@ async function handleUserInteraction(client, interaction) {
         await member.roles.add(toAdd).catch(() => {});
         await member.roles.remove(toRemove).catch(() => {});
 
-        await replyV2Interaction(client, interaction, "✅ Rôles mis à jour !", [], true);
+        await replyV2Interaction(client, interaction, await t('roles.handler.roles_updated', guildId), [], true);
     }
     else if (type === 'btn') {
         const roleId = parts[4];
@@ -339,16 +343,16 @@ async function handleUserInteraction(client, interaction) {
         if (option && option.requiredRoles && option.requiredRoles.length > 0) {
             const hasRequired = member.roles.cache.some(r => option.requiredRoles.includes(r.id));
             if (!hasRequired) {
-                return replyV2Interaction(client, interaction, "🔒 Vous n'avez pas les rôles requis pour cette option.", [], true);
+                return replyV2Interaction(client, interaction, await t('roles.handler.error_required_roles', guildId), [], true);
             }
         }
 
         if (member.roles.cache.has(roleId)) {
             await member.roles.remove(roleId);
-            await replyV2Interaction(client, interaction, `➖ Rôle <@&${roleId}> retiré.`, [], true);
+            await replyV2Interaction(client, interaction, await t('roles.handler.role_removed', guildId, { role: `<@&${roleId}>` }), [], true);
         } else {
             await member.roles.add(roleId);
-            await replyV2Interaction(client, interaction, `➕ Rôle <@&${roleId}> ajouté.`, [], true);
+            await replyV2Interaction(client, interaction, await t('roles.handler.role_added', guildId, { role: `<@&${roleId}>` }), [], true);
         }
     }
 }

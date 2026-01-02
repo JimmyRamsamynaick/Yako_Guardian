@@ -1,6 +1,7 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const RoleMenu = require('../../database/models/RoleMenu');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'restrict',
@@ -8,7 +9,7 @@ module.exports = {
     category: 'Roles',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Administrateur` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.restrict.permission', message.guild.id), []);
         }
 
         // Try to find the target role (restriction) first
@@ -31,7 +32,7 @@ module.exports = {
         }
 
         if (!targetRole || !query) {
-            return sendV2Message(client, message.channel.id, "**Usage:** `+restrict <NomOption/Emoji> <@RoleAutorisé>`\n\nExemple:\n`+restrict Jeux @Membre` (Seuls les @Membre peuvent prendre l'option 'Jeux')\n`+restrict 🛡️ @Staff`", []);
+            return sendV2Message(client, message.channel.id, await t('roles.restrict.usage', message.guild.id), []);
         }
 
         // Case insensitive regex for query
@@ -57,7 +58,7 @@ module.exports = {
 
             if (index !== -1) {
                 if (foundMenu) {
-                    return sendV2Message(client, message.channel.id, `❌ Plusieurs options correspondent à **${query}**. Soyez plus précis.`, []);
+                    return sendV2Message(client, message.channel.id, await t('roles.restrict.multiple_matches', message.guild.id, { query: query }), []);
                 }
                 foundMenu = menu;
                 foundOptionIndex = index;
@@ -66,7 +67,7 @@ module.exports = {
 
         if (!foundMenu) {
             // Try to help user by listing available options
-            let helpMsg = `❌ Aucune option trouvée pour **"${query}"**.\n\n**Options disponibles :**\n`;
+            let helpMsg = await t('roles.restrict.no_option_found', message.guild.id, { query: query });
             let count = 0;
             for (const m of menus) {
                 for (const o of m.options) {
@@ -75,7 +76,7 @@ module.exports = {
                     count++;
                 }
             }
-            if (count === 0) helpMsg = "❌ Aucun menu/option configuré sur ce serveur.";
+            if (count === 0) helpMsg = await t('roles.restrict.no_menus', message.guild.id);
             
             return sendV2Message(client, message.channel.id, helpMsg, []);
         }
@@ -90,6 +91,6 @@ module.exports = {
             await foundMenu.save();
         }
 
-        return sendV2Message(client, message.channel.id, `✅ L'option **${foundMenu.options[foundOptionIndex].label}** est maintenant réservée au rôle **${targetRole.name}**.`, []);
+        return sendV2Message(client, message.channel.id, await t('roles.restrict.success', message.guild.id, { option: foundMenu.options[foundOptionIndex].label, role: targetRole.name }), []);
     }
 };

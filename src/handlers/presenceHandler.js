@@ -1,10 +1,11 @@
 const { ActivityType } = require('discord.js');
 const { db } = require('../database');
+const { t } = require('../utils/i18n');
 
 module.exports = (client) => {
     // Rotation interval (every 15 seconds)
     // Discord rate limit is 5 updates per minute (1 update every 12s). 15s is safe.
-    setInterval(() => {
+    setInterval(async () => {
         try {
             // Fetch all guilds that have custom status OR activity
             const configs = db.prepare(`
@@ -13,43 +14,52 @@ module.exports = (client) => {
                 WHERE bot_status IS NOT NULL OR bot_activity_type IS NOT NULL
             `).all();
 
-            if (configs.length === 0) return;
-
             // Flatten configs if they have multiple activities separated by ",,"
             // We want to create a pool of "Displayable Items"
             let pool = [];
 
-            configs.forEach(config => {
-                // Handle Status (Online/Idle/etc) - This applies to the activity rotation too
-                const status = config.bot_status || 'online';
+            if (configs.length > 0) {
+                configs.forEach(config => {
+                    // Handle Status (Online/Idle/etc) - This applies to the activity rotation too
+                    const status = config.bot_status || 'online';
 
-                // Handle Activities
-                if (config.bot_activity_type && config.bot_activity_text) {
-                    // Split by ",," as requested
-                    const texts = config.bot_activity_text.split(',,').map(t => t.trim()).filter(t => t.length > 0);
-                    
-                    texts.forEach(text => {
+                    // Handle Activities
+                    if (config.bot_activity_type && config.bot_activity_text) {
+                        // Split by ",," as requested
+                        const texts = config.bot_activity_text.split(',,').map(t => t.trim()).filter(t => t.length > 0);
+                        
+                        texts.forEach(text => {
+                            pool.push({
+                                status: status,
+                                type: config.bot_activity_type,
+                                text: text,
+                                url: config.bot_activity_url
+                            });
+                        });
+                    } else if (config.bot_status) {
+                        // If only status is set but no activity, add a "blank" activity just to set status
                         pool.push({
                             status: status,
-                            type: config.bot_activity_type,
-                            text: text,
-                            url: config.bot_activity_url
+                            type: null,
+                            text: null
                         });
-                    });
-                } else if (config.bot_status) {
-                    // If only status is set but no activity, add a "blank" activity just to set status
-                    // But we can't really set "only status" if others have activity.
-                    // So we prioritize those WITH activity.
-                    // If NO one has activity, we just rotate status?
-                    // Changing status frequently is less noticeable. 
-                    // Let's just push a placeholder if we want to support "Just Status" rotation
-                    pool.push({
-                        status: status,
-                        type: null,
-                        text: null
-                    });
-                }
-            });
+                    }
+                });
+            }
+
+            // Fallback: Default Localized Presence if pool is empty
+            // This ensures the bot always has a presence even if no guild set one.
+            if (pool.length === 0) {
+                const serverCount = client.guilds.cache.size;
+                const act1 = await t('presence.handler.default_activity_1', null);
+                const act2 = await t('presence.handler.default_activity_2', null, { servers: serverCount });
+                const act3 = await t('presence.handler.default_activity_3', null);
+
+                // Add default activities to pool
+                pool.push({ status: 'online', type: 'watch', text: act1 });
+                pool.push({ status: 'online', type: 'play', text: act2 });
+                pool.push({ status: 'online', type: 'listen', text: act3 });
+            }
 
             if (pool.length === 0) return;
 

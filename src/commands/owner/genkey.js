@@ -1,5 +1,6 @@
 const { generateKey } = require('../../utils/subscription');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'genkey',
@@ -9,16 +10,16 @@ module.exports = {
         // Actually, just keep original check or assume isBotOwner util
         
         const days = parseInt(args[0]);
-        if (!days || isNaN(days)) return sendV2Message(client, message.channel.id, "Usage: `+genkey <jours>`", []);
+        if (!days || isNaN(days)) return sendV2Message(client, message.channel.id, await t('genkey.usage', message.guild.id), []);
         
         const key = generateKey(days);
         
         // Send key in DM to avoid leaking
         try {
-            await message.author.send(`**Nouvelle Clé de Licence générée :**\n\`${key}\`\nDurée: ${days} jours.`);
-            sendV2Message(client, message.channel.id, "Clé générée et envoyée en DM.", []);
+            await message.author.send(await t('genkey.dm_success', message.guild.id, { key, days }));
+            sendV2Message(client, message.channel.id, await t('genkey.channel_success', message.guild.id), []);
         } catch (e) {
-            sendV2Message(client, message.channel.id, `**Clé générée :** \`${key}\` (${days} jours)\n*(Impossible de vous envoyer un DM)*`, []);
+            sendV2Message(client, message.channel.id, await t('genkey.public_success', message.guild.id, { key, days }), []);
         }
     }
 };

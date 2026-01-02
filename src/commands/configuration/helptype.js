@@ -2,6 +2,7 @@ const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const { db } = require('../../database');
 const { getGuildConfig } = require('../../utils/mongoUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'helptype',
@@ -9,7 +10,7 @@ module.exports = {
     category: 'Configuration',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && message.author.id !== message.guild.ownerId) {
-             return sendV2Message(client, message.channel.id, "❌ Vous devez être administrateur pour utiliser cette commande.", []);
+             return sendV2Message(client, message.channel.id, await t('helptype.permission', message.guild.id), []);
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -17,10 +18,10 @@ module.exports = {
 
         const type = args[0]?.toLowerCase();
         if (!type || !['button', 'select', 'hybrid'].includes(type)) {
-            return sendV2Message(client, message.channel.id, `❌ Usage: \`${prefix}helptype <button/select/hybrid>\`\n\n• **Button**: Affiche des boutons pour chaque catégorie.\n• **Select**: Affiche un menu déroulant.\n• **Hybrid**: Combine les deux (Boutons pour les sections principales, Select pour le reste).`, []);
+            return sendV2Message(client, message.channel.id, await t('helptype.usage', message.guild.id, { prefix }), []);
         }
 
         db.prepare('UPDATE guild_settings SET help_type = ? WHERE guild_id = ?').run(type, message.guild.id);
-        return sendV2Message(client, message.channel.id, `✅ Menu d'aide configuré sur : **${type.toUpperCase()}**.`, []);
+        return sendV2Message(client, message.channel.id, await t('helptype.success', message.guild.id, { type: type.toUpperCase() }), []);
     }
 };

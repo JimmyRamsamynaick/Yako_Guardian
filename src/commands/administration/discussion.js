@@ -1,22 +1,20 @@
 const { sendV2Message } = require('../../utils/componentUtils');
-const { isBotOwner } = require('../../utils/ownerUtils');
 const { ChannelType } = require('discord.js');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'discussion',
     description: 'Envoie un MP et attend une réponse',
-    category: 'Owner',
+    category: 'Administration',
     aliases: ['chat'],
     async run(client, message, args) {
-        if (!await isBotOwner(message.author.id)) return;
-
         const targetId = args[0]?.replace(/[<@!>]/g, '');
-        if (!targetId) return sendV2Message(client, message.channel.id, "**Usage:** `+discussion <ID/User>`", []);
+        if (!targetId) return sendV2Message(client, message.channel.id, await t('discussion.usage', message.guild.id), []);
 
         try {
             const user = await client.users.fetch(targetId);
             
-            await sendV2Message(client, message.channel.id, `✅ **Discussion ouverte avec ${user.tag}**\n\n- Tout ce que vous écrivez ici sera envoyé à l'utilisateur.\n- Les réponses de l'utilisateur apparaîtront ici.\n- Tapez \`stop\` pour fermer la session.`, []);
+            await sendV2Message(client, message.channel.id, await t('discussion.started', message.guild.id, { user: user.tag }), []);
             
             // Start Collector
             const filter = m => m.author.id === message.author.id && m.channel.id === message.channel.id;
@@ -26,7 +24,7 @@ module.exports = {
             const dmListener = async (msg) => {
                 // Check if message is from target user AND is in DM
                 if (msg.author.id === user.id && msg.channel.type === ChannelType.DM) {
-                     sendV2Message(client, message.channel.id, `📩 **${user.tag}:** ${msg.content}`, []);
+                     sendV2Message(client, message.channel.id, await t('discussion.dm_received', message.guild.id, { user: user.tag, content: msg.content }), []);
                 }
             };
             client.on('messageCreate', dmListener);
@@ -39,18 +37,18 @@ module.exports = {
                         await user.send(m.content);
                         m.react('✅').catch(() => {});
                     } catch (e) {
-                        sendV2Message(client, m.channel.id, "❌ Échec de l'envoi.", []);
+                        sendV2Message(client, m.channel.id, await t('discussion.send_error', message.guild.id), []);
                     }
                 }
             });
 
-            collector.on('end', () => {
+            collector.on('end', async () => {
                 client.removeListener('messageCreate', dmListener);
-                sendV2Message(client, message.channel.id, "⏹️ **Discussion terminée.**", []);
+                sendV2Message(client, message.channel.id, await t('discussion.stopped', message.guild.id), []);
             });
 
         } catch (e) {
-            return sendV2Message(client, message.channel.id, `❌ Impossible d'ouvrir la discussion: ${e.message}`, []);
+            return sendV2Message(client, message.channel.id, await t('discussion.open_error', message.guild.id, { error: e.message }), []);
         }
     }
 };

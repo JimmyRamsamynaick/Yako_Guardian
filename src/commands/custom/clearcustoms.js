@@ -1,6 +1,7 @@
 const CustomCommand = require('../../database/models/CustomCommand');
 const { PermissionsBitField } = require('discord.js');
-const { sendV2Message, updateV2Interaction } = require('../../utils/componentUtils');
+const { sendV2Message, updateV2Interaction, editV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'clearcustoms',
@@ -8,16 +9,16 @@ module.exports = {
     category: 'Custom',
     async execute(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission (Administrator requis).", []);
+            return sendV2Message(client, message.channel.id, await t('clearcustoms.permission', message.guild.id), []);
         }
 
         const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('confirm_clearcustoms').setLabel('Confirmer la suppression').setStyle(ButtonStyle.Danger),
-            new ButtonBuilder().setCustomId('cancel_clearcustoms').setLabel('Annuler').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId('confirm_clearcustoms').setLabel(await t('clearcustoms.btn_confirm', message.guild.id)).setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('cancel_clearcustoms').setLabel(await t('clearcustoms.btn_cancel', message.guild.id)).setStyle(ButtonStyle.Secondary)
         );
 
-        const content = "⚠️ **Êtes-vous sûr de vouloir supprimer TOUTES les commandes personnalisées ?**\nCette action est irréversible.";
+        const content = await t('clearcustoms.warning', message.guild.id);
         const msg = await sendV2Message(client, message.channel.id, content, [row]);
 
         // Since sendV2Message returns the message object (from client.rest.post usually returns raw data or message structure depending on djs version/usage)
@@ -36,17 +37,16 @@ module.exports = {
             
             if (interaction.customId === 'confirm_clearcustoms') {
                 const deleted = await CustomCommand.deleteMany({ guildId: message.guild.id });
-                await updateV2Interaction(client, interaction, `✅ **${deleted.deletedCount}** commandes personnalisées ont été supprimées.`, []);
+                await updateV2Interaction(client, interaction, await t('clearcustoms.success', message.guild.id, { count: deleted.deletedCount }), []);
             } else {
-                await updateV2Interaction(client, interaction, "❌ Suppression annulée.", []);
+                await updateV2Interaction(client, interaction, await t('clearcustoms.cancelled', message.guild.id), []);
             }
         } catch (e) {
             // Edit message to remove components if timeout
             // We can't use msg.edit because msg is raw data.
             // We need to use editV2Message or client.rest.patch
-            const { editV2Message } = require('../../utils/componentUtils');
             try {
-                await editV2Message(client, channel.id, msgId, "❌ Temps écoulé, annulation.", []);
+                await editV2Message(client, channel.id, msgId, await t('clearcustoms.timeout', message.guild.id), []);
             } catch (err) { }
         }
     }

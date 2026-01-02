@@ -2,6 +2,7 @@ const { sendV2Message } = require('../../utils/componentUtils');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const GlobalSettings = require('../../database/models/GlobalSettings');
 const { exec } = require('child_process');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'updatebot',
@@ -17,7 +18,7 @@ module.exports = {
         if (commandName === 'autoupdate') {
             const state = args[0];
             if (!state || !['on', 'off'].includes(state.toLowerCase())) {
-                return sendV2Message(client, message.channel.id, "❌ Usage: `+autoupdate <on/off>`", []);
+                return sendV2Message(client, message.channel.id, await t('update.usage_autoupdate', message.guild.id), []);
             }
 
             const isEnabled = state.toLowerCase() === 'on';
@@ -27,24 +28,24 @@ module.exports = {
                 { upsert: true, new: true }
             );
 
-            return sendV2Message(client, message.channel.id, `✅ **Auto Update** est maintenant **${isEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉ'}**.\nLe bot vérifiera les mises à jour automatiquement.`, []);
+            return sendV2Message(client, message.channel.id, await t('update.autoupdate_status', message.guild.id, { status: isEnabled ? 'ACTIVÉ' : 'DÉSACTIVÉE' }), []);
         }
 
         // --- UPDATEBOT ---
         if (commandName === 'updatebot' || commandName === 'update') {
-            await sendV2Message(client, message.channel.id, "🔄 **Recherche de mises à jour...**", []);
+            await sendV2Message(client, message.channel.id, await t('update.checking_updates', message.guild.id), []);
             
             // Simulation or real git pull
             exec('git pull', async (error, stdout, stderr) => {
                 if (error) {
-                    return sendV2Message(client, message.channel.id, `❌ Erreur lors de la mise à jour:\n\`\`\`${error.message}\`\`\``, []);
+                    return sendV2Message(client, message.channel.id, await t('update.update_error', message.guild.id, { error: error.message }), []);
                 }
                 
                 if (stdout.includes('Already up to date')) {
-                    return sendV2Message(client, message.channel.id, "✅ Le bot est déjà à jour.", []);
+                    return sendV2Message(client, message.channel.id, await t('update.already_updated', message.guild.id), []);
                 }
 
-                await sendV2Message(client, message.channel.id, `✅ **Mise à jour téléchargée !**\n\`\`\`${stdout}\`\`\`\n🔄 Redémarrage en cours...`, []);
+                await sendV2Message(client, message.channel.id, await t('update.update_downloaded', message.guild.id, { output: stdout }), []);
                 
                 // Restart process (if managed by PM2 or similar)
                 process.exit(0); 

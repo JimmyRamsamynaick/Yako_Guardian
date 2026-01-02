@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'unmassiverole',
@@ -6,21 +7,21 @@ module.exports = {
     category: 'Rôles',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission Administrateur requise.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.massiverole.permission_admin', message.guild.id), []);
         }
 
         const role = message.mentions.roles.first() || message.guild.roles.cache.get(args[0]);
         const type = args[1] ? args[1].toLowerCase() : 'all'; // all, humans, bots
 
         if (!role) {
-            return sendV2Message(client, message.channel.id, "**Utilisation:** `+unmassiverole <@role> [all/humans/bots]`", []);
+            return sendV2Message(client, message.channel.id, await t('roles.unmassiverole.usage', message.guild.id), []);
         }
 
         if (role.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Rôle trop élevé.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.massiverole.role_too_high', message.guild.id), []);
         }
 
-        await sendV2Message(client, message.channel.id, `⏳ Retrait du rôle ${role.name} en cours...`, []);
+        await sendV2Message(client, message.channel.id, await t('roles.unmassiverole.processing', message.guild.id, { role: role.name }), []);
 
         let members;
         await message.guild.members.fetch();
@@ -46,6 +47,6 @@ module.exports = {
             }
         }
 
-        sendV2Message(client, message.channel.id, `✅ Terminé ! Rôle retiré à ${count} membres. (Échecs: ${errors})`, []);
+        sendV2Message(client, message.channel.id, await t('roles.unmassiverole.success', message.guild.id, { count: count, errors: errors }), []);
     }
 };

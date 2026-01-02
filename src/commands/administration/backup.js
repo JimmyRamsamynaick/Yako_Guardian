@@ -2,6 +2,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { createBackup, loadBackup } = require('../../utils/backupHandler');
 const { sendV2Message } = require('../../utils/componentUtils');
 const Backup = require('../../database/models/Backup');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'backup',
@@ -9,7 +10,7 @@ module.exports = {
     category: 'Administration',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ **Permission Refusée**\nVous devez être Administrateur pour gérer les backups.", []);
+            return sendV2Message(client, message.channel.id, await t('backup.permission', message.guild.id), []);
         }
 
         const sub = args[0] ? args[0].toLowerCase() : null;
@@ -17,86 +18,80 @@ module.exports = {
 
         if (!sub) {
             return sendV2Message(client, message.channel.id, 
-                "**💾 SYSTÈME DE BACKUP**\n\n" +
-                "`+backup create <nom>` : Créer une sauvegarde.\n" +
-                "`+backup load <nom>` : Charger une sauvegarde (Danger!).\n" +
-                "`+backup delete <nom>` : Supprimer une sauvegarde.\n" +
-                "`+backup list` : Voir vos sauvegardes.",
+                await t('backup.usage', message.guild.id), 
                 []
             );
         }
 
         try {
             if (sub === 'create') {
-                if (!name) return sendV2Message(client, message.channel.id, "❌ Précisez un nom pour la backup.", []);
+                if (!name) return sendV2Message(client, message.channel.id, await t('backup.create_no_name', message.guild.id), []);
                 
-                await sendV2Message(client, message.channel.id, "⏳ Création de la sauvegarde en cours...", []);
+                await sendV2Message(client, message.channel.id, await t('backup.creating', message.guild.id), []);
                 await createBackup(message.guild, name);
                 
-                return sendV2Message(client, message.channel.id, `✅ **Sauvegarde créée avec succès**\nNom: \`${name}\``, []);
+                return sendV2Message(client, message.channel.id, await t('backup.create_success', message.guild.id, { name: name }), []);
             }
 
             if (sub === 'list') {
                 const backups = await Backup.find({ guild_id: message.guild.id });
                 if (backups.length === 0) {
-                    return sendV2Message(client, message.channel.id, "📂 Aucune sauvegarde trouvée.", []);
+                    return sendV2Message(client, message.channel.id, await t('backup.list_empty', message.guild.id), []);
                 }
 
                 const list = backups.map(b => `• **${b.name}** (${new Date(b.created_at).toLocaleDateString()})`).join('\n');
-                return sendV2Message(client, message.channel.id, `**📂 LISTE DES SAUVEGARDES**\n\n${list}`, []);
+                return sendV2Message(client, message.channel.id, await t('backup.list_title', message.guild.id, { list: list }), []);
             }
 
             if (sub === 'load') {
-                if (!name) return sendV2Message(client, message.channel.id, "❌ Précisez le nom de la backup à charger.", []);
+                if (!name) return sendV2Message(client, message.channel.id, await t('backup.load_no_name', message.guild.id), []);
                 
                 const backup = await Backup.findOne({ guild_id: message.guild.id, name: name });
-                if (!backup) return sendV2Message(client, message.channel.id, `❌ Aucune backup trouvée avec le nom \`${name}\`.`, []);
+                if (!backup) return sendV2Message(client, message.channel.id, await t('backup.not_found', message.guild.id, { name: name }), []);
 
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
                         .setCustomId(`backup_confirm_load_${name}`)
-                        .setLabel('CONFIRMER LE CHARGEMENT')
+                        .setLabel(await t('backup.btn_load', message.guild.id))
                         .setStyle(ButtonStyle.Danger),
                     new ButtonBuilder()
                         .setCustomId('backup_cancel')
-                        .setLabel('Annuler')
+                        .setLabel(await t('backup.btn_cancel', message.guild.id))
                         .setStyle(ButtonStyle.Secondary)
                 );
 
                 return sendV2Message(client, message.channel.id, 
-                    `⚠️ **ATTENTION** ⚠️\n\nVous êtes sur le point de charger la backup \`${name}\`.\n` +
-                    "Cela va **SUPPRIMER** tous les rôles et salons actuels du serveur pour les remplacer.\n" +
-                    "Cette action est irréversible.\n\nÊtes-vous sûr ?", 
+                    await t('backup.load_warning', message.guild.id, { name: name }), 
                     [row]
                 );
             }
 
             if (sub === 'delete') {
-                if (!name) return sendV2Message(client, message.channel.id, "❌ Précisez le nom de la backup à supprimer.", []);
+                if (!name) return sendV2Message(client, message.channel.id, await t('backup.delete_no_name', message.guild.id), []);
 
                 const backup = await Backup.findOne({ guild_id: message.guild.id, name: name });
-                if (!backup) return sendV2Message(client, message.channel.id, `❌ Aucune backup trouvée avec le nom \`${name}\`.`, []);
+                if (!backup) return sendV2Message(client, message.channel.id, await t('backup.not_found', message.guild.id, { name: name }), []);
 
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
                         .setCustomId(`backup_confirm_delete_${name}`)
-                        .setLabel('Confirmer la suppression')
+                        .setLabel(await t('backup.btn_delete', message.guild.id))
                         .setStyle(ButtonStyle.Danger),
                     new ButtonBuilder()
                         .setCustomId('backup_cancel')
-                        .setLabel('Annuler')
+                        .setLabel(await t('backup.btn_cancel', message.guild.id))
                         .setStyle(ButtonStyle.Secondary)
                 );
 
                 return sendV2Message(client, message.channel.id, 
-                    `🗑️ **Suppression de Backup**\n\nVoulez-vous vraiment supprimer la backup \`${name}\` ?`, 
+                    await t('backup.delete_warning', message.guild.id, { name: name }), 
                     [row]
                 );
             }
 
         } catch (error) {
             console.error(error);
-            return sendV2Message(client, message.channel.id, `❌ Une erreur est survenue: ${error.message}`, []);
+            return sendV2Message(client, message.channel.id, await t('backup.error', message.guild.id, { error: error.message }), []);
         }
     }
 };

@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'vocinfo',
@@ -17,13 +18,13 @@ module.exports = {
         });
 
         const info = [
-            `**Salons vocaux:** ${voiceChannels.size}`,
-            `**Salons actifs:** ${activeChannels}`,
-            `**Membres en vocal:** ${totalMembers}`,
-            `**Membres muets (serv):** ${voiceChannels.reduce((acc, c) => acc + c.members.filter(m => m.voice.serverMute).size, 0)}`,
-            `**Membres sourds (serv):** ${voiceChannels.reduce((acc, c) => acc + c.members.filter(m => m.voice.serverDeaf).size, 0)}`
+            await t('vocinfo.channels', message.guild.id, { count: voiceChannels.size }),
+            await t('vocinfo.active', message.guild.id, { count: activeChannels }),
+            await t('vocinfo.members', message.guild.id, { count: totalMembers }),
+            await t('vocinfo.muted', message.guild.id, { count: voiceChannels.reduce((acc, c) => acc + c.members.filter(m => m.voice.serverMute).size, 0) }),
+            await t('vocinfo.deafened', message.guild.id, { count: voiceChannels.reduce((acc, c) => acc + c.members.filter(m => m.voice.serverDeaf).size, 0) })
         ].join('\n');
 
-        await sendV2Message(client, message.channel.id, "**Activité Vocale**\n\n" + info, []);
+        await sendV2Message(client, message.channel.id, (await t('vocinfo.title', message.guild.id)) + "\n\n" + info, []);
     }
 };

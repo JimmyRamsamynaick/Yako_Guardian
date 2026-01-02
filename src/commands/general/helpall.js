@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'helpall',
@@ -32,20 +33,20 @@ module.exports = {
             }
         });
 
-        let content = "**📜 LISTE DES COMMANDES PAR NIVEAU**\n\n";
+        let content = (await t('helpall.title', message.guild.id)) + "\n\n";
 
         // Level 0
-        if (levels['0'].length > 0) content += `**Niveau 0 (Public)**\n${levels['0'].map(c => `\`${c}\``).join(', ')}\n\n`;
+        if (levels['0'].length > 0) content += (await t('helpall.level0', message.guild.id)) + `\n${levels['0'].map(c => `\`${c}\``).join(', ')}\n\n`;
         // Level 1
-        if (levels['1'].length > 0) content += `**Niveau 1 (Support/Tickets)**\n${levels['1'].map(c => `\`${c}\``).join(', ')}\n\n`;
+        if (levels['1'].length > 0) content += (await t('helpall.level1', message.guild.id)) + `\n${levels['1'].map(c => `\`${c}\``).join(', ')}\n\n`;
         // Level 2
-        if (levels['2'].length > 0) content += `**Niveau 2 (Modération)**\n${levels['2'].map(c => `\`${c}\``).join(', ')}\n\n`;
+        if (levels['2'].length > 0) content += (await t('helpall.level2', message.guild.id)) + `\n${levels['2'].map(c => `\`${c}\``).join(', ')}\n\n`;
         // Level 3
-        if (levels['3'].length > 0) content += `**Niveau 3 (Administration)**\n${levels['3'].map(c => `\`${c}\``).join(', ')}\n\n`;
+        if (levels['3'].length > 0) content += (await t('helpall.level3', message.guild.id)) + `\n${levels['3'].map(c => `\`${c}\``).join(', ')}\n\n`;
         // Level 4
-        if (levels['4'].length > 0) content += `**Niveau 4 (Sécurité/Backup)**\n${levels['4'].map(c => `\`${c}\``).join(', ')}\n\n`;
+        if (levels['4'].length > 0) content += (await t('helpall.level4', message.guild.id)) + `\n${levels['4'].map(c => `\`${c}\``).join(', ')}\n\n`;
         // Level 5
-        if (levels['5'].length > 0) content += `**Niveau 5 (Propriétaire Serveur)**\n${levels['5'].map(c => `\`${c}\``).join(', ')}\n\n`;
+        if (levels['5'].length > 0) content += (await t('helpall.level5', message.guild.id)) + `\n${levels['5'].map(c => `\`${c}\``).join(', ')}\n\n`;
         
         return sendV2Message(client, message.channel.id, content, []);
     }

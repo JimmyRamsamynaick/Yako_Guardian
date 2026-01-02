@@ -6,7 +6,8 @@ const BotOwner = require('../database/models/BotOwner');
  * @returns {Promise<boolean>} - True if the user is an owner, false otherwise.
  */
 async function isBotOwner(userId) {
-    if (userId === process.env.OWNER_ID) return true;
+    const envOwnerId = process.env.OWNER_ID ? process.env.OWNER_ID.trim() : null;
+    if (userId === envOwnerId) return true;
     const owner = await BotOwner.findOne({ userId });
     return !!owner;
 }

@@ -2,6 +2,7 @@ const { db } = require('../../database');
 const { AuditLogEvent, PermissionsBitField, EmbedBuilder } = require('discord.js');
 const logger = require('../logger');
 const { checkSubscription } = require('../subscription');
+const { t } = require('../i18n');
 
 // Cache for rate limits: guildId_userId_module -> { count, expires }
 const limitCache = new Map();
@@ -80,23 +81,23 @@ async function executeSanction(client, guild, member, settings, reasonModule, sa
             if (member.bannable) {
                 // Delete messages from the last 7 days (604800 seconds)
                 await member.ban({ deleteMessageSeconds: 604800, reason });
-                logAction(guild, "🚫 Membre Banni", `**Utilisateur:** ${member.user.tag} (<@${member.id}>)\n**Raison:** ${reasonModule}`, "#FF0000", settings);
+                await logAction(guild, await t('antiraid.handler.banned', guild.id), await t('antiraid.handler.banned_desc', guild.id, { tag: member.user.tag, id: member.id, reason: reasonModule }), "#FF0000", settings);
             } else {
-                 logAction(guild, "⚠️ Sanction Échouée", `Impossible de bannir ${member.user.tag}.\n**Raison:** ${reasonModule}\n**Erreur:** Permissions insuffisantes ou hiérarchie.`, "#FF0000", settings);
+                 await logAction(guild, await t('antiraid.handler.failed', guild.id), await t('antiraid.handler.ban_failed_desc', guild.id, { tag: member.user.tag, reason: reasonModule }), "#FF0000", settings);
             }
         } else if (sanctionType === 'kick') {
             if (member.kickable) {
                 await member.kick(reason);
-                logAction(guild, "👢 Membre Expulsé", `**Utilisateur:** ${member.user.tag} (<@${member.id}>)\n**Raison:** ${reasonModule}`, "#FFA500", settings);
+                await logAction(guild, await t('antiraid.handler.kicked', guild.id), await t('antiraid.handler.kicked_desc', guild.id, { tag: member.user.tag, id: member.id, reason: reasonModule }), "#FFA500", settings);
             } else {
-                 logAction(guild, "⚠️ Sanction Échouée", `Impossible d'expulser ${member.user.tag}.\n**Raison:** ${reasonModule}\n**Erreur:** Permissions insuffisantes ou hiérarchie.`, "#FFA500", settings);
+                 await logAction(guild, await t('antiraid.handler.failed', guild.id), await t('antiraid.handler.kick_failed_desc', guild.id, { tag: member.user.tag, reason: reasonModule }), "#FFA500", settings);
             }
         } else if (sanctionType === 'derank') {
             // Remove all roles
             const roles = member.roles.cache.filter(r => r.name !== '@everyone' && r.editable);
             if (roles.size > 0) {
                 await member.roles.remove(roles, reason);
-                logAction(guild, "📉 Membre Derank", `**Utilisateur:** ${member.user.tag} (<@${member.id}>)\n**Raison:** ${reasonModule}`, "#FFFF00", settings);
+                await logAction(guild, await t('antiraid.handler.deranked', guild.id), await t('antiraid.handler.deranked_desc', guild.id, { tag: member.user.tag, id: member.id, reason: reasonModule }), "#FFFF00", settings);
             } else {
                 // If no roles removed, maybe because none were editable
                 // logAction(guild, `⚠️ **Sanction Incomplète**\nAucun rôle retiré à ${member.user.tag} (Hiérarchie).`, settings);

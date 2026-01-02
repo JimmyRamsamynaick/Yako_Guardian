@@ -1,6 +1,7 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const RoleMenu = require('../../database/models/RoleMenu');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'unrestrict',
@@ -8,13 +9,13 @@ module.exports = {
     category: 'Roles',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Administrateur` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.unrestrict.permission', message.guild.id), []);
         }
 
         const query = args.join(' ');
 
         if (!query) {
-            return sendV2Message(client, message.channel.id, "**Usage:** `+unrestrict <NomOption/Emoji>`\nExemple: `+unrestrict Jeux`", []);
+            return sendV2Message(client, message.channel.id, await t('roles.unrestrict.usage', message.guild.id), []);
         }
 
         // Case insensitive regex for query
@@ -35,7 +36,7 @@ module.exports = {
 
             if (index !== -1) {
                 if (foundMenu) {
-                    return sendV2Message(client, message.channel.id, `❌ Plusieurs options correspondent à **${query}**. Soyez plus précis.`, []);
+                    return sendV2Message(client, message.channel.id, await t('roles.unrestrict.multiple_matches', message.guild.id, { query: query }), []);
                 }
                 foundMenu = menu;
                 foundOptionIndex = index;
@@ -43,12 +44,12 @@ module.exports = {
         }
 
         if (!foundMenu) {
-            return sendV2Message(client, message.channel.id, `❌ Aucune option trouvée pour **"${query}"**.`, []);
+            return sendV2Message(client, message.channel.id, await t('roles.unrestrict.no_option_found', message.guild.id, { query: query }), []);
         }
 
         foundMenu.options[foundOptionIndex].requiredRoles = [];
         await foundMenu.save();
 
-        return sendV2Message(client, message.channel.id, `✅ Restrictions retirées pour l'option **${foundMenu.options[foundOptionIndex].label}** du menu **${foundMenu.name}**.`, []);
+        return sendV2Message(client, message.channel.id, await t('roles.unrestrict.success', message.guild.id, { option: foundMenu.options[foundOptionIndex].label, menu: foundMenu.name }), []);
     }
 };

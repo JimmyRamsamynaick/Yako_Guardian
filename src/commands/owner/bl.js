@@ -1,6 +1,7 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const GlobalBlacklist = require('../../database/models/GlobalBlacklist');
 const { isBotOwner } = require('../../utils/ownerUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'bl',
@@ -16,23 +17,28 @@ module.exports = {
         // --- UNBL ---
         if (commandName === 'unbl') {
             const targetId = args[0]?.replace(/[<@!>]/g, '');
-            if (!targetId || !targetId.match(/^\d+$/)) return sendV2Message(client, message.channel.id, "**Usage:** `+unbl <@user/ID>`", []);
+            if (!targetId || !targetId.match(/^\d+$/)) return sendV2Message(client, message.channel.id, await t('bl.usage_unbl', message.guild.id), []);
 
             const deleted = await GlobalBlacklist.findOneAndDelete({ userId: targetId });
-            if (!deleted) return sendV2Message(client, message.channel.id, "❌ Cet utilisateur n'est pas blacklist.", []);
+            if (!deleted) return sendV2Message(client, message.channel.id, await t('bl.not_blacklisted', message.guild.id), []);
 
-            return sendV2Message(client, message.channel.id, `✅ <@${targetId}> retiré de la blacklist globale.`, []);
+            return sendV2Message(client, message.channel.id, await t('bl.unbl_success', message.guild.id, { user: `<@${targetId}>` }), []);
         }
 
         // --- BL INFO ---
         if (commandName === 'blinfo') {
              const targetId = args[0]?.replace(/[<@!>]/g, '');
-             if (!targetId) return sendV2Message(client, message.channel.id, "**Usage:** `+blinfo <@user/ID>`", []);
+             if (!targetId) return sendV2Message(client, message.channel.id, await t('bl.usage_blinfo', message.guild.id), []);
 
              const bl = await GlobalBlacklist.findOne({ userId: targetId });
-             if (!bl) return sendV2Message(client, message.channel.id, "ℹ️ Cet utilisateur n'est pas blacklist.", []);
+             if (!bl) return sendV2Message(client, message.channel.id, await t('bl.info_not_blacklisted', message.guild.id), []);
 
-             return sendV2Message(client, message.channel.id, `**⛔ INFO BLACKLIST**\n\n👤 **User:** <@${bl.userId}>\n📝 **Raison:** ${bl.reason}\n👮 **Par:** <@${bl.addedBy}>\n📅 **Date:** ${bl.addedAt.toLocaleDateString()}`, []);
+             return sendV2Message(client, message.channel.id, await t('bl.bl_info', message.guild.id, { 
+                 user: `<@${bl.userId}>`,
+                 reason: bl.reason,
+                 moderator: `<@${bl.addedBy}>`,
+                 date: bl.addedAt.toLocaleDateString()
+             }), []);
         }
 
         // --- BL LIST ---
@@ -42,11 +48,12 @@ module.exports = {
              } else {
                  const bls = await GlobalBlacklist.find();
                  const count = bls.length;
-                 let content = `**⛔ BLACKLIST GLOBALE (${count})**\n\n`;
-                 if (count === 0) content += "_Aucun utilisateur blacklist._";
+                 let content = await t('bl.bl_header', message.guild.id, { count });
+                 
+                 if (count === 0) content += await t('bl.bl_empty', message.guild.id);
                  else {
                      content += bls.slice(0, 15).map(b => `• <@${b.userId}> | ${b.reason}`).join('\n');
-                     if (count > 15) content += `\n\n_Et ${count - 15} autres..._`;
+                     if (count > 15) content += await t('bl.bl_more', message.guild.id, { count: count - 15 });
                  }
                  return sendV2Message(client, message.channel.id, content, []);
              }
@@ -55,12 +62,12 @@ module.exports = {
         // --- BL DEL/REMOVE ---
         if (commandName === 'bl' && (sub === 'del' || sub === 'remove') && args[1]) {
             const targetId = args[1].replace(/[<@!>]/g, '');
-            if (!targetId || !targetId.match(/^\d+$/)) return sendV2Message(client, message.channel.id, "**Usage:** `+bl del <@user/ID>`", []);
+            if (!targetId || !targetId.match(/^\d+$/)) return sendV2Message(client, message.channel.id, await t('bl.usage_bl_del', message.guild.id), []);
 
             const deleted = await GlobalBlacklist.findOneAndDelete({ userId: targetId });
-            if (!deleted) return sendV2Message(client, message.channel.id, "❌ Cet utilisateur n'est pas blacklist.", []);
+            if (!deleted) return sendV2Message(client, message.channel.id, await t('bl.not_blacklisted', message.guild.id), []);
 
-            return sendV2Message(client, message.channel.id, `✅ <@${targetId}> retiré de la blacklist globale.`, []);
+            return sendV2Message(client, message.channel.id, await t('bl.unbl_success', message.guild.id, { user: `<@${targetId}>` }), []);
         }
 
         // --- BL ADD ---
@@ -79,10 +86,10 @@ module.exports = {
             if (targetId) {
                 if (!targetId.match(/^\d+$/)) return; // Should not happen if regex passed
 
-                if (await GlobalBlacklist.findOne({ userId: targetId })) return sendV2Message(client, message.channel.id, "⚠️ Cet utilisateur est déjà blacklist.", []);
+                if (await GlobalBlacklist.findOne({ userId: targetId })) return sendV2Message(client, message.channel.id, await t('bl.already_blacklisted', message.guild.id), []);
                 
                 await GlobalBlacklist.create({ userId: targetId, reason, addedBy: message.author.id });
-                sendV2Message(client, message.channel.id, `⛔ <@${targetId}> ajouté à la blacklist globale.\n📝 Raison: ${reason}\n\n*Banissement en cours sur tous les serveurs...*`, []);
+                sendV2Message(client, message.channel.id, await t('bl.bl_added', message.guild.id, { user: `<@${targetId}>`, reason }), []);
 
                 // Trigger Global Ban
                 client.guilds.cache.forEach(guild => {

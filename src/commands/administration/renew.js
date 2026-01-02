@@ -1,4 +1,5 @@
 const { sendV2Message, replyV2Interaction, updateV2Interaction } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'renew',
@@ -6,7 +7,7 @@ module.exports = {
     category: 'Administration',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageChannels') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Gérer les salons` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('renew.permission', message.guild.id), []);
         }
 
         const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]) || message.channel;
@@ -29,12 +30,12 @@ module.exports = {
         const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
         
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('renew_confirm').setLabel('Confirmer Renew').setStyle(ButtonStyle.Danger),
-            new ButtonBuilder().setCustomId('renew_cancel').setLabel('Annuler').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId('renew_confirm').setLabel(await t('renew.btn_confirm', message.guild.id)).setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('renew_cancel').setLabel(await t('renew.btn_cancel', message.guild.id)).setStyle(ButtonStyle.Secondary)
         );
 
         const msg = await sendV2Message(client, message.channel.id,
-            `⚠️ **ATTENTION** : Vous allez recréer le salon ${channel}. Tous les messages seront perdus.\nConfirmez-vous ?`,
+            await t('renew.warning', message.guild.id, { channel: channel }),
             [row]
         );
 
@@ -42,16 +43,16 @@ module.exports = {
         const collector = fetchedMsg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 15000 });
 
         collector.on('collect', async i => {
-            if (i.user.id !== message.author.id) return replyV2Interaction(client, i, "❌ Pas touche !", [], true);
+            if (i.user.id !== message.author.id) return replyV2Interaction(client, i, await t('renew.not_allowed', message.guild.id), [], true);
 
             if (i.customId === 'renew_confirm') {
                 try {
-                    await replyV2Interaction(client, i, "♻️ Renouvellement en cours...", [], true);
+                    await replyV2Interaction(client, i, await t('renew.progress', message.guild.id), [], true);
                     const position = channel.position;
                     const newChannel = await channel.clone();
                     await channel.delete();
                     await newChannel.setPosition(position);
-                    await newChannel.send(`✅ Salon recréé par ${message.author}.`);
+                    await newChannel.send(await t('renew.success', message.guild.id, { user: message.author }));
                 } catch (e) {
                     console.error(e);
                     // Use sendV2Message because original channel might be gone or interaction failed
@@ -59,11 +60,11 @@ module.exports = {
                     // If channel delete failed, we can reply.
                     // Try reply first
                     try {
-                        await replyV2Interaction(client, i, "❌ Erreur lors du renew.", [], true);
+                        await replyV2Interaction(client, i, await t('renew.error', message.guild.id), [], true);
                     } catch (err) {}
                 }
             } else {
-                await updateV2Interaction(client, i, "❌ Action annulée.", []);
+                await updateV2Interaction(client, i, await t('renew.cancelled', message.guild.id), []);
             }
         });
     }

@@ -3,6 +3,7 @@ const { sendV2Message } = require('../../utils/componentUtils');
 const { db } = require('../../database');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const ActiveTicket = require('../../database/models/ActiveTicket');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'remove',
@@ -21,16 +22,16 @@ module.exports = {
                         SendMessages: false,
                         ReadMessageHistory: false
                     });
-                    return sendV2Message(client, message.channel.id, `✅ <@${member.id}> a été retiré du ticket.`, []);
+                    return sendV2Message(client, message.channel.id, await t('remove.ticket_removed', message.guild.id, { id: member.id }), []);
                 } catch (e) {
-                    return sendV2Message(client, message.channel.id, "❌ Impossible de retirer le membre.", []);
+                    return sendV2Message(client, message.channel.id, await t('remove.ticket_error', message.guild.id), []);
                 }
              }
         }
 
         // --- STANDARD CONFIGURATION REMOVE ---
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Administrateur` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('remove.permission', message.guild.id), []);
         }
 
         const sub = args[0]?.toLowerCase();
@@ -38,7 +39,7 @@ module.exports = {
         if (sub === 'perm' || sub === 'permission') {
             const targetStr = args[1];
             if (!targetStr) {
-                return sendV2Message(client, message.channel.id, "**Usage:** `+del perm <@rôle>`", []);
+                return sendV2Message(client, message.channel.id, await t('remove.usage_perm', message.guild.id), []);
             }
 
             let roleId = null;
@@ -49,12 +50,12 @@ module.exports = {
             }
 
             if (!roleId) {
-                return sendV2Message(client, message.channel.id, "❌ Veuillez spécifier un rôle valide.", []);
+                return sendV2Message(client, message.channel.id, await t('remove.role_required', message.guild.id), []);
             }
 
             const config = await getGuildConfig(message.guild.id);
             if (!config.customPermissions || config.customPermissions.length === 0) {
-                 return sendV2Message(client, message.channel.id, "ℹ️ Aucune permission configurée à supprimer.", []);
+                 return sendV2Message(client, message.channel.id, await t('remove.no_perms', message.guild.id), []);
             }
 
             const initialLength = config.customPermissions.length;
@@ -62,11 +63,11 @@ module.exports = {
             const deletedCount = initialLength - config.customPermissions.length;
 
             if (deletedCount === 0) {
-                return sendV2Message(client, message.channel.id, `ℹ️ Aucune permission trouvée pour le rôle <@&${roleId}>.`, []);
+                return sendV2Message(client, message.channel.id, await t('remove.role_no_perms', message.guild.id, { id: roleId }), []);
             }
 
             await config.save();
-            return sendV2Message(client, message.channel.id, `✅ **${deletedCount}** permissions supprimées pour le rôle <@&${roleId}>.`, []);
+            return sendV2Message(client, message.channel.id, await t('remove.perm_success', message.guild.id, { count: deletedCount, id: roleId }), []);
         }
 
         if (sub === 'activity') {
@@ -77,12 +78,12 @@ module.exports = {
                 // Clear current activity (if it was this guild's turn, or just to be responsive)
                 client.user.setActivity(null);
 
-                return sendV2Message(client, message.channel.id, "✅ Activité du bot supprimée pour ce serveur.", []);
+                return sendV2Message(client, message.channel.id, await t('remove.activity_success', message.guild.id), []);
             } catch (e) {
-                return sendV2Message(client, message.channel.id, `❌ Erreur: ${e.message}`, []);
+                return sendV2Message(client, message.channel.id, await t('remove.activity_error', message.guild.id, { error: e.message }), []);
             }
         }
 
-        return sendV2Message(client, message.channel.id, "**Usage:** `+remove activity`", []);
+        return sendV2Message(client, message.channel.id, await t('remove.usage_activity', message.guild.id), []);
     }
 };

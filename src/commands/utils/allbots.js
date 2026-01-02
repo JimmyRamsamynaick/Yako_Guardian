@@ -1,4 +1,5 @@
 const { createPagination } = require('../../utils/pagination');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'allbots',
@@ -16,6 +17,6 @@ module.exports = {
         }
         
         const bots = message.guild.members.cache.filter(m => m.user.bot).map(m => m.user.tag);
-        await createPagination(client, message, bots, 10, 'Liste des Bots');
+        await createPagination(client, message, bots, 10, await t('allbots.title', message.guild.id));
     }
 };

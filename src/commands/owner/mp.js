@@ -2,12 +2,13 @@ const { sendV2Message } = require('../../utils/componentUtils');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const GlobalSettings = require('../../database/models/GlobalSettings');
 const { EmbedBuilder } = require('discord.js');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'mp',
     description: 'Gestion des messages privés et interactions',
     category: 'Owner',
-    aliases: ['discussion'],
+    aliases: [],
     async run(client, message, args) {
         if (!await isBotOwner(message.author.id)) return;
 
@@ -32,10 +33,10 @@ module.exports = {
                         { mpEnabled: newState },
                         { upsert: true, new: true }
                     );
-                    return sendV2Message(client, message.channel.id, `✅ **MP Settings**\nLa réception de MP (Modmail global) est maintenant **${newState ? 'ACTIVÉE' : 'DÉSACTIVÉE'}**.`, []);
+                    return sendV2Message(client, message.channel.id, await t('mp.mp_settings_success', message.guild.id, { status: newState ? 'ACTIVÉE' : 'DÉSACTIVÉE' }), []);
                 }
 
-                return sendV2Message(client, message.channel.id, `⚙️ **MP Settings**\nÉtat actuel: **${currentStatus ? 'ON' : 'OFF'}**\nUsage: \`+mp settings <on/off>\``, []);
+                return sendV2Message(client, message.channel.id, await t('mp.mp_settings_status', message.guild.id, { status: currentStatus ? 'ON' : 'OFF' }), []);
             }
 
             // +mp <user> <message>
@@ -43,27 +44,27 @@ module.exports = {
             const content = args.slice(1).join(' ');
 
             if (!targetId || !content) {
-                return sendV2Message(client, message.channel.id, "❌ Usage: `+mp <ID/Mention> <Message>` ou `+mp settings`", []);
+                return sendV2Message(client, message.channel.id, await t('mp.usage_mp', message.guild.id), []);
             }
 
             const userId = targetId.replace(/[<@!>]/g, '');
             const user = await client.users.fetch(userId).catch(() => null);
 
             if (!user) {
-                return sendV2Message(client, message.channel.id, "❌ Utilisateur introuvable.", []);
+                return sendV2Message(client, message.channel.id, await t('mp.user_not_found', message.guild.id), []);
             }
 
             try {
                 const embed = new EmbedBuilder()
-                    .setAuthor({ name: `Message de l'équipe ${client.user.username}`, iconURL: client.user.displayAvatarURL() })
+                    .setAuthor({ name: await t('mp.mp_author', message.guild.id, { botName: client.user.username }), iconURL: client.user.displayAvatarURL() })
                     .setDescription(content)
                     .setColor('#0099ff')
                     .setTimestamp();
 
                 await user.send({ embeds: [embed] });
-                return sendV2Message(client, message.channel.id, `✅ Message envoyé à **${user.tag}** via le bot.`, []);
+                return sendV2Message(client, message.channel.id, await t('mp.mp_sent', message.guild.id, { user: user.tag }), []);
             } catch (e) {
-                return sendV2Message(client, message.channel.id, `❌ Impossible d'envoyer le MP: ${e.message}`, []);
+                return sendV2Message(client, message.channel.id, await t('mp.mp_error', message.guild.id, { error: e.message }), []);
             }
         }
 
@@ -74,13 +75,13 @@ module.exports = {
             
             const targetId = args[0];
             if (!targetId) {
-                return sendV2Message(client, message.channel.id, "❌ Usage: `+discussion <ID/User>`\n*(Ouvre une session de chat avec l'utilisateur)*", []);
+                return sendV2Message(client, message.channel.id, await t('mp.usage_discussion', message.guild.id), []);
             }
             
             const userId = targetId.replace(/[<@!>]/g, '');
             const user = await client.users.fetch(userId).catch(() => null);
             
-            if (!user) return sendV2Message(client, message.channel.id, "❌ Utilisateur introuvable.", []);
+            if (!user) return sendV2Message(client, message.channel.id, await t('mp.user_not_found', message.guild.id), []);
 
             // Check if there's already a ticket? 
             // Or just inform the owner they can reply via +mp?
@@ -93,14 +94,14 @@ module.exports = {
             }
 
             const embed = new EmbedBuilder()
-                .setTitle(`👤 Discussion: ${user.tag}`)
+                .setTitle(await t('mp.discussion_title', message.guild.id, { user: user.tag }))
                 .setThumbnail(user.displayAvatarURL())
                 .addFields(
-                    { name: 'ID', value: user.id, inline: true },
-                    { name: 'Création', value: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`, inline: true },
-                    { name: 'Serveurs communs', value: mutualGuilds.join(', ') || 'Aucun', inline: false }
+                    { name: await t('mp.discussion_fields_id', message.guild.id), value: user.id, inline: true },
+                    { name: await t('mp.discussion_fields_created', message.guild.id), value: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`, inline: true },
+                    { name: await t('mp.discussion_fields_mutuals', message.guild.id), value: mutualGuilds.join(', ') || await t('mp.discussion_none', message.guild.id), inline: false }
                 )
-                .setDescription("Pour répondre, utilisez `+mp <ID> <Message>`.\n*(Le système de session en direct arrivera dans une future mise à jour v2)*")
+                .setDescription(await t('mp.discussion_desc', message.guild.id))
                 .setColor('#2b2d31');
 
             return sendV2Message(client, message.channel.id, "", [], [embed]);

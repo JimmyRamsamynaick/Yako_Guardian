@@ -1,4 +1,5 @@
 const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'unbanall',
@@ -6,18 +7,18 @@ module.exports = {
     category: 'Administration',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Administrateur` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('unbanall.permission', message.guild.id), []);
         }
 
         const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
         
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('unbanall_confirm').setLabel('Confirmer UNBAN ALL').setStyle(ButtonStyle.Danger),
-            new ButtonBuilder().setCustomId('unbanall_cancel').setLabel('Annuler').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId('unbanall_confirm').setLabel(await t('unbanall.btn_confirm', message.guild.id)).setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('unbanall_cancel').setLabel(await t('unbanall.btn_cancel', message.guild.id)).setStyle(ButtonStyle.Secondary)
         );
 
         const msg = await sendV2Message(client, message.channel.id, 
-            `⚠️ **ATTENTION** : Vous allez débannir TOUS les membres bannis.\nCette action est irréversible et peut être longue.\nConfirmez-vous ?`, 
+            await t('unbanall.warning', message.guild.id), 
             [row]
         );
 
@@ -32,27 +33,27 @@ module.exports = {
         const collector = fetchedMsg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 15000 });
 
         collector.on('collect', async i => {
-            if (i.user.id !== message.author.id) return replyV2Interaction(client, i, "❌ Pas touche !", [], true);
+            if (i.user.id !== message.author.id) return replyV2Interaction(client, i, await t('unbanall.not_allowed', message.guild.id), [], true);
 
             if (i.customId === 'unbanall_confirm') {
-                await updateV2Interaction(client, i, "⏳ Débannissement en cours... Patientez.", []);
+                await updateV2Interaction(client, i, await t('unbanall.progress', message.guild.id), []);
                 
                 try {
                     const bans = await message.guild.bans.fetch();
-                    if (bans.size === 0) return updateV2Interaction(client, i, "✅ Aucun membre banni.", []);
+                    if (bans.size === 0) return updateV2Interaction(client, i, await t('unbanall.no_bans', message.guild.id), []);
 
                     let count = 0;
                     for (const [id, ban] of bans) {
                         await message.guild.members.unban(id);
                         count++;
                     }
-                    await updateV2Interaction(client, i, `✅ **${count}** membres ont été débannis.`, []);
+                    await updateV2Interaction(client, i, await t('unbanall.success', message.guild.id, { count: count }), []);
                 } catch (e) {
                     console.error(e);
-                    await updateV2Interaction(client, i, "❌ Une erreur est survenue.", []);
+                    await updateV2Interaction(client, i, await t('unbanall.error', message.guild.id), []);
                 }
             } else {
-                await updateV2Interaction(client, i, "❌ Action annulée.", []);
+                await updateV2Interaction(client, i, await t('unbanall.cancelled', message.guild.id), []);
             }
         });
     }

@@ -1,5 +1,6 @@
 const { createPagination } = require('../../utils/pagination');
 const { PermissionsBitField } = require('discord.js');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'alladmins',
@@ -14,6 +15,6 @@ module.exports = {
             .filter(m => !m.user.bot && m.permissions.has(PermissionsBitField.Flags.Administrator))
             .map(m => m.user.tag);
         
-        await createPagination(client, message, admins, 10, 'Liste des Administrateurs (Humains)');
+        await createPagination(client, message, admins, 10, await t('alladmins.title', message.guild.id));
     }
 };

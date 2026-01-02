@@ -1,7 +1,7 @@
 const TempVocConfig = require('../database/models/TempVocConfig');
 const ActiveTempVoc = require('../database/models/ActiveTempVoc');
 const { ChannelType, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { sendV2Message } = require('../utils/componentUtils');
+const { t } = require('../utils/i18n');
 
 module.exports = {
     name: 'voiceStateUpdate',
@@ -11,7 +11,7 @@ module.exports = {
             const active = await ActiveTempVoc.findOne({ channelId: newState.channelId });
             if (active && active.blockedUsers.includes(newState.member.id) && active.ownerId !== newState.member.id) {
                 try {
-                    await newState.disconnect("Blacklisted");
+                    await newState.disconnect(await t('tempvoc.blacklisted', newState.guild.id));
                 } catch (e) {
                     // Ignore if already disconnected
                 }
@@ -73,23 +73,24 @@ module.exports = {
                     });
 
                     const row1 = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId('tempvoc_lock').setEmoji('🔒').setLabel('Verrouiller').setStyle(ButtonStyle.Secondary),
-                        new ButtonBuilder().setCustomId('tempvoc_unlock').setEmoji('🔓').setLabel('Déverrouiller').setStyle(ButtonStyle.Secondary),
-                        new ButtonBuilder().setCustomId('tempvoc_hide').setEmoji('👁️').setLabel('Masquer/Visible').setStyle(ButtonStyle.Secondary),
-                        new ButtonBuilder().setCustomId('tempvoc_transfer').setEmoji('👑').setLabel('Transfert').setStyle(ButtonStyle.Primary)
+                        new ButtonBuilder().setCustomId('tempvoc_lock').setEmoji('🔒').setLabel(await t('tempvoc.lock', newState.guild.id)).setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId('tempvoc_unlock').setEmoji('🔓').setLabel(await t('tempvoc.unlock', newState.guild.id)).setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId('tempvoc_hide').setEmoji('👁️').setLabel(await t('tempvoc.hide', newState.guild.id)).setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId('tempvoc_transfer').setEmoji('👑').setLabel(await t('tempvoc.transfer', newState.guild.id)).setStyle(ButtonStyle.Primary)
                     );
                     const row2 = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId('tempvoc_limit').setEmoji('👥').setLabel('Limite').setStyle(ButtonStyle.Secondary),
-                        new ButtonBuilder().setCustomId('tempvoc_rename').setEmoji('✏️').setLabel('Renommer').setStyle(ButtonStyle.Secondary),
-                        new ButtonBuilder().setCustomId('tempvoc_kick').setEmoji('👢').setLabel('Kick').setStyle(ButtonStyle.Danger),
-                        new ButtonBuilder().setCustomId('tempvoc_purge').setEmoji('💥').setLabel('Purge').setStyle(ButtonStyle.Danger)
+                        new ButtonBuilder().setCustomId('tempvoc_limit').setEmoji('👥').setLabel(await t('tempvoc.limit', newState.guild.id)).setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId('tempvoc_rename').setEmoji('✏️').setLabel(await t('tempvoc.rename', newState.guild.id)).setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId('tempvoc_kick').setEmoji('👢').setLabel(await t('tempvoc.kick', newState.guild.id)).setStyle(ButtonStyle.Danger),
+                        new ButtonBuilder().setCustomId('tempvoc_purge').setEmoji('💥').setLabel(await t('tempvoc.purge', newState.guild.id)).setStyle(ButtonStyle.Danger)
                     );
                     const row3 = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId('tempvoc_wl').setEmoji('✅').setLabel('Whitelist').setStyle(ButtonStyle.Success),
-                        new ButtonBuilder().setCustomId('tempvoc_bl').setEmoji('⛔').setLabel('Blacklist').setStyle(ButtonStyle.Secondary)
+                        new ButtonBuilder().setCustomId('tempvoc_wl').setEmoji('✅').setLabel(await t('tempvoc.whitelist', newState.guild.id)).setStyle(ButtonStyle.Success),
+                        new ButtonBuilder().setCustomId('tempvoc_bl').setEmoji('⛔').setLabel(await t('tempvoc.blacklist', newState.guild.id)).setStyle(ButtonStyle.Secondary)
                     );
 
-                    await sendV2Message(client, channel.id, `👋 Bienvenue dans votre salon temporaire <@${newState.member.id}> !\nUtilisez les boutons ci-dessous pour gérer votre salon.`, [row1, row2, row3]);
+                    const { sendV2Message } = require('../utils/componentUtils');
+                    await sendV2Message(client, channel.id, await t('tempvoc.welcome', newState.guild.id, { user: newState.member.id }), [row1, row2, row3]);
 
                 } catch (e) {
                     console.error("TempVoc Error:", e);

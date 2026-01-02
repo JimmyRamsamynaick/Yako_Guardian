@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'role',
@@ -9,20 +10,20 @@ module.exports = {
         const role = message.guild.roles.cache.get(roleId);
 
         if (!role) {
-            return sendV2Message(client, message.channel.id, "❌ Rôle introuvable.", []);
+            return sendV2Message(client, message.channel.id, await t('role.not_found', message.guild.id), []);
         }
 
         const info = [
-            `**Nom:** ${role.name}`,
-            `**ID:** ${role.id}`,
-            `**Couleur:** ${role.hexColor}`,
-            `**Mentionable:** ${role.mentionable ? 'Oui' : 'Non'}`,
-            `**Affiché séparément:** ${role.hoist ? 'Oui' : 'Non'}`,
-            `**Position:** ${role.position}`,
-            `**Membres:** ${role.members.size}`,
-            `**Créé le:** <t:${Math.floor(role.createdTimestamp / 1000)}:R>`
+            `**${await t('role.name', message.guild.id)}:** ${role.name}`,
+            `**${await t('role.id', message.guild.id)}:** ${role.id}`,
+            `**${await t('role.color', message.guild.id)}:** ${role.hexColor}`,
+            `**${await t('role.mentionable', message.guild.id)}:** ${role.mentionable ? await t('role.yes', message.guild.id) : await t('role.no', message.guild.id)}`,
+            `**${await t('role.hoist', message.guild.id)}:** ${role.hoist ? await t('role.yes', message.guild.id) : await t('role.no', message.guild.id)}`,
+            `**${await t('role.position', message.guild.id)}:** ${role.position}`,
+            `**${await t('role.members', message.guild.id)}:** ${role.members.size}`,
+            `**${await t('role.created_at', message.guild.id)}:** <t:${Math.floor(role.createdTimestamp / 1000)}:R>`
         ].join('\n');
 
-        await sendV2Message(client, message.channel.id, `**Info Rôle: ${role.name}**\n\n${info}`, []);
+        await sendV2Message(client, message.channel.id, (await t('role.title', message.guild.id, { name: role.name })) + `\n\n${info}`, []);
     }
 };

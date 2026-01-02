@@ -2,6 +2,7 @@ const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const TicketConfig = require('../../database/models/TicketConfig');
 const { updateTicketDashboard } = require('../../handlers/ticketHandler');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'ticket',
@@ -12,7 +13,7 @@ module.exports = {
 
         if (sub === 'settings') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return sendV2Message(client, message.channel.id, "❌ Permission `Administrateur` requise.", []);
+                return sendV2Message(client, message.channel.id, await t('ticket.permission', message.guild.id), []);
             }
             
             let config = await TicketConfig.findOne({ guildId: message.guild.id });
@@ -28,7 +29,7 @@ module.exports = {
             
             await updateTicketDashboard(client, mockInteraction, config);
         } else {
-             return sendV2Message(client, message.channel.id, "**Usage:** `+ticket settings`", []);
+             return sendV2Message(client, message.channel.id, await t('ticket.usage', message.guild.id), []);
         }
     }
 };

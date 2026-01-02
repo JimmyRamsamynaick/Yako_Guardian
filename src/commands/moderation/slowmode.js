@@ -1,5 +1,6 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'slowmode',
@@ -8,14 +9,14 @@ module.exports = {
     aliases: ['slow'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Gérer les salons` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('slowmode.permission', message.guild.id), []);
         }
 
         const durationStr = args[0];
         let channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[1]) || message.channel;
 
         if (!durationStr) {
-            return sendV2Message(client, message.channel.id, "**Usage:** `+slowmode <durée/off> [salon]`\nEx: `+slowmode 10s`, `+slowmode 1h #général`, `+slowmode off`", []);
+            return sendV2Message(client, message.channel.id, await t('slowmode.usage', message.guild.id), []);
         }
 
         let seconds = 0;
@@ -24,7 +25,7 @@ module.exports = {
         } else {
             const match = durationStr.match(/^(\d+)(s|m|h)?$/);
             if (!match) {
-                return sendV2Message(client, message.channel.id, "❌ Durée invalide. Ex: `5s`, `10m`, `1h` (Max 6h).", []);
+                return sendV2Message(client, message.channel.id, await t('slowmode.invalid_duration', message.guild.id), []);
             }
             const amount = parseInt(match[1]);
             const unit = match[2] || 's';
@@ -35,19 +36,19 @@ module.exports = {
         }
 
         if (seconds > 21600) { // 6 hours
-            return sendV2Message(client, message.channel.id, "❌ Le slowmode ne peut pas dépasser 6 heures (21600s).", []);
+            return sendV2Message(client, message.channel.id, await t('slowmode.limit_exceeded', message.guild.id), []);
         }
 
         try {
             await channel.setRateLimitPerUser(seconds);
             if (seconds === 0) {
-                return sendV2Message(client, message.channel.id, `✅ Slowmode désactivé pour <#${channel.id}>.`, []);
+                return sendV2Message(client, message.channel.id, await t('slowmode.disabled', message.guild.id, { channel: channel.toString() }), []);
             } else {
-                return sendV2Message(client, message.channel.id, `✅ Slowmode défini sur **${durationStr}** pour <#${channel.id}>.`, []);
+                return sendV2Message(client, message.channel.id, await t('slowmode.set', message.guild.id, { duration: durationStr, channel: channel.toString() }), []);
             }
         } catch (e) {
             console.error(e);
-            return sendV2Message(client, message.channel.id, "❌ Impossible de modifier le slowmode (Permissions ?).", []);
+            return sendV2Message(client, message.channel.id, await t('slowmode.error', message.guild.id), []);
         }
     }
 };

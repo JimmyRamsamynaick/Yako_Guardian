@@ -1,6 +1,7 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { PermissionsBitField } = require('discord.js');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'perms',
@@ -9,7 +10,7 @@ module.exports = {
     aliases: ['perm'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Vous devez être administrateur pour gérer les permissions.", []);
+            return sendV2Message(client, message.channel.id, await t('perms.permission', message.guild.id), []);
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -37,11 +38,11 @@ module.exports = {
                     else users.push(`<@${id}>`);
                 });
 
-                const list = [...roles, ...users].join(', ') || "Aucun";
+                const list = [...roles, ...users].join(', ') || await t('perms.none', message.guild.id);
                 content += `**Perm${i}**\n${list}\n`;
             }
 
-            content += `\nVoir le \`${prefix}helpall\` pour voir les commandes auxquelles chaque permission donne accès`;
+            content += await t('perms.footer', message.guild.id, { prefix });
             return sendV2Message(client, message.channel.id, content, []);
         }
 
@@ -50,7 +51,7 @@ module.exports = {
             const target = args[2];
 
             if (!level || !['1', '2', '3', '4', '5'].includes(level) || !target) {
-                return sendV2Message(client, message.channel.id, `❌ Usage: \`${prefix}perms set <1-5> <@role/@user>\``, []);
+                return sendV2Message(client, message.channel.id, await t('perms.usage_set', message.guild.id, { prefix }), []);
             }
 
             let id;
@@ -68,7 +69,8 @@ module.exports = {
                 await config.save();
             }
 
-            return sendV2Message(client, message.channel.id, `✅ **${message.guild.roles.cache.get(id)?.name || 'Utilisateur'}** ajouté au niveau **${level}**.`, []);
+            const targetName = message.guild.roles.cache.get(id)?.name || 'Utilisateur';
+            return sendV2Message(client, message.channel.id, await t('perms.added', message.guild.id, { target: targetName, level }), []);
         }
 
         if (sub === 'del' || sub === 'remove') {
@@ -76,7 +78,7 @@ module.exports = {
             const target = args[2];
 
             if (!level || !['1', '2', '3', '4', '5'].includes(level) || !target) {
-                return sendV2Message(client, message.channel.id, `❌ Usage: \`${prefix}perms del <1-5> <@role/@user>\``, []);
+                return sendV2Message(client, message.channel.id, await t('perms.usage_del', message.guild.id, { prefix }), []);
             }
 
             let id;
@@ -90,16 +92,16 @@ module.exports = {
                 await config.save();
             }
 
-            return sendV2Message(client, message.channel.id, `✅ Supprimé du niveau **${level}**.`, []);
+            return sendV2Message(client, message.channel.id, await t('perms.removed', message.guild.id, { level }), []);
         }
 
         if (sub === 'reset' || sub === 'clear') {
              config.permissionLevels = { '1': [], '2': [], '3': [], '4': [], '5': [] };
              config.markModified('permissionLevels');
              await config.save();
-             return sendV2Message(client, message.channel.id, `✅ Toutes les permissions par niveaux ont été réinitialisées.`, []);
+             return sendV2Message(client, message.channel.id, await t('perms.reset_success', message.guild.id), []);
         }
         
-        return sendV2Message(client, message.channel.id, `❌ Commande inconnue. Usage: \`${prefix}perms [set/del/reset]\``, []);
+        return sendV2Message(client, message.channel.id, await t('perms.unknown_sub', message.guild.id, { prefix }), []);
     }
 };

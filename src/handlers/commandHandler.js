@@ -28,6 +28,11 @@ module.exports = (client) => {
     for (const filePath of commandFiles) {
         try {
             const command = require(filePath);
+            
+            // Assign category based on folder name
+            const category = path.dirname(filePath).split(path.sep).pop();
+            command.category = category;
+
             if (command.name) {
                 client.commands.set(command.name, command);
                 logger.info(`Command loaded: ${command.name}`);

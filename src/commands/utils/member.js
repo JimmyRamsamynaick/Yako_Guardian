@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'member',
@@ -10,17 +11,17 @@ module.exports = {
         try {
             member = await message.guild.members.fetch(memberId);
         } catch {
-            return sendV2Message(client, message.channel.id, "❌ Membre introuvable sur ce serveur.", []);
+            return sendV2Message(client, message.channel.id, await t('member.not_found', message.guild.id), []);
         }
 
         const info = [
-            `**Surnom:** ${member.nickname || 'Aucun'}`,
-            `**Rejoint le:** <t:${Math.floor(member.joinedTimestamp / 1000)}:R>`,
-            `**Boost depuis:** ${member.premiumSince ? `<t:${Math.floor(member.premiumSinceTimestamp / 1000)}:R>` : 'Non'}`,
-            `**Rôle le plus haut:** ${member.roles.highest}`,
-            `**Rôles:** ${member.roles.cache.size - 1}` // Exclude @everyone
+            `**${await t('member.nickname', message.guild.id)}:** ${member.nickname || await t('member.none', message.guild.id)}`,
+            `**${await t('member.joined_at', message.guild.id)}:** <t:${Math.floor(member.joinedTimestamp / 1000)}:R>`,
+            `**${await t('member.boost_since', message.guild.id)}:** ${member.premiumSince ? `<t:${Math.floor(member.premiumSinceTimestamp / 1000)}:R>` : await t('member.no', message.guild.id)}`,
+            `**${await t('member.highest_role', message.guild.id)}:** ${member.roles.highest}`,
+            `**${await t('member.roles', message.guild.id)}:** ${member.roles.cache.size - 1}` // Exclude @everyone
         ].join('\n');
 
-        await sendV2Message(client, message.channel.id, `**Info Membre: ${member.user.tag}**\n\n${info}`, []);
+        await sendV2Message(client, message.channel.id, (await t('member.title', message.guild.id, { tag: member.user.tag })) + `\n\n${info}`, []);
     }
 };

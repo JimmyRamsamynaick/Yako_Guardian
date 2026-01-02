@@ -4,6 +4,7 @@ const GuildConfig = require('../../database/models/GuildConfig');
 const { createTicket } = require('../../utils/modmailUtils');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'messageCreate',
@@ -18,26 +19,26 @@ module.exports = {
             if (activeTicket) {
                 // Forward to guild channel
                 const guild = client.guilds.cache.get(activeTicket.guildId);
-                if (!guild) return sendV2Message(client, message.channel.id, "❌ Le serveur semble inaccessible.", []);
+                if (!guild) return sendV2Message(client, message.channel.id, await t('modmail.handler.guild_inaccessible', 'dm'), []);
 
                 const channel = guild.channels.cache.get(activeTicket.channelId);
                 if (!channel) {
                     // Channel deleted? Clean up
                     activeTicket.closed = true;
                     await activeTicket.save();
-                    return sendV2Message(client, message.channel.id, "❌ Le ticket semble avoir été fermé.", []);
+                    return sendV2Message(client, message.channel.id, await t('modmail.handler.ticket_closed', guild.id), []);
                 }
 
-                let content = `**${message.author.tag}**: ${message.content}`;
+                let content = await t('modmail.handler.user_reply', guild.id, { user: message.author.tag, content: message.content });
                 if (message.attachments.size > 0) {
-                    content += `\n[Pièce jointe](${message.attachments.first().url})`;
+                    content += await t('modmail.handler.attachment', guild.id, { url: message.attachments.first().url });
                 }
 
                 try {
                     await channel.send({ content });
                     await message.react('✅');
                 } catch (e) {
-                    sendV2Message(client, message.channel.id, "❌ Impossible d'envoyer le message.", []);
+                    sendV2Message(client, message.channel.id, await t('modmail.handler.send_error', guild.id), []);
                 }
                 return;
             }
@@ -55,32 +56,35 @@ module.exports = {
             }
 
             if (mutualGuilds.length === 0) {
-                return sendV2Message(client, message.channel.id, "❌ Aucun serveur commun n'a le modmail activé.", []);
+                return sendV2Message(client, message.channel.id, await t('modmail.handler.no_common_guild', 'dm'), []);
             }
 
             if (mutualGuilds.length === 1) {
                 // Create ticket directly
                 try {
                     await createTicket(client, message.author, mutualGuilds[0], message.content);
-                    sendV2Message(client, message.channel.id, `✅ **Ticket ouvert sur ${mutualGuilds[0].name} !**\nUn membre du staff vous répondra bientôt.`, []);
+                    sendV2Message(client, message.channel.id, await t('modmail.handler.ticket_opened', 'dm', { server: mutualGuilds[0].name }), []);
                 } catch (e) {
-                    sendV2Message(client, message.channel.id, `❌ Erreur: ${e.message}`, []);
+                    sendV2Message(client, message.channel.id, await t('modmail.handler.ticket_create_error', 'dm', { error: e.message }), []);
                 }
             } else {
                 // Ask to choose
+                // We need to resolve descriptions before building the menu
+                const options = await Promise.all(mutualGuilds.map(async g => ({
+                    label: g.name,
+                    value: g.id,
+                    description: await t('modmail.handler.choose_server_desc', 'dm', { server: g.name })
+                })));
+
                 const row = new ActionRowBuilder()
                     .addComponents(
                         new StringSelectMenuBuilder()
                             .setCustomId('modmail_select_guild')
-                            .setPlaceholder('Choisissez un serveur')
-                            .addOptions(mutualGuilds.map(g => ({
-                                label: g.name,
-                                value: g.id,
-                                description: `Ouvrir un ticket sur ${g.name}`
-                            })).slice(0, 25))
+                            .setPlaceholder(await t('modmail.handler.choose_server_placeholder', 'dm'))
+                            .addOptions(options.slice(0, 25))
                     );
 
-                await sendV2Message(client, message.channel.id, "📨 **Choisissez le serveur à contacter :**", [row]);
+                await sendV2Message(client, message.channel.id, await t('modmail.handler.choose_server', 'dm'), [row]);
             }
             return;
         }
@@ -97,19 +101,19 @@ module.exports = {
             // Forward to User
             const user = await client.users.fetch(ticket.userId).catch(() => null);
             if (!user) {
-                return message.channel.send("❌ Utilisateur introuvable (a quitté le serveur ?).");
+                return message.channel.send(await t('modmail.handler.user_not_found', message.guild.id));
             }
 
-            let content = `**Staff (${message.guild.name})**: ${message.content}`;
+            let content = await t('modmail.handler.staff_reply', message.guild.id, { server: message.guild.name, content: message.content });
             if (message.attachments.size > 0) {
-                content += `\n[Pièce jointe](${message.attachments.first().url})`;
+                content += await t('modmail.handler.attachment', message.guild.id, { url: message.attachments.first().url });
             }
 
             try {
                 await user.send(content);
                 await message.react('✅');
             } catch (e) {
-                message.channel.send("❌ Impossible d'envoyer le message en DM (Bloqué ?).");
+                message.channel.send(await t('modmail.handler.dm_send_error', message.guild.id));
             }
         }
     }

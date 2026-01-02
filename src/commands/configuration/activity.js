@@ -2,6 +2,7 @@ const { sendV2Message } = require('../../utils/componentUtils');
 const { PermissionsBitField } = require('discord.js');
 const { setBotActivity, setBotStatus } = require('../../utils/presenceUtils');
 const { db } = require('../../database');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'activity',
@@ -15,7 +16,7 @@ module.exports = {
     async run(client, message, args) {
         // Permission check: Administrator
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-             return sendV2Message(client, message.channel.id, "❌ Vous devez être administrateur pour utiliser cette commande.", []);
+             return sendV2Message(client, message.channel.id, await t('activity.permission', message.guild.id), []);
         }
 
         let commandName = message.content.split(' ')[0].slice(client.config.prefix.length).toLowerCase();
@@ -29,9 +30,9 @@ module.exports = {
                     // Force update if possible, but rotation will handle it
                     // To show immediate effect, we might want to clear presence if no other servers have custom presence
                     // But simpler is just to confirm
-                    return sendV2Message(client, message.channel.id, "✅ Activité supprimée pour ce serveur.", []);
+                    return sendV2Message(client, message.channel.id, await t('activity.removed', message.guild.id), []);
                 } catch (e) {
-                    return sendV2Message(client, message.channel.id, `❌ Erreur: ${e.message}`, []);
+                    return sendV2Message(client, message.channel.id, await t('activity.error', message.guild.id, { error: e.message }), []);
                 }
             }
             return; // Other remove commands handled elsewhere or return help?
@@ -69,7 +70,7 @@ module.exports = {
             }
 
             if (!text) {
-                return sendV2Message(client, message.channel.id, `❌ Précisez le message (séparez par \`,,\` pour plusieurs phrases).`, []);
+                return sendV2Message(client, message.channel.id, await t('activity.usage', message.guild.id), []);
             }
 
             return await setBotActivity(client, message, typeStr, text, url);

@@ -2,6 +2,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, 
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { createTicket } = require('../utils/modmailUtils');
 const { updateV2Interaction, replyV2Interaction, sendV2Message } = require('../utils/componentUtils');
+const { t } = require('../utils/i18n');
 
 async function handleModmailInteraction(client, interaction) {
     const { customId, guild } = interaction;
@@ -32,16 +33,48 @@ async function handleModmailInteraction(client, interaction) {
         const guildId = interaction.values[0];
         const targetGuild = client.guilds.cache.get(guildId);
         
-        if (!targetGuild) return replyV2Interaction(client, interaction, "❌ Serveur introuvable.", [], true);
+        if (!targetGuild) return replyV2Interaction(client, interaction, await t('modmail.handler.server_not_found', interaction.guild.id), [], true);
 
         try {
-            await createTicket(client, interaction.user, targetGuild, "Ticket créé via menu de sélection.");
-            // Update the menu to show success, or just reply?
-            // Original code updated content.
-            await updateV2Interaction(client, interaction, `✅ **Ticket ouvert sur ${targetGuild.name} !**`, []);
+            await createTicket(client, interaction.user, targetGuild, await t('modmail.handler.ticket_created_select', targetGuild.id));
+            // Update the menu to show success
+            await updateV2Interaction(client, interaction, await t('modmail.ticket_created', targetGuild.id, { server: targetGuild.name }), []);
         } catch (e) {
-            await replyV2Interaction(client, interaction, `❌ Erreur: ${e.message}`, [], true);
+            await replyV2Interaction(client, interaction, await t('modmail.ticket_error', targetGuild.id, { error: e.message }), [], true);
         }
+        return;
+    }
+
+    // Modmail Claim Button
+    if (customId === 'modmail_claim') {
+        const ActiveTicket = require('../database/models/ActiveTicket');
+        const ticket = await ActiveTicket.findOne({ channelId: interaction.channelId });
+        
+        if (!ticket) {
+            return replyV2Interaction(client, interaction, await t('modmail.ticket_inactive', interaction.guild.id), [], true);
+        }
+
+        if (ticket.claimedBy) {
+            return replyV2Interaction(client, interaction, await t('modmail.ticket_already_claimed', interaction.guild.id, { user: `<@${ticket.claimedBy}>` }), [], true);
+        }
+
+        ticket.claimedBy = interaction.user.id;
+        await ticket.save();
+
+        // Disable the claim button or update it
+        try {
+            const row = ActionRowBuilder.from(interaction.message.components[0]);
+            const claimBtn = row.components.find(c => c.data.custom_id === 'modmail_claim');
+            if (claimBtn) {
+                claimBtn.setDisabled(true);
+                claimBtn.setLabel(`${await t('modmail.claimed_by', interaction.guild.id)} ${interaction.user.username}`);
+                await interaction.message.edit({ components: [row] });
+            }
+        } catch (e) {
+            console.error("Failed to update claim button:", e);
+        }
+
+        await replyV2Interaction(client, interaction, await t('modmail.ticket_claimed', interaction.guild.id, { user: interaction.user.toString() }));
         return;
     }
 
@@ -54,11 +87,12 @@ async function handleModmailInteraction(client, interaction) {
             await ticket.save();
             await interaction.channel.delete().catch(() => {});
             
-            // Notify user?
+            // Notify user
             const user = await client.users.fetch(ticket.userId).catch(() => null);
-            if (user) user.send(`🔒 Votre ticket sur **${interaction.guild.name}** a été fermé par le staff.`).catch(() => {});
+            // We use the guild's language for the DM notification
+            if (user) user.send(await t('modmail.ticket_closed_dm', ticket.guildId, { server: interaction.guild.name })).catch(() => {});
         } else {
-            replyV2Interaction(client, interaction, "❌ Ce ticket n'est plus actif.", [], true);
+            replyV2Interaction(client, interaction, await t('modmail.ticket_inactive', interaction.guild.id), [], true);
         }
         return;
     }
@@ -85,21 +119,22 @@ async function handleModmailInteraction(client, interaction) {
 
 async function showModmailMenu(client, interaction, config) {
     const mm = config.modmail;
-    const status = mm.enabled ? "✅ Activé" : "❌ Désactivé";
-    const category = mm.categoryId ? `<#${mm.categoryId}>` : "Non défini";
-    const role = mm.staffRoleId ? `<@&${mm.staffRoleId}>` : "Non défini";
+    const guildId = interaction.guild ? interaction.guild.id : interaction.channel.guild.id;
+    const status = mm.enabled ? await t('modmail.state_active', guildId) : await t('modmail.state_inactive', guildId);
+    const category = mm.categoryId ? `<#${mm.categoryId}>` : await t('modmail.handler.not_defined', guildId);
+    const role = mm.staffRoleId ? `<@&${mm.staffRoleId}>` : await t('modmail.handler.not_defined', guildId);
 
-    const content = `**📨 Configuration Modmail**\n\n` +
-                    `État : **${status}**\n` +
-                    `Catégorie : ${category}\n` +
-                    `Rôle Staff : ${role}\n\n` +
-                    `Le système Modmail permet aux membres de contacter le staff via les DMs du bot.`;
+    const content = await t('modmail.title', guildId) + "\n\n" +
+                    `${await t('modmail.state_label', guildId)} : **${status}**\n` +
+                    `**${await t('modmail.category', guildId)}** : ${category}\n` +
+                    `**${await t('modmail.role', guildId)}** : ${role}\n\n` +
+                    await t('modmail.description', guildId);
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('modmail_toggle')
-                .setLabel(mm.enabled ? 'Désactiver' : 'Activer')
+                .setLabel(mm.enabled ? await t('modmail.btn_deactivate', guildId) : await t('modmail.btn_activate', guildId))
                 .setStyle(mm.enabled ? ButtonStyle.Danger : ButtonStyle.Success)
         );
 
@@ -107,7 +142,7 @@ async function showModmailMenu(client, interaction, config) {
         .addComponents(
             new ChannelSelectMenuBuilder()
                 .setCustomId('modmail_category_select')
-                .setPlaceholder('Choisir la catégorie des tickets')
+                .setPlaceholder(await t('modmail.placeholder_category', guildId))
                 .setChannelTypes(ChannelType.GuildCategory)
         );
 
@@ -115,7 +150,7 @@ async function showModmailMenu(client, interaction, config) {
         .addComponents(
             new RoleSelectMenuBuilder()
                 .setCustomId('modmail_role_select')
-                .setPlaceholder('Choisir le rôle Staff')
+                .setPlaceholder(await t('modmail.placeholder_role', guildId))
         );
 
     if (interaction.type === 3) {
@@ -128,19 +163,20 @@ async function showModmailMenu(client, interaction, config) {
 
 async function showReportMenu(client, interaction, config) {
     const report = config.report;
-    const status = report.enabled ? "✅ Activé" : "❌ Désactivé";
-    const channel = report.channelId ? `<#${report.channelId}>` : "Non défini";
+    const guildId = interaction.guild ? interaction.guild.id : interaction.channel.guild.id;
+    const status = report.enabled ? await t('modmail.state_active', guildId) : await t('modmail.state_inactive', guildId);
+    const channel = report.channelId ? `<#${report.channelId}>` : await t('modmail.handler.not_defined', guildId);
 
-    const content = `**🚨 Configuration Report**\n\n` +
-                    `État : **${status}**\n` +
-                    `Salon de logs : ${channel}\n\n` +
-                    `Permet aux utilisateurs de signaler des messages via Clic Droit > Applications > Report Message.`;
+    const content = await t('report.title', guildId) + "\n\n" +
+                    await t('report.state', guildId, { status }) + "\n" +
+                    await t('report.logs', guildId, { channel }) + "\n\n" +
+                    await t('report.description', guildId);
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('report_toggle')
-                .setLabel(report.enabled ? 'Désactiver' : 'Activer')
+                .setLabel(report.enabled ? await t('report.btn_deactivate', guildId) : await t('report.btn_activate', guildId))
                 .setStyle(report.enabled ? ButtonStyle.Danger : ButtonStyle.Success)
         );
 
@@ -148,7 +184,7 @@ async function showReportMenu(client, interaction, config) {
         .addComponents(
             new ChannelSelectMenuBuilder()
                 .setCustomId('report_channel_select')
-                .setPlaceholder('Choisir le salon de logs')
+                .setPlaceholder(await t('report.placeholder', guildId))
                 .setChannelTypes(ChannelType.GuildText)
         );
 
@@ -163,7 +199,7 @@ async function showReportMenu(client, interaction, config) {
 async function handleReportContext(client, interaction) {
     const config = await getGuildConfig(interaction.guild.id);
     if (!config.report || !config.report.enabled || !config.report.channelId) {
-        return replyV2Interaction(client, interaction, "❌ Le système de signalement n'est pas activé sur ce serveur.", [], true);
+        return replyV2Interaction(client, interaction, await t('report.disabled', interaction.guild.id), [], true);
     }
 
     const message = interaction.targetMessage;
@@ -171,11 +207,11 @@ async function handleReportContext(client, interaction) {
     // Show Modal for Reason
     const modal = new ModalBuilder()
         .setCustomId(`report_modal_${message.id}`)
-        .setTitle('Signaler un message');
+        .setTitle(await t('report.modal_title', interaction.guild.id));
 
     const reasonInput = new TextInputBuilder()
         .setCustomId('report_reason')
-        .setLabel("Raison du signalement")
+        .setLabel(await t('report.modal_label', interaction.guild.id))
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(true);
 
@@ -188,42 +224,43 @@ async function handleReportContext(client, interaction) {
 async function handleReportModal(client, interaction) {
     const messageId = interaction.customId.split('_')[2];
     const reason = interaction.fields.getTextInputValue('report_reason');
+    const guildId = interaction.guild.id;
     
-    const config = await getGuildConfig(interaction.guild.id);
+    const config = await getGuildConfig(guildId);
     if (!config.report || !config.report.channelId) {
-        return replyV2Interaction(client, interaction, "❌ Configuration invalide.", [], true);
+        return replyV2Interaction(client, interaction, await t('report.config_invalid', guildId), [], true);
     }
 
     const logChannel = interaction.guild.channels.cache.get(config.report.channelId);
     if (!logChannel) {
-        return replyV2Interaction(client, interaction, "❌ Le salon de logs report est introuvable.", [], true);
+        return replyV2Interaction(client, interaction, await t('report.channel_not_found', guildId), [], true);
     }
 
     // Fetch reported message if possible (to get content/author)
-    let reportedContent = "Message introuvable";
-    let reportedAuthor = "Inconnu";
-    let messageLink = `https://discord.com/channels/${interaction.guild.id}/${interaction.channelId}/${messageId}`;
+    let reportedContent = await t('modmail.handler.message_not_found', guildId);
+    let reportedAuthor = await t('modmail.handler.unknown_user', guildId);
+    let messageLink = `https://discord.com/channels/${guildId}/${interaction.channelId}/${messageId}`;
 
     try {
         const channel = interaction.channel; // The channel where command was used
         const msg = await channel.messages.fetch(messageId);
-        reportedContent = msg.content || "*Contenu non-textuel*";
+        reportedContent = msg.content || await t('modmail.handler.non_text_content', guildId);
         reportedAuthor = msg.author.tag;
-        if (msg.attachments.size > 0) reportedContent += " [Pièce jointe]";
+        if (msg.attachments.size > 0) reportedContent += ` ${await t('modmail.handler.attachment', guildId)}`;
     } catch (e) {}
 
-    const reportContent = `🚨 **Nouveau Signalement**\n\n` +
-                          `**Signalé par:** <@${interaction.user.id}>\n` +
-                          `**Auteur du message:** ${reportedAuthor}\n` +
-                          `**Raison:** ${reason}\n` +
-                          `**Lien:** [Voir le message](${messageLink})\n\n` +
-                          `**Contenu:**\n> ${reportedContent.replace(/\n/g, '\n> ')}`;
+    const reportContent = `🚨 **${await t('modmail.handler.new_report_title', guildId)}**\n\n` +
+                          `**${await t('modmail.handler.reported_by', guildId)}:** <@${interaction.user.id}>\n` +
+                          `**${await t('modmail.handler.message_author', guildId)}:** ${reportedAuthor}\n` +
+                          `**${await t('modmail.handler.reason', guildId)}:** ${reason}\n` +
+                          `**${await t('modmail.handler.link', guildId)}:** [${await t('modmail.handler.view_message', guildId)}](${messageLink})\n\n` +
+                          `**${await t('modmail.handler.content', guildId)}:**\n> ${reportedContent.replace(/\n/g, '\n> ')}`;
 
     
     const row = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
-                .setLabel('Voir le message')
+                .setLabel(await t('modmail.handler.view_message', guildId))
                 .setStyle(ButtonStyle.Link)
                 .setURL(messageLink)
         );
@@ -231,7 +268,7 @@ async function handleReportModal(client, interaction) {
     // Using V2 for the log message too? Yes.
     await sendV2Message(client, logChannel.id, reportContent, [row]);
 
-    await replyV2Interaction(client, interaction, "✅ Signalement envoyé aux modérateurs.", [], true);
+    await replyV2Interaction(client, interaction, await t('modmail.handler.report_sent', guildId), [], true);
 }
 
 module.exports = { handleModmailInteraction, showModmailMenu, showReportMenu, handleReportContext };

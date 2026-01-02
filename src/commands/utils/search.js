@@ -1,5 +1,6 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const axios = require('axios');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'search',
@@ -10,7 +11,7 @@ module.exports = {
         
         if (sub === 'wiki') {
             const query = args.slice(1).join(' ');
-            if (!query) return sendV2Message(client, message.channel.id, "❌ Veuillez spécifier un mot-clé.", []);
+            if (!query) return sendV2Message(client, message.channel.id, await t('search.usage_keyword', message.guild.id), []);
 
             try {
                 const url = `https://fr.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=5&namespace=0&format=json`;
@@ -20,16 +21,16 @@ module.exports = {
                 const [searchTerm, titles, descriptions, urls] = res.data;
 
                 if (!titles || titles.length === 0) {
-                     return sendV2Message(client, message.channel.id, "❌ Aucun résultat trouvé.", []);
+                     return sendV2Message(client, message.channel.id, await t('search.no_results', message.guild.id), []);
                 }
 
                 const list = titles.map((title, i) => `**${title}** - [Lien](${urls[i]})`).join('\n');
-                await sendV2Message(client, message.channel.id, `**Résultats Wiki pour "${query}":**\n${list}`, []);
+                await sendV2Message(client, message.channel.id, (await t('search.result_title', message.guild.id, { query: query })) + `\n${list}`, []);
             } catch (e) {
-                return sendV2Message(client, message.channel.id, "❌ Erreur lors de la recherche.", []);
+                return sendV2Message(client, message.channel.id, await t('search.error', message.guild.id), []);
             }
         } else {
-            return sendV2Message(client, message.channel.id, "**Usage:** `+search wiki <mot-clé>`", []);
+            return sendV2Message(client, message.channel.id, await t('search.usage', message.guild.id), []);
         }
     }
 };

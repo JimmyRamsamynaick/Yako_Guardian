@@ -1,6 +1,7 @@
 const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { sendV2Message, updateV2Interaction } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'report',
@@ -8,32 +9,32 @@ module.exports = {
     async execute(client, message, args) { // Added client parameter
         if (args[0] === 'settings') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission (Administrator requis).", []);
+                return sendV2Message(client, message.channel.id, await t('report.permission', message.guild.id), []);
             }
 
             const config = await getGuildConfig(message.guild.id);
             await showReportMenu(client, message, config);
         } else {
-            sendV2Message(client, message.channel.id, "Utilisation: `+report settings`", []);
+            sendV2Message(client, message.channel.id, await t('report.usage', message.guild.id), []);
         }
     }
 };
 
 async function showReportMenu(client, interaction, config) {
     const report = config.report || { enabled: false, channelId: null };
-    const status = report.enabled ? "✅ Activé" : "❌ Désactivé";
+    const status = report.enabled ? await t('modmail.report.state_active', interaction.guild.id) : await t('modmail.report.state_inactive', interaction.guild.id);
     const channel = report.channelId ? `<#${report.channelId}>` : "Non défini";
 
-    const content = `**🚨 Configuration Report**\n\n` +
-                    `État : **${status}**\n` +
-                    `Salon de logs : ${channel}\n\n` +
-                    `Permet aux utilisateurs de signaler des messages via Clic Droit > Applications > Report Message.`;
+    const content = await t('modmail.report.title', interaction.guild.id) + "\n\n" +
+                    await t('modmail.report.state', interaction.guild.id, { status }) + "\n" +
+                    await t('modmail.report.logs', interaction.guild.id, { channel }) + "\n\n" +
+                    await t('modmail.report.description', interaction.guild.id);
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('report_toggle')
-                .setLabel(report.enabled ? 'Désactiver' : 'Activer')
+                .setLabel(report.enabled ? await t('modmail.report.btn_deactivate', interaction.guild.id) : await t('modmail.report.btn_activate', interaction.guild.id))
                 .setStyle(report.enabled ? ButtonStyle.Danger : ButtonStyle.Success)
         );
 
@@ -41,7 +42,7 @@ async function showReportMenu(client, interaction, config) {
         .addComponents(
             new ChannelSelectMenuBuilder()
                 .setCustomId('report_channel_select')
-                .setPlaceholder('Choisir le salon de logs')
+                .setPlaceholder(await t('modmail.report.placeholder', interaction.guild.id))
                 .setChannelTypes(ChannelType.GuildText)
         );
 

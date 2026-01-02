@@ -1,5 +1,6 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'buy',
@@ -10,20 +11,18 @@ module.exports = {
         // Note: localhost ne fonctionnera que pour vous. Il faudra mettre votre IP publique ou nom de domaine plus tard.
         const websiteUrl = process.env.WEBSITE_URL || 'http://localhost:3002';
         
-        const content = `**💎 Yako Guardian Premium**\n\n` +
-            `Débloquez la puissance totale de Yako Guardian pour protéger votre serveur efficacement.\n\n` +
-            `**💸 Prix:** \`5.00€ / mois\`\n\n` +
-            `**🚀 Inclus:**\n` +
-            `• Anti-Raid Complet\n` +
-            `• Anti-Token & Mass Mention\n` +
-            `• Protection des Salons & Rôles\n` +
-            `• Support Prioritaire\n\n` +
-            `_Cliquez sur le bouton ci-dessous pour accéder à la boutique_`;
+        const title = await t('buy.title', message.guild.id);
+        const desc = await t('buy.description', message.guild.id);
+        const price = await t('buy.price', message.guild.id);
+        const includes = await t('buy.includes', message.guild.id);
+        const footer = await t('buy.footer', message.guild.id);
+
+        const content = `${title}\n\n${desc}\n\n${price}\n\n${includes}\n\n${footer}`;
 
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setLabel('Accéder à la Boutique')
+                    .setLabel(await t('buy.button', message.guild.id))
                     .setStyle(ButtonStyle.Link)
                     .setURL(websiteUrl)
             );

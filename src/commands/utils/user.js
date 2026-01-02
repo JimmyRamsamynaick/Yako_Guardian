@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'user',
@@ -10,21 +11,21 @@ module.exports = {
         try {
             user = await client.users.fetch(userId);
         } catch {
-            return sendV2Message(client, message.channel.id, "❌ Utilisateur introuvable.", []);
+            return sendV2Message(client, message.channel.id, await t('userinfo.not_found', message.guild.id), []);
         }
 
         const info = [
-            `**Tag:** ${user.tag}`,
-            `**ID:** ${user.id}`,
-            `**Création:** <t:${Math.floor(user.createdTimestamp / 1000)}:R>`,
-            `**Bot:** ${user.bot ? 'Oui' : 'Non'}`
+            await t('userinfo.tag', message.guild.id, { tag: user.tag }),
+            await t('userinfo.id', message.guild.id, { id: user.id }),
+            await t('userinfo.created', message.guild.id, { date: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>` }),
+            await t('userinfo.bot', message.guild.id, { isBot: user.bot ? await t('userinfo.yes', message.guild.id) : await t('userinfo.no', message.guild.id) })
         ].join('\n');
         
         const links = [
-            `[Avatar](${user.displayAvatarURL({ size: 1024 })})`,
-            user.banner ? `[Bannière](${user.bannerURL({ size: 1024 })})` : null
+            `[${await t('userinfo.avatar_link', message.guild.id)}](${user.displayAvatarURL({ size: 1024 })})`,
+            user.banner ? `[${await t('userinfo.banner_link', message.guild.id)}](${user.bannerURL({ size: 1024 })})` : null
         ].filter(Boolean).join(' | ');
 
-        await sendV2Message(client, message.channel.id, `**Info Utilisateur: ${user.username}**\n\n${info}\n\n${links}`, []);
+        await sendV2Message(client, message.channel.id, (await t('userinfo.title', message.guild.id, { username: user.username })) + `\n\n${info}\n\n${links}`, []);
     }
 };

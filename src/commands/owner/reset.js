@@ -1,6 +1,7 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const { db } = require('../../database');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'reset',
@@ -14,29 +15,30 @@ module.exports = {
         if (commandName === 'reset' && args[0] === 'server') {
             // Check Owner or Guild Owner
             if (message.author.id !== message.guild.ownerId && !(await isBotOwner(message.author.id))) {
-                return sendV2Message(client, message.channel.id, "❌ Seul le propriétaire du serveur ou un Owner du bot peut faire ça.", []);
+                return sendV2Message(client, message.channel.id, await t('reset.server_owner_only', message.guild.id), []);
             }
 
             // Confirm
             const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('confirm_reset_server').setLabel('CONFIRMER RESET SERVEUR').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('cancel_reset').setLabel('Annuler').setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId('confirm_reset_server').setLabel(await t('reset.confirm_reset_server_label', message.guild.id)).setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId('cancel_reset').setLabel(await t('reset.cancel_label', message.guild.id)).setStyle(ButtonStyle.Secondary)
             );
 
-            return sendV2Message(client, message.channel.id, "⚠️ **ATTENTION**\nVous allez supprimer TOUTES les configurations du bot pour ce serveur (Prefix, Whitelist, Blacklist, Logs, etc.).\nCette action est irréversible.", [row]);
+            return sendV2Message(client, message.channel.id, await t('reset.warning_server', message.guild.id), [row]);
         }
 
         // --- RESET ALL (Owner Only) ---
         if (commandName === 'resetall') {
             if (!await isBotOwner(message.author.id)) return;
 
+            const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('confirm_reset_all').setLabel('CONFIRMER RESET TOTAL').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('cancel_reset').setLabel('Annuler').setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId('confirm_reset_all').setLabel(await t('reset.confirm_reset_all_label', message.guild.id)).setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId('cancel_reset').setLabel(await t('reset.cancel_label', message.guild.id)).setStyle(ButtonStyle.Secondary)
             );
 
-            return sendV2Message(client, message.channel.id, "⚠️ **DANGER CRITIQUE**\nVous allez supprimer les configurations de **TOUS LES SERVEURS**.\nCette action est irréversible.", [row]);
+            return sendV2Message(client, message.channel.id, await t('reset.warning_all', message.guild.id), [row]);
         }
     }
 };

@@ -1,5 +1,6 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, Routes } = require('discord.js');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'button',
@@ -7,22 +8,22 @@ module.exports = {
     category: 'Personnalisation',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageMessages') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Gérer les messages` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('button.permission', message.guild.id), []);
         }
 
         const sub = args[0] ? args[0].toLowerCase() : null;
 
         if (!sub || !['link', 'role', 'del', 'add'].includes(sub)) {
-            return sendV2Message(client, message.channel.id, "**Utilisation:**\n`+button link <url> <label>` : Bouton URL\n`+button role <@role> [label]` : Bouton Rôle\n`+button del` : Supprimer les boutons", []);
+            return sendV2Message(client, message.channel.id, await t('button.usage', message.guild.id), []);
         }
 
         if (!message.reference) {
-            return sendV2Message(client, message.channel.id, "❌ Vous devez répondre au message à modifier.", []);
+            return sendV2Message(client, message.channel.id, await t('button.no_reference', message.guild.id), []);
         }
 
         const targetMsg = await message.channel.messages.fetch(message.reference.messageId);
         if (!targetMsg.editable && targetMsg.author.id !== client.user.id) {
-            return sendV2Message(client, message.channel.id, "❌ Je ne peux pas modifier ce message (ce n'est pas le mien).", []);
+            return sendV2Message(client, message.channel.id, await t('button.not_editable', message.guild.id), []);
         }
 
         if (sub === 'link' || sub === 'add') {
@@ -30,11 +31,11 @@ module.exports = {
             const label = args.slice(2).join(' ');
 
             if (!url || !label) {
-                return sendV2Message(client, message.channel.id, "❌ URL et Label requis. Ex: `+button link https://google.com Site Web`", []);
+                return sendV2Message(client, message.channel.id, await t('button.link_missing_args', message.guild.id), []);
             }
 
             if (!url.startsWith('http')) {
-                return sendV2Message(client, message.channel.id, "❌ URL invalide (doit commencer par http).", []);
+                return sendV2Message(client, message.channel.id, await t('button.invalid_url', message.guild.id), []);
             }
 
             await addButton(client, message, targetMsg, label, ButtonStyle.Link, url);
@@ -45,7 +46,7 @@ module.exports = {
             const label = args.slice(2).join(' ') || (role ? role.name : null);
 
             if (!role) {
-                return sendV2Message(client, message.channel.id, "❌ Rôle introuvable.", []);
+                return sendV2Message(client, message.channel.id, await t('button.role_not_found', message.guild.id), []);
             }
 
             // CustomID format: btn_role_ROLEID
@@ -59,14 +60,14 @@ module.exports = {
                 
                 // Note: Ephemeral messages are not possible with text commands (+button).
                 // We simulate it by deleting the confirmation after 3 seconds.
-                const confirmMsg = await sendV2Message(client, message.channel.id, "🗑️ Boutons supprimés.", []);
+                const confirmMsg = await sendV2Message(client, message.channel.id, await t('button.deleted', message.guild.id), []);
                 setTimeout(() => {
                     client.rest.delete(Routes.channelMessage(message.channel.id, confirmMsg.id)).catch(() => {});
                 }, 3000);
                 
                 return;
             } catch (e) {
-                 const errorMsg = await sendV2Message(client, message.channel.id, "❌ Erreur lors de la suppression.", []);
+                 const errorMsg = await sendV2Message(client, message.channel.id, await t('button.delete_error', message.guild.id), []);
                  setTimeout(() => {
                     client.rest.delete(Routes.channelMessage(message.channel.id, errorMsg.id)).catch(() => {});
                 }, 5000);
@@ -83,7 +84,7 @@ async function addButton(client, message, targetMsg, label, style, url = null, c
         let row = components.find(r => r.components.length < 5);
         if (!row) {
             if (components.length >= 5) {
-                return sendV2Message(client, message.channel.id, "❌ Limite de 5 rangées atteinte.", []);
+                return sendV2Message(client, message.channel.id, await t('button.limit_reached', message.guild.id), []);
             }
             row = new ActionRowBuilder();
             components.push(row);
@@ -102,6 +103,6 @@ async function addButton(client, message, targetMsg, label, style, url = null, c
         await message.delete().catch(() => {});
     } catch (e) {
         console.error(e);
-        return sendV2Message(client, message.channel.id, "❌ Erreur lors de l'ajout du bouton.", []);
+        return sendV2Message(client, message.channel.id, await t('button.add_error', message.guild.id), []);
     }
 }

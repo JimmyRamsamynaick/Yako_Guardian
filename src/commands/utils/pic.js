@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'pic',
@@ -10,10 +11,10 @@ module.exports = {
         try {
             user = await client.users.fetch(userId);
         } catch {
-            return sendV2Message(client, message.channel.id, "❌ Utilisateur introuvable.", []);
+            return sendV2Message(client, message.channel.id, await t('pic.not_found', message.guild.id), []);
         }
 
         const url = user.displayAvatarURL({ size: 4096, extension: 'png' });
-        await sendV2Message(client, message.channel.id, `**Avatar de ${user.tag}**\n${url}`, []);
+        await sendV2Message(client, message.channel.id, (await t('pic.title', message.guild.id, { tag: user.tag })) + `\n${url}`, []);
     }
 };

@@ -1,14 +1,18 @@
 const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { sendV2Message, updateV2Interaction, replyV2Interaction } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'show',
     description: 'Commandes d\'affichage automatique',
     async execute(client, message, args) {
+        if (!args[0]) {
+            return message.reply("Usage: `+show pics`");
+        }
         if (args[0] === 'pics') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission (Administrator requis).", []);
+                return sendV2Message(client, message.channel.id, await t('showpics.permission', message.guild.id), []);
             }
 
             const config = await getGuildConfig(message.guild.id);
@@ -19,19 +23,20 @@ module.exports = {
 
 async function showPfpMenu(client, interaction, config) {
     const pfp = config.pfp || { enabled: false };
-    const status = pfp.enabled ? "✅ Activé" : "❌ Désactivé";
-    const channel = pfp.channelId ? `<#${pfp.channelId}>` : "Non défini";
+    const guildId = interaction.guild ? interaction.guild.id : (interaction.guildId || interaction.channel.guild.id);
+    const status = pfp.enabled ? await t('showpics.status_on', guildId) : await t('showpics.status_off', guildId);
+    const channel = pfp.channelId ? `<#${pfp.channelId}>` : await t('showpics.channel_undefined', guildId);
 
-    const content = `**🖼️ Configuration Show Pics**\n\n` +
-                    `État : **${status}**\n` +
-                    `Salon : ${channel}\n\n` +
-                    `Envoie automatiquement des photos de profils aléatoires des membres toutes les heures.`;
+    const content = (await t('showpics.menu_title', guildId)) + `\n\n` +
+                    `${status}\n` +
+                    `${channel}\n\n` +
+                    (await t('showpics.description', guildId));
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('pfp_toggle')
-                .setLabel(pfp.enabled ? 'Désactiver' : 'Activer')
+                .setLabel(pfp.enabled ? await t('showpics.btn_disable', guildId) : await t('showpics.btn_enable', guildId))
                 .setStyle(pfp.enabled ? ButtonStyle.Danger : ButtonStyle.Success)
         );
 
@@ -39,7 +44,7 @@ async function showPfpMenu(client, interaction, config) {
         .addComponents(
             new ChannelSelectMenuBuilder()
                 .setCustomId('pfp_channel_select')
-                .setPlaceholder('Choisir le salon')
+                .setPlaceholder(await t('showpics.placeholder', guildId))
                 .setChannelTypes(ChannelType.GuildText)
         );
 

@@ -24,6 +24,7 @@ const { handleNotificationInteraction } = require('./notificationHandler');
 const { handleModmailInteraction } = require('./modmailInteractionHandler');
 const { handleAutoInteraction } = require('./autoInteractionHandler');
 const { handleSuggestionButton } = require('./suggestionHandler');
+const { t } = require('../utils/i18n');
 
 module.exports = (client) => {
     client.on('interactionCreate', async (interaction) => {
@@ -83,7 +84,7 @@ module.exports = (client) => {
             await handleSuggestionButton(client, interaction);
         } else if (customId.startsWith('modmail_') || customId.startsWith('report_')) {
             await handleModmailInteraction(client, interaction);
-        } else if (customId.startsWith('pfp_')) {
+        } else if (customId.startsWith('pfp_') || customId.startsWith('autopublish_')) {
             await handleAutoInteraction(client, interaction);
         } else if (customId === 'btn_set_profil') {
             await handleSetProfilButton(client, interaction);
@@ -93,7 +94,7 @@ module.exports = (client) => {
         if (interaction.user.id !== interaction.guild.ownerId) {
              const { isBotOwner } = require('../utils/ownerUtils');
              if (!(await isBotOwner(interaction.user.id))) {
-                 return replyV2Interaction(client, interaction, "❌ Seul le propriétaire peut confirmer.", [], true);
+                 return replyV2Interaction(client, interaction, await t('handlers.owner_only', interaction.guild.id), [], true);
              }
         }
         
@@ -106,15 +107,15 @@ module.exports = (client) => {
             db.prepare('DELETE FROM command_permissions WHERE guild_id = ?').run(interaction.guild.id);
             db.prepare('DELETE FROM backups WHERE guild_id = ?').run(interaction.guild.id);
             
-            await updateV2Interaction(client, interaction, "✅ Serveur réinitialisé avec succès.", []);
+            await updateV2Interaction(client, interaction, await t('handlers.reset_success', interaction.guild.id), []);
         } catch (e) {
-            await updateV2Interaction(client, interaction, `❌ Erreur: ${e.message}`, []);
+            await updateV2Interaction(client, interaction, await t('handlers.reset_error', interaction.guild.id, { error: e.message }), []);
         }
     }
 
     if (customId === 'confirm_reset_all') {
         const { isBotOwner } = require('../utils/ownerUtils');
-        if (!(await isBotOwner(interaction.user.id))) return replyV2Interaction(client, interaction, "❌ Owner Only.", [], true);
+        if (!(await isBotOwner(interaction.user.id))) return replyV2Interaction(client, interaction, await t('handlers.owner_only', interaction.guild.id), [], true);
 
         const { db } = require('../database');
         try {
@@ -126,14 +127,14 @@ module.exports = (client) => {
             db.prepare('DELETE FROM backups').run();
             db.prepare('DELETE FROM active_tickets').run();
             
-            await updateV2Interaction(client, interaction, "✅ **TOUTES** les données ont été effacées.", []);
+            await updateV2Interaction(client, interaction, await t('handlers.reset_all_success', interaction.guild.id), []);
         } catch (e) {
-            await updateV2Interaction(client, interaction, `❌ Erreur: ${e.message}`, []);
+            await updateV2Interaction(client, interaction, await t('handlers.reset_error', interaction.guild.id, { error: e.message }), []);
         }
     }
     
     if (customId === 'cancel_reset') {
-        await updateV2Interaction(client, interaction, "❌ Opération annulée.", []);
+        await updateV2Interaction(client, interaction, await t('handlers.cancel', interaction.guild.id), []);
     }
 
     });
@@ -152,32 +153,32 @@ module.exports = (client) => {
 async function handleSetProfilButton(client, interaction) {
     // Permission check: Administrator
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return replyV2Interaction(client, interaction, "❌ Vous devez être administrateur.", [], true);
+        return replyV2Interaction(client, interaction, await t('handlers.permission_denied', interaction.guild.id), [], true);
     }
 
     const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
     
     const modal = new ModalBuilder()
         .setCustomId('modal_set_profil')
-        .setTitle('Modifier le profil du bot');
+        .setTitle(await t('handlers.profil_modal_title', interaction.guild.id));
 
     const nameInput = new TextInputBuilder()
         .setCustomId('profil_name')
-        .setLabel("Nouveau Pseudo")
-        .setPlaceholder("Laisser vide pour ne pas changer")
+        .setLabel(await t('handlers.profil_name', interaction.guild.id))
+        .setPlaceholder(await t('handlers.profil_name_placeholder', interaction.guild.id))
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
     const picInput = new TextInputBuilder()
         .setCustomId('profil_pic')
-        .setLabel("URL de l'Avatar")
-        .setPlaceholder("https://... (Laisser vide pour ignorer)")
+        .setLabel(await t('handlers.profil_pic', interaction.guild.id))
+        .setPlaceholder(await t('handlers.profil_pic_placeholder', interaction.guild.id))
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
     const bannerInput = new TextInputBuilder()
         .setCustomId('profil_banner')
-        .setLabel("URL de la Bannière")
+        .setLabel(await t('handlers.profil_banner', interaction.guild.id))
         .setPlaceholder("https://... (Laisser vide pour ignorer)")
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
@@ -212,9 +213,9 @@ async function handleSetProfilModal(client, interaction) {
     if (name) {
         try {
             await interaction.guild.members.me.setNickname(name);
-            logs.push("✅ Pseudo modifié.");
+            logs.push(await t('handlers.profil_logs_name', interaction.guild.id));
         } catch (e) {
-            logs.push(`❌ Erreur Pseudo: ${e.message}`);
+            logs.push(await t('handlers.profil_logs_name_error', interaction.guild.id, { error: e.message }));
         }
     }
 
@@ -224,9 +225,9 @@ async function handleSetProfilModal(client, interaction) {
             await client.rest.patch(Routes.guildMember(interaction.guild.id, '@me'), {
                 body: { avatar: dataUri }
             });
-            logs.push("✅ Avatar modifié.");
+            logs.push(await t('handlers.profil_logs_pic', interaction.guild.id));
         } catch (e) {
-            logs.push(`❌ Erreur Avatar: ${e.message}`);
+            logs.push(await t('handlers.profil_logs_pic_error', interaction.guild.id, { error: e.message }));
         }
     }
 
@@ -236,13 +237,13 @@ async function handleSetProfilModal(client, interaction) {
             await client.rest.patch(Routes.guildMember(interaction.guild.id, '@me'), {
                 body: { banner: dataUri }
             });
-            logs.push("✅ Bannière modifiée.");
+            logs.push(await t('handlers.profil_logs_banner', interaction.guild.id));
         } catch (e) {
-            logs.push(`❌ Erreur Bannière: ${e.message}`);
+            logs.push(await t('handlers.profil_logs_banner_error', interaction.guild.id, { error: e.message }));
         }
     }
 
-    if (logs.length === 0) logs.push("ℹ️ Aucune modification demandée.");
+    if (logs.length === 0) logs.push(await t('handlers.profil_no_change', interaction.guild.id));
     
     const payload = createV2Payload(logs.join('\n'), []);
     await client.rest.patch(Routes.webhookMessage(client.application.id, interaction.token, '@original'), { body: payload });
@@ -254,11 +255,11 @@ async function handleRoleButton(client, interaction) {
     const role = interaction.guild.roles.cache.get(roleId);
 
     if (!role) {
-        return replyV2Interaction(client, interaction, "❌ Ce rôle n'existe plus.", [], true);
+        return replyV2Interaction(client, interaction, await t('handlers.role_not_found', interaction.guild.id), [], true);
     }
 
     if (role.position >= interaction.guild.members.me.roles.highest.position) {
-        return replyV2Interaction(client, interaction, "❌ Je ne peux pas gérer ce rôle (il est au-dessus de moi).", [], true);
+        return replyV2Interaction(client, interaction, await t('handlers.role_hierarchy_error', interaction.guild.id), [], true);
     }
 
     const member = interaction.member;
@@ -266,14 +267,14 @@ async function handleRoleButton(client, interaction) {
     try {
         if (member.roles.cache.has(roleId)) {
             await member.roles.remove(role);
-            return replyV2Interaction(client, interaction, `❌ Rôle **${role.name}** retiré.`, [], true);
+            return replyV2Interaction(client, interaction, await t('handlers.role_removed', interaction.guild.id, { role: role.name }), [], true);
         } else {
             await member.roles.add(role);
-            return replyV2Interaction(client, interaction, `✅ Rôle **${role.name}** ajouté.`, [], true);
+            return replyV2Interaction(client, interaction, await t('handlers.role_added', interaction.guild.id, { role: role.name }), [], true);
         }
     } catch (e) {
         console.error(e);
-        return replyV2Interaction(client, interaction, "❌ Erreur lors de la modification du rôle.", [], true);
+        return replyV2Interaction(client, interaction, await t('handlers.role_error', interaction.guild.id), [], true);
     }
 }
 
@@ -289,17 +290,17 @@ async function handleBackup(client, interaction) {
         
         // Check perms
         if (!interaction.member.permissions.has('Administrator') && interaction.member.id !== interaction.guild.ownerId) {
-             return replyV2Interaction(client, interaction, "❌ Permission refusée.", [], true);
+             return replyV2Interaction(client, interaction, await t('handlers.permission_denied', interaction.guild.id), [], true);
         }
 
         try {
-            await replyV2Interaction(client, interaction, "⏳ Chargement de la backup en cours... Patientez.", [], true);
+            await replyV2Interaction(client, interaction, await t('handlers.backup_loading', interaction.guild.id), [], true);
             await loadBackup(interaction.guild, name);
-            await replyV2Interaction(client, interaction, `✅ Backup \`${name}\` chargée avec succès !`, [], true);
+            await replyV2Interaction(client, interaction, await t('handlers.backup_loaded', interaction.guild.id, { name }), [], true);
             await interaction.message.delete().catch(() => {});
         } catch (error) {
             console.error(error);
-            await replyV2Interaction(client, interaction, `❌ Erreur lors du chargement : ${error.message}`, [], true);
+            await replyV2Interaction(client, interaction, await t('handlers.backup_load_error', interaction.guild.id, { error: error.message }), [], true);
         }
         return;
     }
@@ -310,16 +311,16 @@ async function handleBackup(client, interaction) {
         
         // Check perms
         if (!interaction.member.permissions.has('Administrator') && interaction.member.id !== interaction.guild.ownerId) {
-             return replyV2Interaction(client, interaction, "❌ Permission refusée.", [], true);
+             return replyV2Interaction(client, interaction, await t('handlers.permission_denied', interaction.guild.id), [], true);
         }
 
         try {
             await Backup.deleteOne({ guild_id: interaction.guild.id, name: name });
-            await replyV2Interaction(client, interaction, `✅ Backup \`${name}\` supprimée avec succès.`, [], true);
+            await replyV2Interaction(client, interaction, await t('handlers.backup_deleted', interaction.guild.id, { name }), [], true);
             await interaction.message.delete().catch(() => {});
         } catch (error) {
             console.error(error);
-            await replyV2Interaction(client, interaction, `❌ Erreur : ${error.message}`, [], true);
+            await replyV2Interaction(client, interaction, await t('handlers.backup_delete_error', interaction.guild.id, { error: error.message }), [], true);
         }
         return;
     }
@@ -333,65 +334,76 @@ async function handleSecurPanel(client, interaction) {
     
     if (!settings) {
         try {
-            await replyV2Interaction(client, interaction, "❌ Erreur : Paramètres introuvables. Veuillez refaire +secur.", [], true);
+            await replyV2Interaction(client, interaction, await t('handlers.secur_no_settings', interaction.guild.id), [], true);
         } catch (e) { console.error("Error replying no settings:", e); }
         return;
     }
     
     // Helper to regenerate the panel
-    const generateStatusText = (s) => {
-        return `**YAKO GUARDIAN - PANNEAU DE SÉCURITÉ**
-            
-**🛡️ Modules Antiraid**
-\`Anti-Token\` : ${s.antitoken_level}
-\`Anti-Update\` : ${s.antiupdate}
-\`Anti-Channel\` : ${s.antichannel}
-\`Anti-Role\` : ${s.antirole}
-\`Anti-Webhook\` : ${s.antiwebhook}
-\`Anti-Unban\` : ${s.antiunban}
-\`Anti-Bot\` : ${s.antibot}
-\`Anti-Ban\` : ${s.antiban}
-\`Anti-Everyone\` : ${s.antieveryone}
-\`Anti-Deco\` : ${s.antideco}
+    const generateStatusText = async (s) => {
+        const title = await t('secur.panel_title', interaction.guild.id);
+        const modules = await t('secur.modules_title', interaction.guild.id);
+        const footer = await t('secur.footer', interaction.guild.id);
 
-_Utilisez le menu ci-dessous pour configurer un module._`;
+        const tr = async (key) => {
+            if (key === 'on') return await t('common.state_on', interaction.guild.id);
+            if (key === 'off') return await t('common.state_off', interaction.guild.id);
+            if (key === 'max') return await t('common.state_max', interaction.guild.id);
+            return key;
+        };
+
+        return `${title}
+            
+${modules}
+\`Anti-Token\` : ${await tr(s.antitoken_level)}
+\`Anti-Update\` : ${await tr(s.antiupdate)}
+\`Anti-Channel\` : ${await tr(s.antichannel)}
+\`Anti-Role\` : ${await tr(s.antirole)}
+\`Anti-Webhook\` : ${await tr(s.antiwebhook)}
+\`Anti-Unban\` : ${await tr(s.antiunban)}
+\`Anti-Bot\` : ${await tr(s.antibot)}
+\`Anti-Ban\` : ${await tr(s.antiban)}
+\`Anti-Everyone\` : ${await tr(s.antieveryone)}
+\`Anti-Deco\` : ${await tr(s.antideco)}
+
+${footer}`;
     };
     
-    const getRowSelect = () => new ActionRowBuilder()
+    const getRowSelect = async () => new ActionRowBuilder()
             .addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId('secur_select_module')
-                    .setPlaceholder('Choisir un module à configurer')
+                    .setPlaceholder(await t('secur.placeholder', interaction.guild.id))
                     .addOptions([
-                        { label: 'Anti-Token', value: 'antitoken_level', description: 'Protection contre les tokens/selfbots', emoji: '🚪' },
-                        { label: 'Anti-Bot', value: 'antibot', description: 'Empêche l\'ajout de bots non vérifiés', emoji: '🤖' },
-                        { label: 'Anti-Ban', value: 'antiban', description: 'Limite les bannissements massifs', emoji: '🔨' },
-                        { label: 'Anti-Channel', value: 'antichannel', description: 'Protection des salons', emoji: '📺' },
-                        { label: 'Anti-Role', value: 'antirole', description: 'Protection des rôles', emoji: '🎭' },
-                        { label: 'Anti-Webhook', value: 'antiwebhook', description: 'Protection des webhooks', emoji: '🔗' },
-                        { label: 'Anti-Everyone', value: 'antieveryone', description: 'Anti @everyone / @here', emoji: '📢' },
-                        { label: 'Anti-Update', value: 'antiupdate', description: 'Anti modification serveur', emoji: '⚙️' },
-                        { label: 'Anti-Deco', value: 'antideco', description: 'Anti déconnexion', emoji: '🔌' },
+                        { label: 'Anti-Token', value: 'antitoken_level', description: await t('secur.desc_antitoken', interaction.guild.id), emoji: '🚪' },
+                        { label: 'Anti-Bot', value: 'antibot', description: await t('secur.desc_antibot', interaction.guild.id), emoji: '🤖' },
+                        { label: 'Anti-Ban', value: 'antiban', description: await t('secur.desc_antiban', interaction.guild.id), emoji: '🔨' },
+                        { label: 'Anti-Channel', value: 'antichannel', description: await t('secur.desc_antichannel', interaction.guild.id), emoji: '📺' },
+                        { label: 'Anti-Role', value: 'antirole', description: await t('secur.desc_antirole', interaction.guild.id), emoji: '🎭' },
+                        { label: 'Anti-Webhook', value: 'antiwebhook', description: await t('secur.desc_antiwebhook', interaction.guild.id), emoji: '🔗' },
+                        { label: 'Anti-Everyone', value: 'antieveryone', description: await t('secur.desc_antieveryone', interaction.guild.id), emoji: '📢' },
+                        { label: 'Anti-Update', value: 'antiupdate', description: await t('secur.desc_antiupdate', interaction.guild.id), emoji: '⚙️' },
+                        { label: 'Anti-Deco', value: 'antideco', description: await t('secur.desc_antideco', interaction.guild.id), emoji: '🔌' },
                     ])
             );
 
-    const getRowButtons = () => new ActionRowBuilder()
+    const getRowButtons = async () => new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('secur_toggle_all_on')
-                    .setLabel('Tout Activer')
+                    .setLabel(await t('secur.btn_all_on', interaction.guild.id))
                     .setStyle(ButtonStyle.Success),
                 new ButtonBuilder()
                     .setCustomId('secur_toggle_all_max')
-                    .setLabel('Tout Max')
+                    .setLabel(await t('secur.btn_all_max', interaction.guild.id))
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId('secur_toggle_all_off')
-                    .setLabel('Tout Désactiver')
+                    .setLabel(await t('secur.btn_all_off', interaction.guild.id))
                     .setStyle(ButtonStyle.Danger),
                 new ButtonBuilder()
                     .setCustomId('secur_refresh')
-                    .setLabel('Rafraîchir')
+                    .setLabel(await t('secur.btn_refresh', interaction.guild.id))
                     .setStyle(ButtonStyle.Secondary)
             );
 
@@ -419,7 +431,7 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId(`secur_mod_${module}_config`)
-                    .setLabel('CONFIG')
+                    .setLabel(await t('secur.btn_config_action', interaction.guild.id))
                     .setStyle(ButtonStyle.Secondary)
             );
             
@@ -427,7 +439,7 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
             .addComponents(
                  new ButtonBuilder()
                     .setCustomId('secur_back_main')
-                    .setLabel('Retour')
+                    .setLabel(await t('handlers.secur_back', interaction.guild.id))
                     .setStyle(ButtonStyle.Secondary)
             );
 
@@ -435,7 +447,7 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
             await updateV2Interaction(
                 client,
                 interaction,
-                `**Configuration : ${module.toUpperCase()}**\nÉtat actuel : ${settings[module]}\n\nChoisissez une action :`,
+                await t('handlers.secur_config_title', interaction.guild.id, { module: module.toUpperCase(), state: settings[module] }),
                 [rowModuleActions, rowBack]
             );
         } catch (error) {
@@ -453,8 +465,8 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                 await updateV2Interaction(
                     client,
                     interaction,
-                    generateStatusText(settings),
-                    [getRowSelect(), getRowButtons()]
+                    await generateStatusText(settings),
+                    [await getRowSelect(), await getRowButtons()]
                 );
             } catch (error) {
                 console.error("Error updating V2 secur panel (back/refresh):", error);
@@ -538,17 +550,17 @@ _Utilisez le menu ci-dessous pour configurer un module._`;
                 // Show modal for limits configuration
                 const modal = new ModalBuilder()
                     .setCustomId(`secur_modal_${moduleName}`)
-                    .setTitle(`Configuration ${moduleName}`);
+                    .setTitle(`Config ${moduleName}`);
 
                 const limitInput = new TextInputBuilder()
                     .setCustomId('limit_count')
-                    .setLabel("Nombre limite (ex: 3)")
+                    .setLabel(await t('secur.config_limit_label', interaction.guild.id))
                     .setStyle(TextInputStyle.Short)
                     .setRequired(false);
 
                 const timeInput = new TextInputBuilder()
                     .setCustomId('limit_time')
-                    .setLabel("Temps en ms (ex: 10000 pour 10s)")
+                    .setLabel(await t('secur.config_time_label', interaction.guild.id))
                     .setStyle(TextInputStyle.Short)
                     .setRequired(false);
 

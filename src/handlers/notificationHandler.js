@@ -3,6 +3,7 @@ const GuildConfig = require('../database/models/GuildConfig');
 const TwitchAlert = require('../database/models/TwitchAlert');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { updateV2Interaction, replyV2Interaction } = require('../utils/componentUtils');
+const { t } = require('../utils/i18n');
 
 async function handleNotificationInteraction(client, interaction) {
     const { customId, guild, member } = interaction;
@@ -19,6 +20,7 @@ async function handleNotificationInteraction(client, interaction) {
 
 async function handleTwitchInteraction(client, interaction, config) {
     const { customId } = interaction;
+    const guildId = interaction.guildId;
 
     if (customId === 'twitch_home') {
         await showTwitchMenu(interaction, config);
@@ -29,19 +31,19 @@ async function handleTwitchInteraction(client, interaction, config) {
     } else if (customId === 'twitch_add') {
         const modal = new ModalBuilder()
             .setCustomId('twitch_add_modal')
-            .setTitle('Ajouter un streamer');
+            .setTitle(await t('notifications.handler.twitch.add_modal_title', guildId));
 
         const nameInput = new TextInputBuilder()
             .setCustomId('streamer_name')
-            .setLabel("Nom de la chaîne Twitch")
+            .setLabel(await t('notifications.handler.twitch.name_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         const channelInput = new TextInputBuilder()
             .setCustomId('discord_channel_id')
-            .setLabel("ID du salon Discord (Optionnel)")
+            .setLabel(await t('notifications.handler.twitch.channel_label', guildId))
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder("Laisser vide pour utiliser le salon actuel")
+            .setPlaceholder(await t('notifications.handler.twitch.channel_placeholder', guildId))
             .setRequired(false);
 
         modal.addComponents(new ActionRowBuilder().addComponents(nameInput), new ActionRowBuilder().addComponents(channelInput));
@@ -53,7 +55,14 @@ async function handleTwitchInteraction(client, interaction, config) {
         // Verify channel
         const channel = interaction.guild.channels.cache.get(channelId);
         if (!channel || !channel.isTextBased()) {
-            return replyV2Interaction(client, interaction, "⚠️ Salon invalide.", [], true);
+            const rowBack = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('twitch_home')
+                        .setLabel(await t('notifications.handler.twitch.back_label', guildId))
+                        .setStyle(ButtonStyle.Secondary)
+                );
+            return replyV2Interaction(client, interaction, await t('notifications.handler.twitch.invalid_channel', guildId), [rowBack], true);
         }
 
         await TwitchAlert.create({
@@ -62,28 +71,32 @@ async function handleTwitchInteraction(client, interaction, config) {
             discordChannelId: channelId
         });
 
-        await replyV2Interaction(client, interaction, `✅ Streamer **${streamerName}** ajouté avec succès !`, [], true);
-        // await showTwitchMenu(interaction, config); // Refresh menu if possible, but interaction is already replied. 
-        // We can't edit the original message easily if we replied ephemeral. 
-        // But the user can click "Retour" or "Actualiser" if we add one.
+        const rowBack = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('twitch_home')
+                    .setLabel(await t('notifications.handler.twitch.back_label', guildId))
+                    .setStyle(ButtonStyle.Secondary)
+            );
+        await replyV2Interaction(client, interaction, await t('notifications.handler.twitch.added_success', guildId, { name: streamerName }), [rowBack], true);
     } else if (customId === 'twitch_del_menu') {
         // Show select menu to delete
         const alerts = await TwitchAlert.find({ guildId: interaction.guildId });
         if (alerts.length === 0) {
-            return replyV2Interaction(client, interaction, "⚠️ Aucun streamer configuré.", [], true);
+            return replyV2Interaction(client, interaction, await t('notifications.handler.twitch.no_streamers', guildId), [], true);
         }
 
-        const options = alerts.map(alert => ({
+        const options = await Promise.all(alerts.map(async alert => ({
             label: alert.channelName,
-            description: `Salon: <#${alert.discordChannelId}>`,
+            description: await t('notifications.handler.twitch.channel_desc', guildId, { channel: `<#${alert.discordChannelId}>` }),
             value: alert._id.toString()
-        }));
+        })));
 
         const row = new ActionRowBuilder()
             .addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId('twitch_delete_select')
-                    .setPlaceholder('Sélectionner un streamer à supprimer')
+                    .setPlaceholder(await t('notifications.handler.twitch.delete_placeholder', guildId))
                     .addOptions(options.slice(0, 25)) // Limit to 25
             );
         
@@ -91,11 +104,11 @@ async function handleTwitchInteraction(client, interaction, config) {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('twitch_home')
-                    .setLabel('Retour')
+                    .setLabel(await t('notifications.handler.twitch.back_label', guildId))
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        await updateV2Interaction(interaction.client, interaction, "🗑️ **Supprimer un streamer**", [row, rowBack]);
+        await updateV2Interaction(interaction.client, interaction, await t('notifications.handler.twitch.delete_title', guildId), [row, rowBack]);
     } else if (customId === 'twitch_delete_select') {
         if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
         const alertId = interaction.values[0];
@@ -103,12 +116,12 @@ async function handleTwitchInteraction(client, interaction, config) {
         await showTwitchMenu(interaction, config);
     } else if (customId === 'twitch_list') {
         const alerts = await TwitchAlert.find({ guildId: interaction.guildId });
-        let content = "**📺 Liste des streamers suivis :**\n\n";
-        if (alerts.length === 0) content += "Aucun streamer configuré.";
+        let content = await t('notifications.handler.twitch.list_title', guildId);
+        if (alerts.length === 0) content += await t('notifications.handler.twitch.list_empty', guildId);
         else {
-            alerts.forEach(alert => {
-                content += `• **${alert.channelName}** -> <#${alert.discordChannelId}>\n`;
-            });
+            for (const alert of alerts) {
+                content += await t('notifications.handler.twitch.channel_list', guildId, { channelName: alert.channelName, channelId: alert.discordChannelId }) + '\n';
+            }
         }
         
         await replyV2Interaction(client, interaction, content, [], true);
@@ -116,31 +129,32 @@ async function handleTwitchInteraction(client, interaction, config) {
 }
 
 async function showTwitchMenu(interaction, config) {
+    const guildId = interaction.guildId || interaction.guild.id;
     const isEnabled = config.twitch?.enabled;
-    const status = isEnabled ? "✅ Activé" : "❌ Désactivé";
+    const status = isEnabled ? await t('notifications.handler.twitch.enabled', guildId) : await t('notifications.handler.twitch.disabled', guildId);
     const btnStyle = isEnabled ? ButtonStyle.Success : ButtonStyle.Danger;
 
     const row = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('twitch_toggle')
-                .setLabel(`Système: ${isEnabled ? 'ON' : 'OFF'}`)
+                .setLabel(await t('notifications.handler.twitch.btn_system', guildId, { state: isEnabled ? 'ON' : 'OFF' }))
                 .setStyle(btnStyle),
             new ButtonBuilder()
                 .setCustomId('twitch_add')
-                .setLabel('Ajouter Streamer')
+                .setLabel(await t('notifications.handler.twitch.btn_add', guildId))
                 .setStyle(ButtonStyle.Primary),
             new ButtonBuilder()
                 .setCustomId('twitch_del_menu')
-                .setLabel('Supprimer Streamer')
+                .setLabel(await t('notifications.handler.twitch.btn_del', guildId))
                 .setStyle(ButtonStyle.Danger),
             new ButtonBuilder()
                 .setCustomId('twitch_list')
-                .setLabel('Voir Liste')
+                .setLabel(await t('notifications.handler.twitch.btn_list', guildId))
                 .setStyle(ButtonStyle.Secondary)
         );
 
-    const content = `**🟣 Configuration Twitch**\n\nÉtat du système : **${status}**\n\nConfigurez ici les alertes de stream Twitch.`;
+    const content = await t('notifications.handler.twitch.config_title', guildId, { status });
 
     // Handle Message object (legacy command)
     if (!interaction.token) {
@@ -160,6 +174,7 @@ async function showTwitchMenu(interaction, config) {
 
 async function handleJoinInteraction(client, interaction, config) {
     const { customId } = interaction;
+    const guildId = interaction.guildId;
 
     if (customId === 'join_home') {
         await showJoinMenu(interaction, config);
@@ -185,13 +200,13 @@ async function handleJoinInteraction(client, interaction, config) {
     } else if (customId === 'join_message_btn') {
         const modal = new ModalBuilder()
             .setCustomId('join_message_modal')
-            .setTitle('Message de bienvenue');
+            .setTitle(await t('notifications.handler.join.modal_title', guildId));
 
         const msgInput = new TextInputBuilder()
             .setCustomId('join_msg_input')
-            .setLabel("Message (Variables: {user}, {server})")
+            .setLabel(await t('notifications.handler.join.msg_label', guildId))
             .setStyle(TextInputStyle.Paragraph)
-            .setValue(config.welcome.message || "Bienvenue {user} sur {server} !")
+            .setValue(config.welcome.message || await t('notifications.handler.join.default_message', guildId))
             .setRequired(true);
 
         modal.addComponents(new ActionRowBuilder().addComponents(msgInput));
@@ -200,25 +215,34 @@ async function handleJoinInteraction(client, interaction, config) {
         const msg = interaction.fields.getTextInputValue('join_msg_input');
         config.welcome.message = msg;
         await config.save();
-        await replyV2Interaction(client, interaction, "✅ Message de bienvenue mis à jour !", [], true);
+
+        const rowBack = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('join_home')
+                    .setLabel(await t('notifications.handler.twitch.back_label', guildId))
+                    .setStyle(ButtonStyle.Secondary)
+            );
+        await replyV2Interaction(client, interaction, await t('notifications.handler.join.msg_updated', guildId), [rowBack], true);
     }
 }
 
 async function showJoinMenu(interaction, config) {
+    const guildId = interaction.guildId || interaction.guild.id;
     const welcome = config.welcome;
-    const status = welcome.enabled ? "✅ Activé" : "❌ Désactivé";
-    const channel = welcome.channelId ? `<#${welcome.channelId}>` : "Non défini";
-    const message = welcome.message || "Non défini";
+    const status = welcome.enabled ? await t('notifications.handler.twitch.enabled', guildId) : await t('notifications.handler.twitch.disabled', guildId);
+    const channel = welcome.channelId ? `<#${welcome.channelId}>` : await t('notifications.handler.common.undefined', guildId);
+    const message = welcome.message || await t('notifications.handler.common.undefined', guildId);
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('join_toggle')
-                .setLabel(welcome.enabled ? 'Désactiver' : 'Activer')
+                .setLabel(welcome.enabled ? await t('notifications.handler.join.btn_toggle_off', guildId) : await t('notifications.handler.join.btn_toggle_on', guildId))
                 .setStyle(welcome.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
             new ButtonBuilder()
                 .setCustomId('join_message_btn')
-                .setLabel('Modifier Message')
+                .setLabel(await t('notifications.handler.join.btn_edit', guildId))
                 .setStyle(ButtonStyle.Primary)
         );
 
@@ -226,14 +250,11 @@ async function showJoinMenu(interaction, config) {
         .addComponents(
             new ChannelSelectMenuBuilder()
                 .setCustomId('join_channel_select')
-                .setPlaceholder('Choisir le salon de bienvenue')
+                .setPlaceholder(await t('notifications.handler.join.select_placeholder', guildId))
                 .setChannelTypes(ChannelType.GuildText)
         );
 
-    const content = `**👋 Configuration Arrivées (Welcome)**\n\n` +
-                    `État : **${status}**\n` +
-                    `Salon : ${channel}\n` +
-                    `Message : \n\`\`\`${message}\`\`\``;
+    const content = await t('notifications.handler.join.config_title', guildId, { status, channel, message });
 
     // Handle Message object (legacy command)
     if (!interaction.token) {
@@ -251,6 +272,7 @@ async function showJoinMenu(interaction, config) {
 
 async function handleLeaveInteraction(client, interaction, config) {
     const { customId } = interaction;
+    const guildId = interaction.guildId;
 
     if (customId === 'leave_home') {
         await showLeaveMenu(interaction, config);
@@ -267,13 +289,13 @@ async function handleLeaveInteraction(client, interaction, config) {
     } else if (customId === 'leave_message_btn') {
         const modal = new ModalBuilder()
             .setCustomId('leave_message_modal')
-            .setTitle('Message de départ');
+            .setTitle(await t('notifications.handler.leave.modal_title', guildId));
 
         const msgInput = new TextInputBuilder()
             .setCustomId('leave_msg_input')
-            .setLabel("Message (Variables: {user}, {server})")
+            .setLabel(await t('notifications.handler.leave.msg_label', guildId))
             .setStyle(TextInputStyle.Paragraph)
-            .setValue(config.goodbye.message || "Au revoir {user} !")
+            .setValue(config.goodbye.message || await t('notifications.handler.leave.default_message', guildId))
             .setRequired(true);
 
         modal.addComponents(new ActionRowBuilder().addComponents(msgInput));
@@ -282,25 +304,35 @@ async function handleLeaveInteraction(client, interaction, config) {
         const msg = interaction.fields.getTextInputValue('leave_msg_input');
         config.goodbye.message = msg;
         await config.save();
-        await replyV2Interaction(client, interaction, "✅ Message de départ mis à jour !", [], true);
+
+        const rowBack = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('leave_home')
+                    .setLabel(await t('notifications.handler.twitch.back_label', guildId))
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        await replyV2Interaction(client, interaction, await t('notifications.handler.leave.msg_updated', guildId), [rowBack], true);
     }
 }
 
 async function showLeaveMenu(interaction, config) {
+    const guildId = interaction.guildId || interaction.guild.id;
     const goodbye = config.goodbye;
-    const status = goodbye.enabled ? "✅ Activé" : "❌ Désactivé";
-    const channel = goodbye.channelId ? `<#${goodbye.channelId}>` : "Non défini";
-    const message = goodbye.message || "Non défini";
+    const status = goodbye.enabled ? await t('notifications.handler.twitch.enabled', guildId) : await t('notifications.handler.twitch.disabled', guildId);
+    const channel = goodbye.channelId ? `<#${goodbye.channelId}>` : await t('notifications.handler.common.undefined', guildId);
+    const message = goodbye.message || await t('notifications.handler.common.undefined', guildId);
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('leave_toggle')
-                .setLabel(goodbye.enabled ? 'Désactiver' : 'Activer')
+                .setLabel(goodbye.enabled ? await t('notifications.handler.leave.btn_toggle_off', guildId) : await t('notifications.handler.leave.btn_toggle_on', guildId))
                 .setStyle(goodbye.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
             new ButtonBuilder()
                 .setCustomId('leave_message_btn')
-                .setLabel('Modifier Message')
+                .setLabel(await t('notifications.handler.leave.btn_edit', guildId))
                 .setStyle(ButtonStyle.Primary)
         );
 
@@ -308,14 +340,11 @@ async function showLeaveMenu(interaction, config) {
         .addComponents(
             new ChannelSelectMenuBuilder()
                 .setCustomId('leave_channel_select')
-                .setPlaceholder('Choisir le salon de départ')
+                .setPlaceholder(await t('notifications.handler.leave.select_placeholder', guildId))
                 .setChannelTypes(ChannelType.GuildText)
         );
 
-    const content = `**👋 Configuration Départs (Goodbye)**\n\n` +
-                    `État : **${status}**\n` +
-                    `Salon : ${channel}\n` +
-                    `Message : \n\`\`\`${message}\`\`\``;
+    const content = await t('notifications.handler.leave.config_title', guildId, { status, channel, message });
 
     // Handle Message object (legacy command)
     if (!interaction.token) {

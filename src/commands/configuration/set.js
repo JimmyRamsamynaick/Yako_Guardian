@@ -4,6 +4,7 @@ const { db } = require('../../database');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const axios = require('axios');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'set',
@@ -13,7 +14,7 @@ module.exports = {
     async run(client, message, args) {
         // Permission check: Administrator
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-             return sendV2Message(client, message.channel.id, "❌ Vous devez être administrateur pour utiliser cette commande.", []);
+             return sendV2Message(client, message.channel.id, await t('set.permission', message.guild.id), []);
         }
 
         const type = args[0]?.toLowerCase();
@@ -21,7 +22,7 @@ module.exports = {
 
         if (!type || !value) {
             return sendV2Message(client, message.channel.id, 
-                "**Usage:** `+set <option> <valeur>`\n\n`name <pseudo>` : Change le pseudo du bot.\n`vocal <ID/on/off>` : Connecte le bot en vocal.\n`pic <url>` : Change l'avatar du bot.\n`banner <url>` : Change la bannière du bot.\n`perm <commande> <rôle/membre>` : Autorise une commande.", 
+                await t('set.usage', message.guild.id), 
             []);
         }
 
@@ -38,7 +39,7 @@ module.exports = {
             const targetStr = args[2];
 
             if (!cmdName || !targetStr) {
-                return sendV2Message(client, message.channel.id, "**Usage:** `+set perm <commande> <@rôle/@membre>`", []);
+                return sendV2Message(client, message.channel.id, await t('set.usage_perm', message.guild.id), []);
             }
 
             // Resolve target
@@ -52,7 +53,7 @@ module.exports = {
                 const id = targetStr.replace(/[<@&>]/g, '');
                 if (message.guild.roles.cache.has(id)) roleId = id;
                 else if (await client.users.fetch(id).catch(() => null)) userId = id;
-                else return sendV2Message(client, message.channel.id, "❌ Rôle ou membre introuvable.", []);
+                else return sendV2Message(client, message.channel.id, await t('set.target_not_found', message.guild.id), []);
             }
 
             try {
@@ -71,19 +72,20 @@ module.exports = {
                 });
 
                 await config.save();
-                return sendV2Message(client, message.channel.id, `✅ Permission ajoutée : La commande \`${cmdName}\` est maintenant autorisée pour ${roleId ? `<@&${roleId}>` : `<@${userId}>`}.`, []);
+                const target = roleId ? `<@&${roleId}>` : `<@${userId}>`;
+                return sendV2Message(client, message.channel.id, await t('set.perm_added', message.guild.id, { command: cmdName, target }), []);
 
             } catch (e) {
                 console.error(e);
-                return sendV2Message(client, message.channel.id, "❌ Erreur lors de l'enregistrement de la permission.", []);
+                return sendV2Message(client, message.channel.id, await t('set.perm_error', message.guild.id), []);
             }
         }
         else if (type === 'name') {
             try {
                 await message.guild.members.me.setNickname(value);
-                return sendV2Message(client, message.channel.id, `✅ Pseudo du bot modifié en **${value}** sur ce serveur.`, []);
+                return sendV2Message(client, message.channel.id, await t('set.name_success', message.guild.id, { name: value }), []);
             } catch (e) {
-                return sendV2Message(client, message.channel.id, `❌ Impossible de changer le pseudo (Permissions insuffisantes ?).`, []);
+                return sendV2Message(client, message.channel.id, await t('set.name_error', message.guild.id), []);
             }
         } 
         else if (type === 'vocal' || type === 'vc') {
@@ -97,20 +99,20 @@ module.exports = {
                 const connection = require('@discordjs/voice').getVoiceConnection(message.guild.id);
                 if (connection) connection.destroy();
                 db.prepare('UPDATE guild_settings SET voice_channel = ? WHERE guild_id = ?').run(null, message.guild.id);
-                return sendV2Message(client, message.channel.id, "✅ Déconnecté du salon vocal.", []);
+                return sendV2Message(client, message.channel.id, await t('set.vocal_off_success', message.guild.id), []);
             }
             
             let channelId = value;
             if (value === 'on') {
                 if (!message.member.voice.channel) {
-                    return sendV2Message(client, message.channel.id, "❌ Vous devez être dans un salon vocal ou spécifier un ID.", []);
+                    return sendV2Message(client, message.channel.id, await t('set.vocal_usage', message.guild.id), []);
                 }
                 channelId = message.member.voice.channel.id;
             }
 
             const channel = message.guild.channels.cache.get(channelId);
             if (!channel || !channel.isVoiceBased()) {
-                return sendV2Message(client, message.channel.id, `❌ Salon vocal introuvable ou ID invalide (${channelId || 'Aucun'}).`, []);
+                return sendV2Message(client, message.channel.id, await t('set.vocal_not_found', message.guild.id, { id: channelId || 'Aucun' }), []);
             }
 
             try {
@@ -121,9 +123,9 @@ module.exports = {
                     selfDeaf: true
                 });
                 db.prepare('UPDATE guild_settings SET voice_channel = ? WHERE guild_id = ?').run(channel.id, message.guild.id);
-                return sendV2Message(client, message.channel.id, `✅ Connecté au salon vocal **${channel.name}**.`, []);
+                return sendV2Message(client, message.channel.id, await t('set.vocal_success', message.guild.id, { channel: channel.name }), []);
             } catch (e) {
-                return sendV2Message(client, message.channel.id, `❌ Erreur de connexion: ${e.message}`, []);
+                return sendV2Message(client, message.channel.id, await t('set.vocal_error', message.guild.id, { error: e.message }), []);
             }
         }
         else if (type === 'pic' || type === 'avatar') {
@@ -133,11 +135,11 @@ module.exports = {
                 await client.rest.patch(Routes.guildMember(message.guild.id, '@me'), {
                     body: { avatar: dataUri }
                 });
-                return sendV2Message(client, message.channel.id, "✅ Avatar de serveur modifié avec succès ! (Si vous ne le voyez pas, faites Ctrl+R)", []);
+                return sendV2Message(client, message.channel.id, await t('set.avatar_success', message.guild.id), []);
             } catch (e) {
                 console.error("Set Pic Error:", e);
                 const errorMsg = e.rawError?.message || e.message;
-                return sendV2Message(client, message.channel.id, `❌ Échec de la modification de l'avatar : ${errorMsg}`, []);
+                return sendV2Message(client, message.channel.id, await t('set.avatar_error', message.guild.id, { error: errorMsg }), []);
             }
         }
         else if (type === 'banner') {
@@ -147,11 +149,11 @@ module.exports = {
                 await client.rest.patch(Routes.guildMember(message.guild.id, '@me'), {
                     body: { banner: dataUri }
                 });
-                return sendV2Message(client, message.channel.id, "✅ Bannière de serveur modifiée avec succès ! (Si vous ne le voyez pas, faites Ctrl+R)", []);
+                return sendV2Message(client, message.channel.id, await t('set.banner_success', message.guild.id), []);
             } catch (e) {
                 console.error("Set Banner Error:", e);
                 const errorMsg = e.rawError?.message || e.message;
-                return sendV2Message(client, message.channel.id, `❌ Échec de la modification de la bannière : ${errorMsg}`, []);
+                return sendV2Message(client, message.channel.id, await t('set.banner_error', message.guild.id, { error: errorMsg }), []);
             }
         }
         else if (type === 'profil') {
@@ -160,24 +162,24 @@ module.exports = {
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('btn_set_profil')
-                    .setLabel('Ouvrir le menu de modification')
+                    .setLabel(await t('set.profil_button', message.guild.id))
                     .setStyle(ButtonStyle.Primary)
                     .setEmoji('✏️')
             );
             
-            return sendV2Message(client, message.channel.id, "Cliquez ci-dessous pour modifier le profil du bot (Pseudo, Avatar, Bannière) en une fois.", [row]);
+            return sendV2Message(client, message.channel.id, await t('set.profil_message', message.guild.id), [row]);
         }
         else if (type === 'lang' || type === 'language') {
             const lang = value.toLowerCase();
             if (!['fr', 'en'].includes(lang)) {
-                 return sendV2Message(client, message.channel.id, "❌ Langues disponibles: `fr`, `en`.\nPour une langue personnalisée, utilisez `+lang custom`.", []);
+                 return sendV2Message(client, message.channel.id, await t('set.lang_invalid', message.guild.id), []);
             }
             
             db.prepare('UPDATE guild_settings SET language = ? WHERE guild_id = ?').run(lang, message.guild.id);
-            return sendV2Message(client, message.channel.id, `✅ Langue définie sur **${lang.toUpperCase()}**.`, []);
+            return sendV2Message(client, message.channel.id, await t('set.lang_success', message.guild.id, { lang: lang.toUpperCase() }), []);
         }
         else {
-            return sendV2Message(client, message.channel.id, "❌ Option invalide. Voir `+set`.", []);
+            return sendV2Message(client, message.channel.id, await t('set.invalid_option', message.guild.id), []);
         }
     }
 };

@@ -1,5 +1,6 @@
 const { sendV2Message } = require('../../utils/componentUtils');
 const ActiveTicket = require('../../database/models/ActiveTicket');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'rename',
@@ -8,19 +9,19 @@ module.exports = {
     async run(client, message, args) {
         const ticket = await ActiveTicket.findOne({ channelId: message.channel.id });
         if (!ticket) {
-            return sendV2Message(client, message.channel.id, "❌ Ce salon n'est pas un ticket actif.", []);
+            return sendV2Message(client, message.channel.id, await t('ticket_rename.not_ticket', message.guild.id), []);
         }
 
         const newName = args.join('-');
         if (!newName) {
-            return sendV2Message(client, message.channel.id, "**Usage:** `+rename <nouveau-nom>`", []);
+            return sendV2Message(client, message.channel.id, await t('ticket_rename.usage', message.guild.id), []);
         }
 
         try {
             await message.channel.setName(newName);
-            return sendV2Message(client, message.channel.id, `✅ Ticket renommé en **${newName}**.`, []);
+            return sendV2Message(client, message.channel.id, await t('ticket_rename.success', message.guild.id, { name: newName }), []);
         } catch (e) {
-            return sendV2Message(client, message.channel.id, "❌ Impossible de renommer le salon (Rate limit ou Permissions).", []);
+            return sendV2Message(client, message.channel.id, await t('ticket_rename.error', message.guild.id), []);
         }
     }
 };

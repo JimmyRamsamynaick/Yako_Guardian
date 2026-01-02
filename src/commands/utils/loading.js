@@ -1,4 +1,5 @@
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 function parseDuration(str) {
     const match = str.match(/^(\d+)([s])$/);
@@ -13,16 +14,16 @@ module.exports = {
     category: 'Utilitaire',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageMessages') && message.author.id !== message.guild.ownerId) {
-            return sendV2Message(client, message.channel.id, "❌ Permission `Gérer les messages` requise.", []);
+            return sendV2Message(client, message.channel.id, await t('loading.permission', message.guild.id), []);
         }
 
         const durationStr = args[0];
-        const text = args.slice(1).join(' ') || 'Chargement en cours...';
+        const text = args.slice(1).join(' ') || await t('loading.default_text', message.guild.id);
 
         const duration = durationStr ? parseDuration(durationStr) : 5000;
         
         if (!durationStr || !duration) {
-            return sendV2Message(client, message.channel.id, "**Utilisation:** `+loading <durée_secondes>s [message]`\nExemple: `+loading 5s Initialisation...`", []);
+            return sendV2Message(client, message.channel.id, await t('loading.usage', message.guild.id), []);
         }
 
         const steps = 10;
@@ -41,7 +42,7 @@ module.exports = {
             try {
                 if (progress >= steps) {
                     clearInterval(timer);
-                    await msg.edit(`⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ 100% - ${text} **Terminé !**`);
+                    await msg.edit(`⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛ 100% - ${text} ${await t('loading.finished', message.guild.id)}`);
                 } else {
                     await msg.edit(`${filled}${empty} ${percentage}% - ${text}`);
                 }

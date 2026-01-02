@@ -1,5 +1,6 @@
 const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
+const { t } = require('../../utils/i18n');
 
 const { sendV2Message } = require('../../utils/componentUtils');
 
@@ -9,7 +10,7 @@ module.exports = {
     category: 'Menus & Rôles',
     async execute(client, message, args) { // Added client
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return sendV2Message(client, message.channel.id, "❌ Vous n'avez pas la permission (Administrator requis).", []);
+            return sendV2Message(client, message.channel.id, await t('roles.soutien.permission', message.guild.id), []);
         }
 
         const sub = args[0]?.toLowerCase();
@@ -22,34 +23,38 @@ module.exports = {
         const soutien = config.soutien || { enabled: false };
 
         if (!sub || sub === 'info') {
-            return sendV2Message(client, message.channel.id, `**Configuration Soutien**\nÉtat: ${soutien.enabled ? '✅' : '❌'}\nRôle: ${soutien.roleId ? `<@&${soutien.roleId}>` : 'Non défini'}\nStatut requis: \`${soutien.statusText || 'Non défini'}\`\n\nCommandes:\n\`+soutien role <rôle>\`\n\`+soutien status <texte>\`\n\`+soutien on/off\``, []);
+            return sendV2Message(client, message.channel.id, await t('roles.soutien.info', message.guild.id, {
+                enabled: soutien.enabled ? '✅' : '❌',
+                role: soutien.roleId ? `<@&${soutien.roleId}>` : 'Non défini',
+                status: soutien.statusText || 'Non défini'
+            }), []);
         }
 
         if (sub === 'on') {
             config.soutien.enabled = true;
             await config.save();
-            return sendV2Message(client, message.channel.id, "✅ Système de soutien activé.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.soutien.enabled', message.guild.id), []);
         }
         if (sub === 'off') {
             config.soutien.enabled = false;
             await config.save();
-            return sendV2Message(client, message.channel.id, "✅ Système de soutien désactivé.", []);
+            return sendV2Message(client, message.channel.id, await t('roles.soutien.disabled', message.guild.id), []);
         }
 
         if (sub === 'role') {
             const role = message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
-            if (!role) return sendV2Message(client, message.channel.id, "❌ Rôle invalide.", []);
+            if (!role) return sendV2Message(client, message.channel.id, await t('roles.soutien.invalid_role', message.guild.id), []);
             config.soutien.roleId = role.id;
             await config.save();
-            return sendV2Message(client, message.channel.id, `✅ Rôle de soutien défini sur **${role.name}**.`, []);
+            return sendV2Message(client, message.channel.id, await t('roles.soutien.role_set', message.guild.id, { role: role.name }), []);
         }
 
         if (sub === 'status' || sub === 'statut') {
             const text = args.slice(1).join(' ');
-            if (!text) return sendV2Message(client, message.channel.id, "❌ Texte invalide.", []);
+            if (!text) return sendV2Message(client, message.channel.id, await t('roles.soutien.invalid_text', message.guild.id), []);
             config.soutien.statusText = text;
             await config.save();
-            return sendV2Message(client, message.channel.id, `✅ Statut requis défini sur : \`${text}\`.`, []);
+            return sendV2Message(client, message.channel.id, await t('roles.soutien.status_set', message.guild.id, { text }), []);
         }
     }
 };

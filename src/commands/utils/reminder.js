@@ -1,6 +1,7 @@
 const Reminder = require('../../database/models/Reminder');
 const { parseDuration, formatDuration } = require('../../utils/timeUtils');
 const { sendV2Message } = require('../../utils/componentUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'reminder',
@@ -20,14 +21,14 @@ module.exports = {
 
 async function createReminder(client, message, args) {
     if (args.length < 2) {
-        return sendV2Message(client, message.channel.id, "Utilisation: `+reminder <durée> <message>`\nExemple: `+reminder 10m Sortir les poubelles`", []);
+        return sendV2Message(client, message.channel.id, await t('reminder.usage', message.guild.id), []);
     }
 
     const durationStr = args[0];
     const duration = parseDuration(durationStr);
 
     if (!duration) {
-        return sendV2Message(client, message.channel.id, "⚠️ Durée invalide. Formats acceptés: `10s`, `5m`, `2h`, `1d`.", []);
+        return sendV2Message(client, message.channel.id, await t('reminder.invalid_duration', message.guild.id), []);
     }
 
     const content = args.slice(1).join(' ');
@@ -42,10 +43,10 @@ async function createReminder(client, message, args) {
             expiresAt: expiresAt
         });
 
-        sendV2Message(client, message.channel.id, `✅ Rappel défini pour dans **${formatDuration(duration)}** : "${content}"`, []);
+        sendV2Message(client, message.channel.id, await t('reminder.success', message.guild.id, { duration: formatDuration(duration), content: content }), []);
     } catch (e) {
         console.error(e);
-        sendV2Message(client, message.channel.id, "❌ Une erreur est survenue lors de la création du rappel.", []);
+        sendV2Message(client, message.channel.id, await t('reminder.error', message.guild.id), []);
     }
 }
 
@@ -53,15 +54,16 @@ async function listReminders(client, message) {
     const reminders = await Reminder.find({ userId: message.author.id, guildId: message.guild.id }).sort({ expiresAt: 1 });
 
     if (reminders.length === 0) {
-        return sendV2Message(client, message.channel.id, "Vous n'avez aucun rappel en attente.", []);
+        return sendV2Message(client, message.channel.id, await t('reminder.empty', message.guild.id), []);
     }
 
-    let content = "**⏰ Vos rappels :**\n\n";
-    reminders.forEach((rem, index) => {
+    let content = (await t('reminder.list_title', message.guild.id)) + "\n\n";
+    for (let i = 0; i < reminders.length; i++) {
+        const rem = reminders[i];
         const timeLeft = rem.expiresAt - Date.now();
-        const timeStr = timeLeft > 0 ? formatDuration(timeLeft) : "Expiré";
-        content += `**${index + 1}.** "${rem.content}" (Dans: ${timeStr})\n`;
-    });
+        const timeStr = timeLeft > 0 ? formatDuration(timeLeft) : await t('reminder.expired', message.guild.id);
+        content += `**${i + 1}.** "${rem.content}" (${timeStr})\n`;
+    }
 
     sendV2Message(client, message.channel.id, content, []);
 }

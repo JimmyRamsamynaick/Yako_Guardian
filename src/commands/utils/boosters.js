@@ -1,4 +1,5 @@
 const { createPagination } = require('../../utils/pagination');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'boosters',
@@ -13,6 +14,6 @@ module.exports = {
             .filter(m => m.premiumSince)
             .map(m => `${m.user.tag} (depuis <t:${Math.floor(m.premiumSinceTimestamp / 1000)}:R>)`);
             
-        await createPagination(client, message, boosters, 10, 'Liste des Boosters');
+        await createPagination(client, message, boosters, 10, await t('boosters.title', message.guild.id));
     }
 };
