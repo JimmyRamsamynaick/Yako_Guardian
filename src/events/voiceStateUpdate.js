@@ -2,6 +2,7 @@ const TempVocConfig = require('../database/models/TempVocConfig');
 const ActiveTempVoc = require('../database/models/ActiveTempVoc');
 const { ChannelType, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { t } = require('../utils/i18n');
+const { createEmbed } = require('../utils/design');
 
 module.exports = {
     name: 'voiceStateUpdate',

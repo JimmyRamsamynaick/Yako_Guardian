@@ -62,6 +62,10 @@ function createEmbed(title, description, type = 'default', options = {}) {
             color = THEME.colors.error;
             icon = THEME.icons.mod;
             break;
+        case 'info':
+            color = THEME.colors.info;
+            icon = THEME.icons.info;
+            break;
     }
 
     // Add icon to title if present

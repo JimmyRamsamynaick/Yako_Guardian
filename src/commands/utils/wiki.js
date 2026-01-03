@@ -21,8 +21,14 @@ module.exports = {
                  return message.channel.send({ embeds: [createEmbed(await t('wiki.not_found', message.guild.id), '', 'error')] });
             }
 
-            const info = `**${data.title}**\n${data.extract}\n\n` + await t('wiki.read_more', message.guild.id, { url: data.content_urls.desktop.page });
-            await message.channel.send({ embeds: [createEmbed(info, '', 'info')] });
+            const description = `${data.extract}\n\n` + await t('wiki.read_more', message.guild.id, { url: data.content_urls.desktop.page });
+            
+            const options = {};
+            if (data.thumbnail && data.thumbnail.source) {
+                options.thumbnail = data.thumbnail.source;
+            }
+
+            await message.channel.send({ embeds: [createEmbed(data.title, description, 'info', options)] });
         } catch (e) {
             console.error(e);
             if (e.response && e.response.status === 404) {
