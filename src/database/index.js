@@ -68,6 +68,7 @@ function initDatabase() {
             module TEXT, -- antiban, antieveryone, antideco, etc.
             limit_count INTEGER,
             limit_time INTEGER, -- milliseconds
+            sanction TEXT, -- kick, ban, derank, mute, warn
             PRIMARY KEY (guild_id, module)
         )
     `);

@@ -698,6 +698,37 @@
         "description": "Gère le système de permissions par niveaux (1-5)",
         "usage": "**Utilisation:** `+perms`"
     },
+    "secur": {
+        "panel_title": "🛡️ Panneau de Sécurité",
+        "modules_title": "**Modules :**",
+        "footer": "Utilisez le menu ci-dessous pour configurer chaque module.",
+        "placeholder": "Sélectionnez un module...",
+        "module_antitoken": "Anti-Token",
+        "desc_antitoken": "Protection contre les raids de tokens",
+        "module_antibot": "Anti-Bot",
+        "desc_antibot": "Empêche les bots non vérifiés de rejoindre",
+        "module_antiban": "Anti-Ban",
+        "desc_antiban": "Limite le nombre de bannissements",
+        "module_antichannel": "Anti-Channel",
+        "desc_antichannel": "Protection contre suppression/création de salons",
+        "module_antirole": "Anti-Role",
+        "desc_antirole": "Protection contre suppression/création de rôles",
+        "module_antiwebhook": "Anti-Webhook",
+        "desc_antiwebhook": "Empêche la création de webhooks",
+        "module_antieveryone": "Anti-Everyone",
+        "desc_antieveryone": "Empêche les mentions @everyone/@here",
+        "module_antiupdate": "Anti-Update",
+        "desc_antiupdate": "Protection contre la modification du serveur",
+        "module_antideco": "Anti-Deco",
+        "desc_antideco": "Protection contre la déconnexion en masse",
+        "btn_all_on": "Tout Activer",
+        "btn_all_max": "Tout Maximum",
+        "btn_all_off": "Tout Désactiver",
+        "btn_refresh": "Rafraîchir",
+        "btn_config_action": "CONFIG",
+        "config_limit_label": "Nombre d'actions (Strike)",
+        "config_time_label": "Temps (ms)"
+    },
     "set": {
         "permission": "❌ Permission Administrateur requise.",
         "usage": "**Utilisation:** `+set <type> <valeur>`",
@@ -906,6 +937,7 @@
         "claimed_by": "Pris par"
     },
     "antiraid": {
+        "reason_prefix": "[Anti-Raid] Détection : {{module}}",
         "reasons": {
             "anti_channel": "Yako Guardian | Anti-Channel",
             "anti_channel_restore": "Yako Guardian | Restauration Anti-Channel",
@@ -929,6 +961,9 @@
             "kick_failed_desc": "Impossible d'expulser {{tag}}.\n**Raison:** {{reason}}\n**Erreur:** Permissions insuffisantes ou hiérarchie.",
             "deranked": "📉 Membre Derank",
             "deranked_desc": "**Utilisateur:** {{tag}} (<@{{id}}>)\n**Raison:** {{reason}}",
+            "muted": "🔇 Membre Exclu (Mute)",
+            "muted_desc": "**Utilisateur:** {{tag}} (<@{{id}}>)\n**Raison:** {{reason}}",
+            "mute_failed_desc": "Impossible d'exclure {{tag}}.\n**Raison:** {{reason}}\n**Erreur:** Permissions insuffisantes ou hiérarchie.",
             "log_title": "⚠️ ALERTE SÉCURITÉ | {{title}}",
             "footer": "Yako Guardian Security"
         }

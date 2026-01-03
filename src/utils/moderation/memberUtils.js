@@ -1,4 +1,5 @@
 const { GuildMember } = require('discord.js');
+const { t } = require('../i18n');
 
 /**
  * Resolves a single member from a string (ID, Mention, Username, Tag)

@@ -3,6 +3,7 @@ const { AuditLogEvent, PermissionsBitField } = require('discord.js');
 const logger = require('../logger');
 const { checkSubscription } = require('../subscription');
 const { t } = require('../i18n');
+const { createEmbed } = require('../design');
 
 // Cache for rate limits: guildId_userId_module -> { count, expires }
 const limitCache = new Map();
@@ -39,12 +40,19 @@ async function checkAntiraid(client, guild, member, moduleName, type = 'action')
     const limitConfig = db.prepare('SELECT * FROM module_limits WHERE guild_id = ? AND module = ?').get(guild.id, moduleName);
     
     // Defaults
-    let maxCount = limitConfig ? limitConfig.limit_count : 3;
-    let timeWindow = limitConfig ? limitConfig.limit_time : 10000; // 10s
+    let maxCount = 3;
+    let timeWindow = 10000; // 10s
 
+    // Apply 'max' preset defaults
     if (moduleState === 'max') {
         maxCount = 0; // Strict mode: 0 actions allowed (Trigger on 1st attempt)
         timeWindow = 60000;
+    }
+
+    // Apply Custom Overrides (Prioritize user config)
+    if (limitConfig) {
+        if (limitConfig.limit_count !== null) maxCount = limitConfig.limit_count;
+        if (limitConfig.limit_time !== null) timeWindow = limitConfig.limit_time;
     }
 
     const key = `${guild.id}_${member.id}_${moduleName}`;
@@ -60,8 +68,16 @@ async function checkAntiraid(client, guild, member, moduleName, type = 'action')
 
     if (userData.count > maxCount) {
         // Trigger Sanction
-        // If module is 'max', we enforce BAN sanction (override default)
-        const sanctionOverride = moduleState === 'max' ? 'ban' : null;
+        let sanctionOverride = null;
+        
+        if (moduleState === 'max') {
+            sanctionOverride = 'ban';
+        }
+        
+        // User config overrides 'max' preset
+        if (limitConfig && limitConfig.sanction) {
+            sanctionOverride = limitConfig.sanction;
+        }
         
         // Do NOT reset cache to ensure continued blocking during the window
         // limitCache.delete(key); 
@@ -74,9 +90,9 @@ async function checkAntiraid(client, guild, member, moduleName, type = 'action')
 
 async function executeSanction(client, guild, member, settings, reasonModule, sanctionOverride = null) {
     const sanctionType = sanctionOverride || settings.punition_antiraid || 'kick';
-    const reason = await t('antiraid.reason_prefix', guild.id, { module: reasonModule });
 
     try {
+        const reason = await t('antiraid.reason_prefix', guild.id, { module: reasonModule });
         if (sanctionType === 'ban') {
             if (member.bannable) {
                 // Delete messages from the last 7 days (604800 seconds)
@@ -94,14 +110,23 @@ async function executeSanction(client, guild, member, settings, reasonModule, sa
             }
         } else if (sanctionType === 'derank') {
             // Remove all roles
-            const roles = member.roles.cache.filter(r => r.name !== '@everyone' && r.editable);
+            const roles = member.roles.cache.filter(r => 
+                r.name !== '@everyone' && 
+                r.editable && 
+                !r.managed
+            );
             if (roles.size > 0) {
                 await member.roles.remove(roles, reason);
                 await logAction(guild, await t('antiraid.handler.deranked', guild.id), await t('antiraid.handler.deranked_desc', guild.id, { tag: member.user.tag, id: member.id, reason: reasonModule }), "#FFFF00", settings);
-            } else {
-                // If no roles removed, maybe because none were editable
-                // logAction(guild, `⚠️ **Sanction Incomplète**\nAucun rôle retiré à ${member.user.tag} (Hiérarchie).`, settings);
             }
+        } else if (sanctionType === 'mute') {
+             if (member.moderatable) {
+                // Mute for 1 hour by default
+                await member.timeout(60 * 60 * 1000, reason);
+                await logAction(guild, await t('antiraid.handler.muted', guild.id), await t('antiraid.handler.muted_desc', guild.id, { tag: member.user.tag, id: member.id, reason: reasonModule }), "#808080", settings);
+             } else {
+                await logAction(guild, await t('antiraid.handler.failed', guild.id), await t('antiraid.handler.mute_failed_desc', guild.id, { tag: member.user.tag, reason: reasonModule }), "#808080", settings);
+             }
         }
     } catch (err) {
         logger.error(`Failed to sanction ${member.user.tag}:`, err);
@@ -112,7 +137,7 @@ async function logAction(guild, title, description, color, settings) {
     if (settings.raid_log_channel) {
         const channel = guild.channels.cache.get(settings.raid_log_channel);
         if (channel) {
-            const embed = createEmbed(await t('antiraid.log_title', guild.id, { title }), description, 'default')
+            const embed = createEmbed(await t('antiraid.handler.log_title', guild.id, { title }), description, 'default')
                 .setColor(color)
                 .setTimestamp();
                 // .setFooter handled below
@@ -128,7 +153,7 @@ async function logAction(guild, title, description, color, settings) {
             
             // Ensure iconURL is valid string or null
             const iconURL = guild.iconURL();
-            const footerText = await t('antiraid.footer', guild.id);
+            const footerText = await t('antiraid.handler.footer', guild.id);
             if (iconURL) {
                  embed.setFooter({ text: footerText, iconURL: iconURL });
             } else {

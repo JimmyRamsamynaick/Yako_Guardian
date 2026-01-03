@@ -1,16 +1,17 @@
-const { PermissionsBitField } = require('discord.js');
+const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const GlobalSettings = require('../../database/models/GlobalSettings');
 const { t } = require('../../utils/i18n');
 const { createEmbed } = require('../../utils/design');
+const { sendSecurPanel } = require('../../handlers/componentHandler');
 
 module.exports = {
     name: 'security',
     description: 'Affiche le statut de sécurité du serveur',
     category: 'Antiraid',
     aliases: ['secur'],
-    usage: 'security status | secur invite <on/off> (Owner)',
+    usage: 'security status | secur config | secur invite <on/off> (Owner)',
     async run(client, message, args) {
         const sub = args[0]?.toLowerCase();
 
@@ -45,6 +46,11 @@ module.exports = {
                 '',
                 'error'
             )] });
+        }
+
+        if (sub === 'config') {
+            await sendSecurPanel(message, message.guild.id);
+            return;
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -88,7 +94,16 @@ module.exports = {
                     }
                 );
 
-            return message.channel.send({ embeds: [embed] });
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('secur_refresh') // Triggers the panel via componentHandler
+                        .setLabel('Configuration Avancée')
+                        .setStyle(ButtonStyle.Primary)
+                        .setEmoji('🛡️')
+                );
+
+            return message.channel.send({ embeds: [embed], components: [row] });
         }
     }
 };

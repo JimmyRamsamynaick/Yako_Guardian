@@ -281,6 +281,8 @@ async function handleRoleButton(client, interaction) {
     }
 }
 
+module.exports.handleSecurPanel = handleSecurPanel;
+
 async function handleBackup(client, interaction) {
     if (interaction.customId === 'backup_cancel') {
         await interaction.message.delete().catch(() => {});
@@ -331,26 +333,19 @@ async function handleBackup(client, interaction) {
 
 
 
-async function handleSecurPanel(client, interaction) {
-    const guildId = interaction.guild.id;
-    let settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
-    
-    // Helper to regenerate the panel
-    const generateStatusText = async (s) => {
-        const title = await t('secur.panel_title', interaction.guild.id);
-        const modules = await t('secur.modules_title', interaction.guild.id);
-        const footer = await t('secur.footer', interaction.guild.id);
+// Helper functions for Secur Panel
+const generateSecurStatusText = async (guildId, s) => {
+    const modules = await t('secur.modules_title', guildId);
+    const footer = await t('secur.footer', guildId);
 
-        const tr = async (key) => {
-            if (key === 'on') return await t('common.state_on', interaction.guild.id);
-            if (key === 'off') return await t('common.state_off', interaction.guild.id);
-            if (key === 'max') return await t('common.state_max', interaction.guild.id);
-            return key;
-        };
+    const tr = async (key) => {
+        if (key === 'on') return await t('common.state_on', guildId);
+        if (key === 'off') return await t('common.state_off', guildId);
+        if (key === 'max') return await t('common.state_max', guildId);
+        return key;
+    };
 
-        return `${title}
-            
-${modules}
+    return `${modules}
 \`Anti-Token\` : ${await tr(s.antitoken_level)}
 \`Anti-Update\` : ${await tr(s.antiupdate)}
 \`Anti-Channel\` : ${await tr(s.antichannel)}
@@ -363,8 +358,77 @@ ${modules}
 \`Anti-Deco\` : ${await tr(s.antideco)}
 
 ${footer}`;
-    };
+};
 
+const getSecurRowSelect = async (guildId) => new ActionRowBuilder()
+        .addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId('secur_select_module')
+                .setPlaceholder(await t('secur.placeholder', guildId))
+                .addOptions([
+                    { label: await t('secur.module_antitoken', guildId), value: 'antitoken_level', description: await t('secur.desc_antitoken', guildId), emoji: '🚪' },
+                    { label: await t('secur.module_antibot', guildId), value: 'antibot', description: await t('secur.desc_antibot', guildId), emoji: '🤖' },
+                    { label: await t('secur.module_antiban', guildId), value: 'antiban', description: await t('secur.desc_antiban', guildId), emoji: '🔨' },
+                    { label: await t('secur.module_antichannel', guildId), value: 'antichannel', description: await t('secur.desc_antichannel', guildId), emoji: '📺' },
+                    { label: await t('secur.module_antirole', guildId), value: 'antirole', description: await t('secur.desc_antirole', guildId), emoji: '🎭' },
+                    { label: await t('secur.module_antiwebhook', guildId), value: 'antiwebhook', description: await t('secur.desc_antiwebhook', guildId), emoji: '🔗' },
+                    { label: await t('secur.module_antieveryone', guildId), value: 'antieveryone', description: await t('secur.desc_antieveryone', guildId), emoji: '📢' },
+                    { label: await t('secur.module_antiupdate', guildId), value: 'antiupdate', description: await t('secur.desc_antiupdate', guildId), emoji: '⚙️' },
+                    { label: await t('secur.module_antideco', guildId), value: 'antideco', description: await t('secur.desc_antideco', guildId), emoji: '🔌' },
+                ])
+        );
+
+const getSecurRowButtons = async (guildId) => new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('secur_toggle_all_on')
+                .setLabel(await t('secur.btn_all_on', guildId))
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('secur_toggle_all_max')
+                .setLabel(await t('secur.btn_all_max', guildId))
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId('secur_toggle_all_off')
+                .setLabel(await t('secur.btn_all_off', guildId))
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId('secur_refresh')
+                .setLabel(await t('secur.btn_refresh', guildId))
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+const sendSecurPanel = async (target, guildId) => {
+    const settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    if (!settings) return; 
+    
+    const embed = createEmbed(await t('secur.panel_title', guildId), await generateSecurStatusText(guildId, settings), 'info');
+    const components = [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)];
+    
+    if (target.reply && typeof target.reply === 'function') {
+         // If interaction, we might want ephemeral? But user asked for panel. 
+         // If called from command, usually public or ephemeral depending on logic.
+         // Let's assume public if not specified.
+         // Actually, check if already replied.
+         if (target.replied || target.deferred) {
+             await target.editReply({ embeds: [embed], components });
+         } else {
+             await target.reply({ embeds: [embed], components });
+         }
+    } else {
+         await target.channel.send({ embeds: [embed], components });
+    }
+};
+
+module.exports.generateSecurStatusText = generateSecurStatusText;
+module.exports.getSecurRowSelect = getSecurRowSelect;
+module.exports.getSecurRowButtons = getSecurRowButtons;
+module.exports.sendSecurPanel = sendSecurPanel;
+
+async function handleSecurPanel(client, interaction) {
+    const guildId = interaction.guild.id;
+    let settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    
     if (!settings) {
         try {
              await interaction.reply({ embeds: [createEmbed(await t('handlers.secur_no_settings', interaction.guild.id), '', 'error')], ephemeral: true });
@@ -372,45 +436,57 @@ ${footer}`;
         return;
     }
     
-    const getRowSelect = async () => new ActionRowBuilder()
-            .addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('secur_select_module')
-                    .setPlaceholder(await t('secur.placeholder', interaction.guild.id))
-                    .addOptions([
-                        { label: await t('secur.module_antitoken', interaction.guild.id), value: 'antitoken_level', description: await t('secur.desc_antitoken', interaction.guild.id), emoji: '🚪' },
-                        { label: await t('secur.module_antibot', interaction.guild.id), value: 'antibot', description: await t('secur.desc_antibot', interaction.guild.id), emoji: '🤖' },
-                        { label: await t('secur.module_antiban', interaction.guild.id), value: 'antiban', description: await t('secur.desc_antiban', interaction.guild.id), emoji: '🔨' },
-                        { label: await t('secur.module_antichannel', interaction.guild.id), value: 'antichannel', description: await t('secur.desc_antichannel', interaction.guild.id), emoji: '📺' },
-                        { label: await t('secur.module_antirole', interaction.guild.id), value: 'antirole', description: await t('secur.desc_antirole', interaction.guild.id), emoji: '🎭' },
-                        { label: await t('secur.module_antiwebhook', interaction.guild.id), value: 'antiwebhook', description: await t('secur.desc_antiwebhook', interaction.guild.id), emoji: '🔗' },
-                        { label: await t('secur.module_antieveryone', interaction.guild.id), value: 'antieveryone', description: await t('secur.desc_antieveryone', interaction.guild.id), emoji: '📢' },
-                        { label: await t('secur.module_antiupdate', interaction.guild.id), value: 'antiupdate', description: await t('secur.desc_antiupdate', interaction.guild.id), emoji: '⚙️' },
-                        { label: await t('secur.module_antideco', interaction.guild.id), value: 'antideco', description: await t('secur.desc_antideco', interaction.guild.id), emoji: '🔌' },
-                    ])
-            );
-
-    const getRowButtons = async () => new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('secur_toggle_all_on')
-                    .setLabel(await t('secur.btn_all_on', interaction.guild.id))
-                    .setStyle(ButtonStyle.Success),
-                new ButtonBuilder()
-                    .setCustomId('secur_toggle_all_max')
-                    .setLabel(await t('secur.btn_all_max', interaction.guild.id))
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId('secur_toggle_all_off')
-                    .setLabel(await t('secur.btn_all_off', interaction.guild.id))
-                    .setStyle(ButtonStyle.Danger),
-                new ButtonBuilder()
-                    .setCustomId('secur_refresh')
-                    .setLabel(await t('secur.btn_refresh', interaction.guild.id))
-                    .setStyle(ButtonStyle.Secondary)
-            );
-
     // --- Handling Selections ---
+
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('secur_select_sanction_')) {
+        const moduleName = interaction.customId.replace('secur_select_sanction_', '');
+        const newSanction = interaction.values[0];
+
+        // Upsert sanction
+        db.prepare(`INSERT INTO module_limits (guild_id, module, sanction) VALUES (?, ?, ?) 
+            ON CONFLICT(guild_id, module) DO UPDATE SET sanction=excluded.sanction`)
+            .run(guildId, moduleName, newSanction);
+
+        // Re-display config
+        const limitConfig = db.prepare('SELECT * FROM module_limits WHERE guild_id = ? AND module = ?').get(guildId, moduleName);
+        const currentSanction = limitConfig?.sanction || 'kick';
+        const currentLimit = limitConfig?.limit_count || 3;
+        const currentTime = limitConfig?.limit_time || 10000;
+
+        const embed = createEmbed(
+            `**Configuration avancée : ${moduleName.toUpperCase()}**`,
+            `Paramètres actuels :\n• Sanction : **${currentSanction.toUpperCase()}**\n• Limite : **${currentLimit}** actions\n• Temps : **${currentTime}ms**`,
+            'success'
+        );
+
+        // Rebuild components (same as in config button)
+        const rowSanction = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId(`secur_select_sanction_${moduleName}`)
+                .setPlaceholder('Choisir une sanction')
+                .addOptions([
+                    { label: 'Kick (Expulser)', value: 'kick', emoji: '👢', default: currentSanction === 'kick' },
+                    { label: 'Ban (Bannir)', value: 'ban', emoji: '🔨', default: currentSanction === 'ban' },
+                    { label: 'Derank (Retirer rôles)', value: 'derank', emoji: '📉', default: currentSanction === 'derank' },
+                    { label: 'Mute (Exclure 1h)', value: 'mute', emoji: '🔇', default: currentSanction === 'mute' }
+                ])
+        );
+
+        const rowBtns = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`secur_btn_limits_${moduleName}`)
+                .setLabel('Modifier Limites (Strike/Temps)')
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId(`secur_select_module`) 
+                .setLabel('Retour Menu')
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId('secur_back_main')
+        );
+
+        await interaction.update({ embeds: [embed], components: [rowSanction, rowBtns] });
+        return;
+    }
 
     if (interaction.isStringSelectMenu() && interaction.customId === 'secur_select_module') {
         const module = interaction.values[0];
@@ -463,10 +539,10 @@ ${footer}`;
         if (interaction.customId === 'secur_back_main' || interaction.customId === 'secur_refresh') {
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
             try {
-                const statusText = await generateStatusText(settings);
+                const statusText = await generateSecurStatusText(guildId, settings);
                 await interaction.update({ 
-                    embeds: [createEmbed(statusText, '', 'info')], 
-                    components: [await getRowSelect(), await getRowButtons()] 
+                    embeds: [createEmbed(await t('secur.panel_title', guildId), statusText, 'info')], 
+                    components: [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)] 
                 });
             } catch (error) {
                 console.error("Error updating V2 secur panel (back/refresh):", error);
@@ -484,10 +560,10 @@ ${footer}`;
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
             try {
-                const statusText = await generateStatusText(settings);
+                const statusText = await generateSecurStatusText(guildId, settings);
                 await interaction.update({ 
-                    embeds: [createEmbed(statusText, '', 'info')], 
-                    components: [await getRowSelect(), await getRowButtons()] 
+                    embeds: [createEmbed(await t('secur.panel_title', guildId), statusText, 'info')], 
+                    components: [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)] 
                 });
             } catch (error) {
                 console.error("Error updating V2 secur panel (all on):", error);
@@ -505,10 +581,10 @@ ${footer}`;
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
             try {
-                const statusText = await generateStatusText(settings);
+                const statusText = await generateSecurStatusText(guildId, settings);
                 await interaction.update({ 
-                    embeds: [createEmbed(statusText, '', 'info')], 
-                    components: [await getRowSelect(), await getRowButtons()] 
+                    embeds: [createEmbed(await t('secur.panel_title', guildId), statusText, 'info')], 
+                    components: [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)] 
                 });
             } catch (error) {
                 console.error("Error updating V2 secur panel (all max):", error);
@@ -526,14 +602,39 @@ ${footer}`;
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
             try {
-                const statusText = await generateStatusText(settings);
+                const statusText = await generateSecurStatusText(guildId, settings);
                 await interaction.update({ 
-                    embeds: [createEmbed(statusText, '', 'info')], 
-                    components: [await getRowSelect(), await getRowButtons()] 
+                    embeds: [createEmbed(await t('secur.panel_title', guildId), statusText, 'info')], 
+                    components: [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)] 
                 });
             } catch (error) {
                 console.error("Error updating V2 secur panel (all off):", error);
             }
+            return;
+        }
+
+        // Handle Limit Button
+        const matchLimits = interaction.customId.match(/^secur_btn_limits_(.+)$/);
+        if (matchLimits) {
+            const moduleName = matchLimits[1];
+            const modal = new ModalBuilder()
+                .setCustomId(`secur_modal_${moduleName}`)
+                .setTitle(`Config ${moduleName}`);
+
+            const limitInput = new TextInputBuilder()
+                .setCustomId('limit_count')
+                .setLabel(await t('secur.config_limit_label', interaction.guild.id))
+                .setStyle(TextInputStyle.Short)
+                .setRequired(false);
+
+            const timeInput = new TextInputBuilder()
+                .setCustomId('limit_time')
+                .setLabel(await t('secur.config_time_label', interaction.guild.id))
+                .setStyle(TextInputStyle.Short)
+                .setRequired(false);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(limitInput), new ActionRowBuilder().addComponents(timeInput));
+            await interaction.showModal(modal);
             return;
         }
 
@@ -544,29 +645,42 @@ ${footer}`;
             const action = match[2];
 
             if (action === 'config') {
-                // Show modal for limits configuration
-                const modal = new ModalBuilder()
-                    .setCustomId(`secur_modal_${moduleName}`)
-                    .setTitle(`Config ${moduleName}`);
+                // Fetch existing config
+                const limitConfig = db.prepare('SELECT * FROM module_limits WHERE guild_id = ? AND module = ?').get(guildId, moduleName);
+                const currentSanction = limitConfig?.sanction || 'kick';
+                const currentLimit = limitConfig?.limit_count || 3;
+                const currentTime = limitConfig?.limit_time || 10000;
 
-                const limitInput = new TextInputBuilder()
-                    .setCustomId('limit_count')
-                    .setLabel(await t('secur.config_limit_label', interaction.guild.id))
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(false);
+                const embed = createEmbed(
+                    `**Configuration avancée : ${moduleName.toUpperCase()}**`,
+                    `Paramètres actuels :\n• Sanction : **${currentSanction.toUpperCase()}**\n• Limite : **${currentLimit}** actions\n• Temps : **${currentTime}ms**`,
+                    'info'
+                );
 
-                const timeInput = new TextInputBuilder()
-                    .setCustomId('limit_time')
-                    .setLabel(await t('secur.config_time_label', interaction.guild.id))
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(false);
+                const rowSanction = new ActionRowBuilder().addComponents(
+                    new StringSelectMenuBuilder()
+                        .setCustomId(`secur_select_sanction_${moduleName}`)
+                        .setPlaceholder('Choisir une sanction')
+                        .addOptions([
+                            { label: 'Kick (Expulser)', value: 'kick', emoji: '👢', default: currentSanction === 'kick' },
+                            { label: 'Ban (Bannir)', value: 'ban', emoji: '🔨', default: currentSanction === 'ban' },
+                            { label: 'Derank (Retirer rôles)', value: 'derank', emoji: '📉', default: currentSanction === 'derank' },
+                            { label: 'Mute (Exclure 1h)', value: 'mute', emoji: '🔇', default: currentSanction === 'mute' }
+                        ])
+                );
 
-                const firstActionRow = new ActionRowBuilder().addComponents(limitInput);
-                const secondActionRow = new ActionRowBuilder().addComponents(timeInput);
+                const rowBtns = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`secur_btn_limits_${moduleName}`)
+                        .setLabel('Modifier Limites (Strike/Temps)')
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
+                        .setCustomId('secur_back_main')
+                        .setLabel('Retour')
+                        .setStyle(ButtonStyle.Secondary)
+                );
 
-                modal.addComponents(firstActionRow, secondActionRow);
-
-                await interaction.showModal(modal);
+                await interaction.update({ embeds: [embed], components: [rowSanction, rowBtns] });
                 return;
             } else {
                 // Update State (off, on, max)
@@ -602,11 +716,18 @@ ${footer}`;
         if (match) {
             const moduleName = match[1];
             const limitCount = interaction.fields.getTextInputValue('limit_count');
-            const limitTime = interaction.fields.getTextInputValue('limit_time');
+            let limitTime = interaction.fields.getTextInputValue('limit_time');
 
             // Save to DB
             if (limitCount && limitTime) {
-                db.prepare(`INSERT OR REPLACE INTO module_limits (guild_id, module, limit_count, limit_time) VALUES (?, ?, ?, ?)`).run(guildId, moduleName, parseInt(limitCount), parseInt(limitTime));
+                // Enforce minimum time of 1000ms if limit > 0
+                if (parseInt(limitCount) > 0 && parseInt(limitTime) < 1000) {
+                    limitTime = "1000";
+                }
+
+                db.prepare(`INSERT INTO module_limits (guild_id, module, limit_count, limit_time) VALUES (?, ?, ?, ?)
+                    ON CONFLICT(guild_id, module) DO UPDATE SET limit_count=excluded.limit_count, limit_time=excluded.limit_time`)
+                    .run(guildId, moduleName, parseInt(limitCount), parseInt(limitTime));
                 try {
                     await interaction.reply({ embeds: [createEmbed(`✅ Configuration sauvegardée pour ${moduleName} : ${limitCount} actions en ${limitTime}ms.`, '', 'success')], ephemeral: true });
                 } catch (error) {
