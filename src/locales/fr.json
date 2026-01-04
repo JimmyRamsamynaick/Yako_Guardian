@@ -1092,7 +1092,7 @@
         "added": "✅ **{{target}}** ajouté au niveau **{{level}}**.",
         "removed": "✅ Retiré du niveau **{{level}}**.",
         "reset_success": "✅ Niveaux de permission réinitialisés.",
-        "unknown_sub": "❌ Sous-commande inconnue. Utilisation: `{{prefix}}perms set/del/reset`.",
+        "unknown_sub": "❌ Sous-commande inconnue. Utilisation: `{{prefix}}perms list/set/del/reset`.",
         "description": "Gère le système de permissions par niveaux (1-5)",
         "usage": "**Utilisation:** `+perms`"
     },
@@ -1176,7 +1176,7 @@
         "activity_error": "❌ Erreur: {{error}}",
         "usage_activity": "❌ Utilisation: `+remove activity`",
         "description": "Supprimer des configurations ou retirer un membre d'un ticket",
-        "usage": "**Utilisation:** `+remove`",
+        "usage": "**Utilisation:**\n`+remove <@membre>` (Ticket)\n`+remove perm <@role>` (Config)\n`+remove activity` (Owner)",
         "success": "✅ Opération réussie."
     },
     "helptype": {
@@ -2441,22 +2441,22 @@
     "bl": {
         "description": "Gère la blacklist globale",
         "usage": "**Utilisation:** +bl",
-        "usage_unbl": "Usage Unblacklist",
+        "usage_unbl": "❌ Utilisation: `+unbl <ID>`",
         "not_blacklisted": "❌ Pas blacklisté.",
-        "unbl_success": "✅ Déblacklisté.",
-        "usage_blinfo": "Usage BL Info",
-        "info_not_blacklisted": "Info: Pas blacklisté.",
-        "bl_info": "Info Blacklist",
-        "bl_header": "Header Blacklist",
-        "bl_empty": "Blacklist vide.",
-        "bl_more": "Et plus...",
-        "usage_bl_del": "Usage BL Del",
+        "unbl_success": "✅ **{{user}}** déblacklisté.",
+        "usage_blinfo": "❌ Utilisation: `+blinfo <ID>`",
+        "info_not_blacklisted": "ℹ️ Utilisateur non blacklisté.",
+        "bl_info": "**Info Blacklist**\nUtilisateur: {{user}}\nRaison: {{reason}}\nModérateur: {{moderator}}\nDate: {{date}}",
+        "bl_header": "**📜 Global Blacklist ({{count}})**\n\n",
+        "bl_empty": "La blacklist est vide.",
+        "bl_more": "\n...et {{count}} de plus.",
+        "usage_bl_del": "❌ Utilisation: `+bl del <ID>`",
         "already_blacklisted": "❌ Déjà blacklisté.",
-        "bl_added": "✅ Blacklisté."
+        "bl_added": "✅ **{{user}}** ajouté à la blacklist.\nRaison: {{reason}}"
     },
     "dbclear": {
         "description": "Vide des listes globales (Owners, Blacklist) ou locales (Perms, Customs)",
-        "usage": "**Utilisation:** +dbclear",
+        "usage": "**Utilisation:** `+dbclear <owners/bl/perms/customs>`",
         "root_owner_only": "❌ Réservé au Root Owner.",
         "owners_deleted": "✅ Owners supprimés.",
         "bl_deleted": "✅ Blacklist supprimée.",

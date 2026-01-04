@@ -4,6 +4,8 @@ const { getGuildConfig } = require('../../utils/mongoUtils');
 const ActiveTicket = require('../../database/models/ActiveTicket');
 const { t } = require('../../utils/i18n');
 const { createEmbed } = require('../../utils/design');
+const { isBotOwner } = require('../../utils/ownerUtils');
+const GlobalSettings = require('../../database/models/GlobalSettings');
 
 module.exports = {
     name: 'remove',
@@ -38,7 +40,10 @@ module.exports = {
         }
 
         // --- STANDARD CONFIGURATION REMOVE ---
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+        const isOwner = await isBotOwner(message.author.id);
+        const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.Administrator);
+
+        if (!isAdmin && !isOwner) {
             return message.channel.send({ embeds: [createEmbed(
                 await t('remove.permission', message.guild.id),
                 '',
@@ -103,29 +108,40 @@ module.exports = {
         }
 
         if (sub === 'activity') {
-            try {
-                // Remove from DB
-                db.prepare('UPDATE guild_settings SET bot_activity_type = NULL, bot_activity_text = NULL, bot_activity_url = NULL WHERE guild_id = ?').run(message.guild.id);
-                
-                // Clear current activity (if it was this guild's turn, or just to be responsive)
+            if (isOwner) {
+                // Global Removal (Owner Priority)
                 client.user.setActivity(null);
-
+                await GlobalSettings.findOneAndUpdate({ clientId: client.user.id }, { activity: { type: null, name: null } }, { upsert: true });
                 return message.channel.send({ embeds: [createEmbed(
                     await t('remove.activity_success', message.guild.id),
                     '',
                     'success'
                 )] });
-            } catch (e) {
-                return message.channel.send({ embeds: [createEmbed(
-                    await t('remove.activity_error', message.guild.id, { error: e.message }),
-                    '',
-                    'error'
-                )] });
+            } else if (isAdmin) {
+                try {
+                    // Remove from DB (Local Guild Activity)
+                    db.prepare('UPDATE guild_settings SET bot_activity_type = NULL, bot_activity_text = NULL, bot_activity_url = NULL WHERE guild_id = ?').run(message.guild.id);
+                    
+                    // Clear current activity
+                    client.user.setActivity(null);
+
+                    return message.channel.send({ embeds: [createEmbed(
+                        await t('remove.activity_success', message.guild.id),
+                        '',
+                        'success'
+                    )] });
+                } catch (e) {
+                    return message.channel.send({ embeds: [createEmbed(
+                        await t('remove.activity_error', message.guild.id, { error: e.message }),
+                        '',
+                        'error'
+                    )] });
+                }
             }
         }
 
         return message.channel.send({ embeds: [createEmbed(
-            await t('remove.usage_activity', message.guild.id),
+            await t('remove.usage', message.guild.id),
             '',
             'info'
         )] });

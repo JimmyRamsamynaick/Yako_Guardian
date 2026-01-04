@@ -892,7 +892,7 @@
         "added": "✅ **{{target}}** added to level **{{level}}**.",
         "removed": "✅ Removed from level **{{level}}**.",
         "reset_success": "✅ Permission levels reset.",
-        "unknown_sub": "❌ Unknown subcommand. Usage: `{{prefix}}perms set/del/reset`.",
+        "unknown_sub": "❌ Unknown subcommand. Usage: `{{prefix}}perms list/set/del/reset`.",
         "description": "Manages the level-based permission system (1-5)",
         "usage": "**Usage:** `+perms`"
     },
@@ -975,7 +975,7 @@
         "activity_error": "❌ Error: {{error}}",
         "usage_activity": "❌ Usage: `+remove activity`",
         "description": "Remove configurations or remove a member from a ticket",
-        "usage": "**Usage:** `+remove`",
+        "usage": "**Usage:**\n`+remove <@member>` (Ticket)\n`+remove perm <@role>` (Config)\n`+remove activity` (Owner)",
         "success": "✅ Operation successful."
     },
     "helptype": {
@@ -2127,18 +2127,18 @@
     "bl": {
         "description": "Manage global blacklist",
         "usage": "**Usage:** +bl",
-        "usage_unbl": "❌ Usage: `+bl remove <ID>`",
+        "usage_unbl": "❌ Usage: `+unbl <ID>`",
         "not_blacklisted": "❌ This user is not blacklisted.",
-        "unbl_success": "✅ User removed from blacklist.",
-        "usage_blinfo": "❌ Usage: `+bl info <ID>`",
+        "unbl_success": "✅ **{{user}}** removed from blacklist.",
+        "usage_blinfo": "❌ Usage: `+blinfo <ID>`",
         "info_not_blacklisted": "ℹ️ User is not blacklisted.",
-        "bl_info": "**Blacklist Info**\nUser: {{user}}\nReason: {{reason}}\nDate: {{date}}",
-        "bl_header": "**Global Blacklist**",
-        "bl_empty": "Blacklist is empty.",
+        "bl_info": "**Blacklist Info**\nUser: {{user}}\nReason: {{reason}}\nModerator: {{moderator}}\nDate: {{date}}",
+        "bl_header": "**📜 Global Blacklist ({{count}})**\n\n",
+        "bl_empty": "The blacklist is empty.",
         "bl_more": "\n...and {{count}} more.",
         "usage_bl_del": "❌ Usage: `+bl del <ID>`",
         "already_blacklisted": "❌ User already blacklisted.",
-        "bl_added": "✅ User added to blacklist."
+        "bl_added": "✅ **{{user}}** added to blacklist.\nReason: {{reason}}"
     },
 
     "discussion": {

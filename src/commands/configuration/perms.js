@@ -23,7 +23,7 @@ module.exports = {
         
         const sub = args[0]?.toLowerCase();
 
-        if (!sub) {
+        if (!sub || sub === 'list') {
             // List View
             let content = "";
             for (let i = 1; i <= 5; i++) {
