@@ -364,6 +364,9 @@
         }
     },
     "common": {
+        "state_on": "ON",
+        "state_off": "OFF",
+        "state_max": "MAX",
         "yes": "Oui",
         "no": "Non",
         "none": "Aucun",

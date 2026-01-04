@@ -411,21 +411,41 @@ const getSecurRowButtons = async (guildId) => new ActionRowBuilder()
         );
 
 const sendSecurPanel = async (target, guildId) => {
-    const settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    console.log("sendSecurPanel called for guild:", guildId);
+    let settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
     const mongoSettings = await getGuildConfig(guildId);
-    if (!settings) return; 
+    if (!settings) {
+        console.log("No settings found in SQLite, attempting insert...");
+        try {
+            db.prepare('INSERT INTO guild_settings (guild_id) VALUES (?)').run(guildId);
+            settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+            console.log("Insert successful, settings:", settings);
+        } catch (e) {
+            console.error("Failed to init guild_settings in sendSecurPanel:", e);
+            return;
+        }
+    } 
     
-    const embed = createEmbed(await t('secur.panel_title', guildId), await generateSecurStatusText(guildId, settings, mongoSettings), 'info');
-    const components = [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)];
-    
-    if (target.reply && typeof target.reply === 'function') {
-         if (target.replied || target.deferred) {
-             await target.editReply({ embeds: [embed], components });
-         } else {
-             await target.reply({ embeds: [embed], components });
-         }
-    } else {
-         await target.channel.send({ embeds: [embed], components });
+    try {
+        const statusText = await generateSecurStatusText(guildId, settings, mongoSettings);
+        const embed = createEmbed(await t('secur.panel_title', guildId), statusText, 'info');
+        const components = [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)];
+        
+        if (target.reply && typeof target.reply === 'function') {
+             if (target.replied || target.deferred) {
+                 await target.editReply({ embeds: [embed], components });
+             } else {
+                 await target.reply({ embeds: [embed], components });
+             }
+        } else {
+             await target.channel.send({ embeds: [embed], components });
+        }
+        console.log("Panel sent successfully");
+    } catch (error) {
+        console.error("Error sending secur panel:", error);
+        if (target.channel) {
+            target.channel.send("Error showing panel: " + error.message).catch(() => {});
+        }
     }
 };
 

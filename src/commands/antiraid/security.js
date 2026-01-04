@@ -13,6 +13,7 @@ module.exports = {
     aliases: ['secur'],
     usage: 'security status | secur config | secur invite <on/off> (Owner)',
     async run(client, message, args) {
+        console.log("Security command triggered");
         const sub = args[0]?.toLowerCase();
 
         // OWNER COMMAND: +secur invite <on/off>
