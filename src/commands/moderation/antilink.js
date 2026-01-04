@@ -5,12 +5,12 @@ const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'antilink',
-    description: 'Configure le système anti-liens',
+    description: 'antilink.description',
     category: 'Moderation',
-    usage: 'antilink <on/off> [invite/all]',
+    usage: 'antilink.usage',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.admin_only', message.guild.id), 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
@@ -20,10 +20,10 @@ module.exports = {
         const arg = args[0]?.toLowerCase();
 
         if (!arg) {
-             return message.channel.send({ embeds: [createEmbed('Utilisation', await t('antilink.usage', message.guild.id), 'info')] });
+             return message.channel.send({ embeds: [createEmbed(await t('common.usage_title', message.guild.id), await t('antilink.usage', message.guild.id), 'info')] });
         }
 
-        const replyMsg = await message.channel.send({ embeds: [createEmbed('AntiLink', `${THEME.icons.loading} Configuration en cours...`, 'loading')] });
+        const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.antilink_title', message.guild.id), `${THEME.icons.loading} ${await t('common.processing', message.guild.id)}`, 'loading')] });
 
         if (['on', 'off'].includes(arg)) {
             config.moderation.antilink.enabled = (arg === 'on');
@@ -36,7 +36,7 @@ module.exports = {
             
             config.markModified('moderation');
             await config.save();
-            await replyMsg.edit({ embeds: [createEmbed('AntiLink', await t('antilink.success', message.guild.id, { 
+            await replyMsg.edit({ embeds: [createEmbed(await t('moderation.antilink_title', message.guild.id), await t('antilink.success', message.guild.id, { 
                 status: arg.toUpperCase(), 
                 mode: config.moderation.antilink.mode 
             }), arg === 'on' ? 'success' : 'warning')] });
@@ -49,13 +49,13 @@ module.exports = {
              config.moderation.antilink.enabled = true;
              config.markModified('moderation');
              await config.save();
-             await replyMsg.edit({ embeds: [createEmbed('AntiLink', await t('antilink.success', message.guild.id, { 
+             await replyMsg.edit({ embeds: [createEmbed(await t('moderation.antilink_title', message.guild.id), await t('antilink.success', message.guild.id, { 
                 status: "ON", 
                 mode: arg 
             }), 'success')] });
              return;
         }
 
-        await replyMsg.edit({ embeds: [createEmbed('Utilisation', await t('antilink.usage', message.guild.id), 'warning')] });
+        await replyMsg.edit({ embeds: [createEmbed(await t('common.usage_title', message.guild.id), await t('antilink.usage', message.guild.id), 'warning')] });
     }
 };

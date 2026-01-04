@@ -17,7 +17,7 @@ module.exports = {
         const extension = emoji.animated ? 'gif' : 'png';
         const url = `https://cdn.discordapp.com/emojis/${emoji.id}.${extension}?size=4096`;
         
-        const embed = createEmbed(await t('emoji.success', message.guild.id, { name: emoji.name, url: url }), '', 'success');
+        const embed = createEmbed(`Émoji: ${emoji.name}`, await t('emoji.success', message.guild.id, { name: emoji.name, url: url }), 'success');
         embed.setImage(url);
         await message.channel.send({ embeds: [embed] });
     }

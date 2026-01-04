@@ -7,29 +7,29 @@ const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'kick',
-    description: 'Expulse un ou plusieurs membres',
+    description: 'kick.description',
     category: 'Moderation',
-    usage: 'kick <user> [raison] | kick <user1>,, <user2> [raison]',
+    usage: 'kick.usage',
     examples: ['kick @user Spam', 'kick @user1,, @user2 Spam'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission', await t('common.permission_missing', message.guild.id, { perm: 'KickMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'KickMembers' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args)) return;
 
         // Loading
-        const loadingEmbed = createEmbed('Expulsion', `${THEME.icons.loading} Recherche des utilisateurs...`, 'loading');
+        const loadingEmbed = createEmbed(await t('moderation.kick_title', message.guild.id), `${THEME.icons.loading} ${await t('common.loading_users', message.guild.id)}`, 'loading');
         const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
 
         const { members, reason } = await resolveMembers(message, args);
 
         if (members.length === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.member_not_found', message.guild.id), 'error')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.member_not_found', message.guild.id), 'error')] });
         }
 
         // Processing
-        await replyMsg.edit({ embeds: [createEmbed('Expulsion', `${THEME.icons.loading} Application des sanctions...`, 'loading')] });
+        await replyMsg.edit({ embeds: [createEmbed(await t('moderation.kick_title', message.guild.id), `${THEME.icons.loading} ${await t('common.processing', message.guild.id)}`, 'loading')] });
 
         const summary = [];
         const successMembers = [];
@@ -70,33 +70,33 @@ module.exports = {
         if (successMembers.length === 1 && summary.length === 0) {
             const member = successMembers[0];
             const description = `${THEME.separators.line}\n` +
-                `👤 **Membre :** ${member.user.tag}\n` +
-                `📌 **Action :** EXPULSION\n` +
-                `✏️ **Raison :** ${reason}\n\n` +
-                `${THEME.icons.success} **Action effectuée avec succès**\n` +
+                `👤 **${await t('common.member_label', message.guild.id)}** ${member.user.tag}\n` +
+                `📌 **${await t('common.action_label', message.guild.id)}** ${await t('moderation.kick_title', message.guild.id).then(s => s.toUpperCase())}\n` +
+                `✏️ **${await t('common.reason_label', message.guild.id)}** ${reason}\n\n` +
+                `${THEME.icons.success} **${await t('common.success_action', message.guild.id)}**\n` +
                 `${THEME.separators.line}`;
             
             embed = createEmbed(
-                'MODÉRATION',
+                await t('moderation.kick_moderation_title', message.guild.id),
                 description,
                 'moderation',
-                { footer: `Modérateur: ${message.author.tag}` }
+                { footer: await t('common.moderator_footer', message.guild.id, { tag: message.author.tag }) }
             );
         } else {
              let description = "";
             if (successMembers.length > 0) {
-                description += `✅ **Succès (${successMembers.length}):**\n${successMembers.map(m => `\`${m.user.tag}\``).join(', ')}\n\n`;
+                description += `✅ **${await t('common.success_count', message.guild.id, { count: successMembers.length })}**\n${successMembers.map(m => `\`${m.user.tag}\``).join(', ')}\n\n`;
             }
             if (summary.length > 0) {
-                description += `⚠️ **Erreurs:**\n${summary.join('\n')}\n\n`;
+                description += `⚠️ **${await t('common.errors_label', message.guild.id)}**\n${summary.join('\n')}\n\n`;
             }
-            description += `**Raison:** ${reason}`;
+            description += `**${await t('common.reason_label', message.guild.id)}** ${reason}`;
             
             embed = createEmbed(
-                'Expulsion Effectuée',
+                await t('moderation.kick_executed_title', message.guild.id),
                 description,
                 successMembers.length > 0 ? (summary.length > 0 ? 'warning' : 'success') : 'error',
-                { footer: `Modérateur: ${message.author.tag}` }
+                { footer: await t('common.moderator_footer', message.guild.id, { tag: message.author.tag }) }
             );
         }
 

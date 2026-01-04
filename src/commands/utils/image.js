@@ -10,6 +10,6 @@ module.exports = {
         if (!query) return message.channel.send({ embeds: [createEmbed(await t('image.usage', message.guild.id), '', 'info')] });
         
         const url = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`;
-        await message.channel.send({ embeds: [createEmbed(await t('image.success', message.guild.id, { query: query, url: url }), '', 'success')] });
+        await message.channel.send({ embeds: [createEmbed('Recherche Images', await t('image.success', message.guild.id, { query: query, url: url }), 'success')] });
     }
 };

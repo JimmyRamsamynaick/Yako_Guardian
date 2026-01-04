@@ -21,7 +21,7 @@ module.exports = {
             // Root Owner check
             if (process.env.OWNER_ID && message.author.id !== process.env.OWNER_ID) {
                 return message.channel.send({ embeds: [createEmbed(
-                    await t('clear.root_owner_only', message.guild.id),
+                    await t('dbclear.root_owner_only', message.guild.id),
                     '',
                     'error'
                 )] });
@@ -29,7 +29,7 @@ module.exports = {
             
             const deleted = await BotOwner.deleteMany({});
             return message.channel.send({ embeds: [createEmbed(
-                await t('clear.owners_deleted', message.guild.id, { count: deleted.deletedCount }),
+                await t('dbclear.owners_deleted', message.guild.id, { count: deleted.deletedCount }),
                 '',
                 'success'
             )] });
@@ -39,7 +39,7 @@ module.exports = {
             // Root Owner check (safety)
              if (process.env.OWNER_ID && message.author.id !== process.env.OWNER_ID) {
                 return message.channel.send({ embeds: [createEmbed(
-                    await t('clear.root_owner_only', message.guild.id),
+                    await t('dbclear.root_owner_only', message.guild.id),
                     '',
                     'error'
                 )] });
@@ -47,7 +47,7 @@ module.exports = {
 
             const deleted = await GlobalBlacklist.deleteMany({});
             return message.channel.send({ embeds: [createEmbed(
-                await t('clear.bl_deleted', message.guild.id, { count: deleted.deletedCount }),
+                await t('dbclear.bl_deleted', message.guild.id, { count: deleted.deletedCount }),
                 '',
                 'success'
             )] });
@@ -56,7 +56,7 @@ module.exports = {
         else if (type === 'perms' || type === 'permissions') {
              if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !await isBotOwner(message.author.id)) {
                 return message.channel.send({ embeds: [createEmbed(
-                    await t('clear.admin_only', message.guild.id),
+                    await t('dbclear.admin_only', message.guild.id),
                     '',
                     'error'
                 )] });
@@ -66,7 +66,7 @@ module.exports = {
             config.customPermissions = [];
             await config.save();
             return message.channel.send({ embeds: [createEmbed(
-                await t('clear.perms_deleted', message.guild.id),
+                await t('dbclear.perms_deleted', message.guild.id),
                 '',
                 'success'
             )] });
@@ -74,7 +74,7 @@ module.exports = {
         else if (type === 'customs' || type === 'customcommands') {
              if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !await isBotOwner(message.author.id)) {
                 return message.channel.send({ embeds: [createEmbed(
-                    await t('clear.admin_only', message.guild.id),
+                    await t('dbclear.admin_only', message.guild.id),
                     '',
                     'error'
                 )] });
@@ -82,14 +82,14 @@ module.exports = {
 
             const deleted = await CustomCommand.deleteMany({ guildId: message.guild.id });
             return message.channel.send({ embeds: [createEmbed(
-                await t('clear.customs_deleted', message.guild.id, { count: deleted.deletedCount }),
+                await t('dbclear.customs_deleted', message.guild.id, { count: deleted.deletedCount }),
                 '',
                 'success'
             )] });
         }
         else {
             return message.channel.send({ embeds: [createEmbed(
-                await t('clear.usage', message.guild.id),
+                await t('dbclear.usage', message.guild.id),
                 '',
                 'info'
             )] });

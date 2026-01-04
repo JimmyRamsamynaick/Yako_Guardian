@@ -5,15 +5,15 @@ const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'mutelist',
-    description: 'Affiche la liste des membres mute (Timeout ou Rôle)',
+    description: 'mutelist.description',
     category: 'Moderation',
-    usage: 'mutelist',
+    usage: 'mutelist.usage',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
         }
 
-        const replyMsg = await message.channel.send({ embeds: [createEmbed('MuteList', `${THEME.icons.loading} Chargement de la liste...`, 'loading')] });
+        const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.mutelist_title', message.guild.id, { count: '...' }), `${THEME.icons.loading} ${await t('moderation.mutelist_loading', message.guild.id)}`, 'loading')] });
 
         const config = await getGuildConfig(message.guild.id);
         const muteRoleId = config.moderation?.muteRole;
@@ -28,7 +28,7 @@ module.exports = {
         });
 
         if (mutedMembers.size === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('MuteList', await t('moderation.mutelist_empty', message.guild.id), 'info')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('moderation.mutelist_title_list', message.guild.id), await t('moderation.mutelist_empty', message.guild.id), 'info')] });
         }
 
         const description = await Promise.all(mutedMembers.map(async m => {

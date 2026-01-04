@@ -14,7 +14,7 @@ module.exports = {
     examples: ['tempcmute @user 1h Spam', 'tempcmute @user1,, @user2 10m'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ManageChannels' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ManageChannels' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args, 2)) return;
@@ -22,7 +22,7 @@ module.exports = {
         const { members, reason: rawReason } = await resolveMembers(message, args);
 
         if (members.length === 0) {
-            return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.member_not_found', message.guild.id), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.member_not_found', message.guild.id), 'error')] });
         }
 
         // Parse duration
@@ -38,10 +38,10 @@ module.exports = {
         }
 
         if (!duration || duration < 1000) {
-            return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.duration_invalid', message.guild.id), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.duration_invalid', message.guild.id), 'error')] });
         }
 
-        const replyMsg = await message.channel.send({ embeds: [createEmbed('TempChannelMute', `${THEME.icons.loading} Application des sanctions...`, 'loading')] });
+        const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.tempcmute_title', message.guild.id), `${THEME.icons.loading} ${await t('common.sanction_processing', message.guild.id)}`, 'loading')] });
 
         const summary = [];
         let successCount = 0;
@@ -83,7 +83,7 @@ module.exports = {
         const summaryText = summary.join('\n');
         
         await replyMsg.edit({ embeds: [createEmbed(
-            'TempChannelMute',
+            await t('moderation.tempcmute_title', message.guild.id),
             summaryText || await t('common.error_generic', message.guild.id),
             successCount > 0 ? 'success' : 'error'
         )] });

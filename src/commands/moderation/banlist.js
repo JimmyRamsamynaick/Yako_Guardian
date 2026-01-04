@@ -4,20 +4,20 @@ const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'banlist',
-    description: 'Affiche la liste des bannissements actifs',
+    description: 'banlist.description',
     category: 'Moderation',
-    usage: 'banlist',
+    usage: 'banlist.usage',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
         }
 
-        const replyMsg = await message.channel.send({ embeds: [createEmbed('BanList', `${THEME.icons.loading} Chargement de la liste...`, 'loading')] });
+        const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.banlist_title', message.guild.id, { count: '...' }), `${THEME.icons.loading} ${await t('moderation.banlist_loading', message.guild.id)}`, 'loading')] });
 
         const bans = await message.guild.bans.fetch().catch(() => null);
 
         if (!bans || bans.size === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('BanList', await t('moderation.banlist_empty', message.guild.id), 'info')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('moderation.banlist_title', message.guild.id, { count: 0 }), await t('moderation.banlist_empty', message.guild.id), 'info')] });
         }
 
         // Map bans to string

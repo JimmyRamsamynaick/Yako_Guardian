@@ -6,14 +6,14 @@ const { checkUsage } = require('../../utils/moderation/helpUtils');
 
 module.exports = {
     name: 'clear',
-    description: 'Supprime des messages ou des sanctions',
+    description: 'clear.description',
     category: 'Moderation',
-    usage: 'clear <nombre> [membre] | clear sanctions <membre> | clear all sanctions',
+    usage: 'clear.usage',
     aliases: ['purge', 'clean'],
     examples: ['clear 10', 'clear 50 @user', 'clear sanctions @user', 'clear all sanctions'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ManageMessages' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ManageMessages' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args)) return;
@@ -23,7 +23,7 @@ module.exports = {
         // --- CLEAR SANCTIONS ---
         if (sub === 'sanctions' || sub === 'sanction') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
+                return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.admin_only', message.guild.id), 'error')] });
             }
 
             const targetMember = message.mentions.members.first() || await message.guild.members.fetch(args[1]).catch(() => null);
@@ -31,31 +31,31 @@ module.exports = {
 
             if (userId) {
                 // +clear sanctions <user>
-                const replyMsg = await message.channel.send({ embeds: [createEmbed('Clear', `${THEME.icons.loading} Suppression des sanctions...`, 'loading')] });
+                const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.clear_title', message.guild.id), `${THEME.icons.loading} ${await t('moderation.clear_process_sanctions', message.guild.id)}`, 'loading')] });
                 const result = await clearSanctions(message.guild.id, userId);
                 
                 await replyMsg.edit({ embeds: [createEmbed(
-                    'Sanctions Supprimées', 
+                    await t('moderation.clear_success_sanctions_title', message.guild.id), 
                     `${THEME.icons.success} ${await t('moderation.clear_sanctions_success', message.guild.id, { user: userId, count: result.deletedCount })}`, 
                     'success'
                 )] });
                 return;
             } else {
-                return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.clear_usage_sanctions', message.guild.id), 'error')] });
+                return message.channel.send({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.clear_usage_sanctions', message.guild.id), 'error')] });
             }
         }
 
         // --- CLEAR ALL SANCTIONS ---
         if (sub === 'all' && args[1]?.toLowerCase() === 'sanctions') {
              if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
+                return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.admin_only', message.guild.id), 'error')] });
             }
             
-            const replyMsg = await message.channel.send({ embeds: [createEmbed('Clear', `${THEME.icons.loading} Suppression de toutes les sanctions...`, 'loading')] });
+            const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.clear_title', message.guild.id), `${THEME.icons.loading} ${await t('moderation.clear_process_all_sanctions', message.guild.id)}`, 'loading')] });
             const result = await clearAllSanctions(message.guild.id);
             
             await replyMsg.edit({ embeds: [createEmbed(
-                'Sanctions Supprimées', 
+                await t('moderation.clear_success_sanctions_title', message.guild.id), 
                 `${THEME.icons.success} ${await t('moderation.clear_all_sanctions_success', message.guild.id, { count: result.deletedCount })}`, 
                 'success'
             )] });
@@ -66,7 +66,7 @@ module.exports = {
         const limit = 100;
         const amount = parseInt(args[0]);
         if (isNaN(amount) || amount < 1 || amount > limit) {
-            return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.clear_invalid_amount', message.guild.id) + ` (Max: ${limit})`, 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.clear_invalid_amount', message.guild.id) + ` (Max: ${limit})`, 'error')] });
         }
 
         const targetMember = message.mentions.members.first() || (args[1] ? await message.guild.members.fetch(args[1]).catch(() => null) : null);
@@ -74,8 +74,8 @@ module.exports = {
         await message.delete().catch(() => {}); // Delete command message first
 
         const loadingEmbed = createEmbed(
-            'Clear',
-            `${THEME.icons.loading} Suppression des messages...`,
+            await t('moderation.clear_title', message.guild.id),
+            `${THEME.icons.loading} ${await t('moderation.clear_process_messages', message.guild.id)}`,
             'loading'
         );
         const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
@@ -101,17 +101,17 @@ module.exports = {
             }
 
             if (messagesToDelete.length === 0) {
-                await replyMsg.edit({ embeds: [createEmbed('Info', await t('moderation.clear_no_messages', message.guild.id), 'warning')] });
+                await replyMsg.edit({ embeds: [createEmbed(await t('common.info_title', message.guild.id), await t('moderation.clear_no_messages', message.guild.id), 'warning')] });
                 setTimeout(() => replyMsg.delete().catch(() => {}), 3000);
                 return;
             }
 
             await message.channel.bulkDelete(messagesToDelete, true);
 
-            const userSuffix = targetMember ? ` de **${targetMember.user.tag}**` : '';
+            const userSuffix = targetMember ? await t('moderation.clear_success_user_suffix', message.guild.id, { user: `**${targetMember.user.tag}**` }) : '';
             const successEmbed = createEmbed(
-                'Succès',
-                `${THEME.icons.success} **${messagesToDelete.length}** messages${userSuffix} ont été supprimés.`,
+                await t('common.success_title', message.guild.id),
+                await t('moderation.clear_success_details', message.guild.id, { count: messagesToDelete.length, user: userSuffix }),
                 'success'
             );
             
@@ -128,7 +128,7 @@ module.exports = {
 
         } catch (error) {
             console.error(error);
-            await replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.clear_error_old', message.guild.id), 'error')] });
+            await replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.clear_error_old', message.guild.id), 'error')] });
             setTimeout(() => replyMsg.delete().catch(() => {}), 5000);
         }
     }

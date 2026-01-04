@@ -22,6 +22,6 @@ module.exports = {
             `**${await t('member.roles', message.guild.id)}:** ${member.roles.cache.size - 1}` // Exclude @everyone
         ].join('\n');
 
-        await message.channel.send({ embeds: [createEmbed((await t('member.title', message.guild.id, { tag: member.user.tag })) + `\n\n${info}`, '', 'info')] });
+        await message.channel.send({ embeds: [createEmbed(await t('member.title', message.guild.id, { tag: member.user.tag }), info, 'info')] });
     }
 };

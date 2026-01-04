@@ -21,12 +21,14 @@ module.exports = {
         }
 
         let count = 0;
-        message.guild.members.cache.filter(m => m.voice.channel && m.id !== message.member.id).forEach(async (member) => {
+        const membersToMove = message.guild.members.cache.filter(m => m.voice.channel && m.id !== message.member.id);
+
+        for (const member of membersToMove.values()) {
             try {
                 await member.voice.setChannel(targetChannel);
                 count++;
             } catch (err) {}
-        });
+        }
 
         return message.channel.send({ embeds: [createEmbed(await t('bringall.success', message.guild.id, { count, channel: targetChannel.toString() }), '', 'success')] });
     }

@@ -1,6 +1,7 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, StringSelectMenuBuilder } = require('discord.js');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { t } = require('../utils/i18n');
+const { createEmbed } = require('../utils/design');
 
 module.exports = {
     handleLogInteraction: async (client, interaction) => {
@@ -84,7 +85,9 @@ async function renderLogPanel(client, interaction, config, type) {
             { label: 'Vocal', value: 'voice', description: 'Logs vocaux', emoji: '🎤', default: type === 'voice' },
             { label: 'Boost', value: 'boost', description: 'Logs de boost', emoji: '🚀', default: type === 'boost' },
             { label: 'Rôles', value: 'role', description: 'Logs de rôles', emoji: '🛡️', default: type === 'role' },
-            { label: 'Raid', value: 'raid', description: 'Logs anti-raid', emoji: '🚨', default: type === 'raid' }
+            { label: 'Raid', value: 'raid', description: 'Logs anti-raid', emoji: '🚨', default: type === 'raid' },
+            { label: 'Serveur', value: 'server', description: 'Logs serveur', emoji: '🏢', default: type === 'server' },
+            { label: 'Membres', value: 'member', description: 'Logs membres', emoji: '👤', default: type === 'member' }
         ]);
     
     const rowMenu = new ActionRowBuilder().addComponents(menu);

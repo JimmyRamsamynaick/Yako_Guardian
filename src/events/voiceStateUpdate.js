@@ -91,7 +91,8 @@ module.exports = {
                     );
 
                     await channel.send({ 
-                        embeds: [createEmbed(await t('tempvoc.welcome', newState.guild.id, { user: newState.member.id }), '', 'info')], 
+                        content: `<@${newState.member.id}>`,
+                        embeds: [createEmbed(await t('tempvoc.panel_title', newState.guild.id), await t('tempvoc.welcome', newState.guild.id, { user: newState.member.id }), 'default')], 
                         components: [row1, row2, row3] 
                     });
 

@@ -8,21 +8,21 @@ const { checkUsage } = require('../../utils/moderation/helpUtils');
 
 module.exports = {
     name: 'unmute',
-    description: 'Unmute un ou plusieurs membres',
+    description: 'unmute.description',
     category: 'Moderation',
-    usage: 'unmute <user> | unmute <user1>,, <user2>',
+    usage: 'unmute.usage',
     examples: ['unmute @user', 'unmute @user1,, @user2'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args)) return;
 
         // Loading state
         const loadingEmbed = createEmbed(
-            'Unmute',
-            `${THEME.icons.loading} Recherche des utilisateurs...`,
+            await t('moderation.unmute_title', message.guild.id),
+            `${THEME.icons.loading} ${await t('common.loading_users', message.guild.id)}`,
             'loading'
         );
         const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
@@ -30,12 +30,12 @@ module.exports = {
         const { members, reason } = await resolveMembers(message, args);
 
         if (members.length === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.member_not_found', message.guild.id), 'error')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.member_not_found', message.guild.id), 'error')] });
         }
 
         const config = await getGuildConfig(message.guild.id);
         
-        await replyMsg.edit({ embeds: [createEmbed('Unmute', `${THEME.icons.loading} Levée des sanctions...`, 'loading')] });
+        await replyMsg.edit({ embeds: [createEmbed(await t('moderation.unmute_title', message.guild.id), `${THEME.icons.loading} ${await t('moderation.unmute_processing', message.guild.id)}`, 'loading')] });
 
         const summary = [];
         let successCount = 0;
@@ -95,10 +95,10 @@ module.exports = {
             type = 'success';
             finalDescription = 
                 `${THEME.separators.line}\n` +
-                `👤 **Membre :** ${target.user.tag}\n` +
-                `📌 **Action :** UNMUTE\n` +
-                `✏️ **Détails :** ${summary[0].replace(/.*: /, '')}\n\n` +
-                `${THEME.icons.success} **Action effectuée avec succès**\n` +
+                `👤 **${await t('common.member_label', message.guild.id)}** ${target.user.tag}\n` +
+                `📌 **${await t('common.action_label', message.guild.id)}** ${await t('moderation.unmute_title', message.guild.id).then(s => s.toUpperCase())}\n` +
+                `✏️ **${await t('moderation.details_label', message.guild.id)}** ${summary[0].replace(/.*: /, '')}\n\n` +
+                `${THEME.icons.success} **${await t('common.success_action', message.guild.id)}**\n` +
                 `${THEME.separators.line}`;
         } else {
             type = successCount > 0 ? (successCount === members.length ? 'success' : 'warning') : 'error';
@@ -108,7 +108,7 @@ module.exports = {
             }
         }
 
-        const finalEmbed = createEmbed('Unmute', finalDescription, type);
+        const finalEmbed = createEmbed(await t('moderation.unmute_title', message.guild.id), finalDescription, type);
         await replyMsg.edit({ embeds: [finalEmbed] });
     }
 };

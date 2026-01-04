@@ -10,9 +10,9 @@ const { checkUsage } = require('../../utils/moderation/helpUtils');
 
 module.exports = {
     name: 'warn',
-    description: 'Avertit un ou plusieurs membres (Ajoute un strike)',
+    description: 'warn.description',
     category: 'Moderation',
-    usage: 'warn <user> [raison] | warn <user1>,, <user2> [raison] | warn list [user]',
+    usage: 'warn.usage',
     examples: ['warn @user Spam', 'warn @user1,, @user2 Spam', 'warn list'],
     async run(client, message, args) {
         // Handle "list" subcommand
@@ -27,14 +27,14 @@ module.exports = {
 
             // 2. If NO user specified, show Global Warn List (All Members)
             if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-                return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
+                return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
             }
 
             const allStrikes = await UserStrike.find({ guildId: message.guild.id });
             const validStrikes = allStrikes.filter(doc => doc.strikes && doc.strikes.length > 0);
 
             if (validStrikes.length === 0) {
-                return message.channel.send({ embeds: [createEmbed('Liste des Avertissements', await t('moderation.warn_list_empty', message.guild.id), 'info')] });
+                return message.channel.send({ embeds: [createEmbed(await t('moderation.warn_list_title_header', message.guild.id), await t('moderation.warn_list_empty', message.guild.id), 'info')] });
             }
 
             // Fetch ONLY relevant members to avoid Rate Limit (Opcode 8)
@@ -45,7 +45,7 @@ module.exports = {
                 members = await message.guild.members.fetch({ user: userIds });
             } catch (e) {
                 console.error("Failed to fetch members for warn list:", e);
-                return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.warn_list_error', message.guild.id), 'error')] });
+                return message.channel.send({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.warn_list_error', message.guild.id), 'error')] });
             }
             
             const list = validStrikes
@@ -61,7 +61,7 @@ module.exports = {
                 .sort((a, b) => b.count - a.count); // Sort by count descending
 
             if (list.length === 0) {
-                return message.channel.send({ embeds: [createEmbed('Liste des Avertissements', await t('moderation.warn_list_empty', message.guild.id), 'info')] });
+                return message.channel.send({ embeds: [createEmbed(await t('moderation.warn_list_title_header', message.guild.id), await t('moderation.warn_list_empty', message.guild.id), 'info')] });
             }
 
             // Create Standard Embed (Not V2 Component)
@@ -95,15 +95,15 @@ module.exports = {
         }
 
         if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args)) return;
 
         // Loading state
         const loadingEmbed = createEmbed(
-            'Warn',
-            `${THEME.icons.loading} Recherche des utilisateurs...`,
+            await t('moderation.warn_title', message.guild.id),
+            `${THEME.icons.loading} ${await t('common.loading_users', message.guild.id)}`,
             'loading'
         );
         const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
@@ -111,10 +111,10 @@ module.exports = {
         const { members, reason } = await resolveMembers(message, args);
 
         if (members.length === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.member_not_found', message.guild.id), 'error')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.member_not_found', message.guild.id), 'error')] });
         }
 
-        await replyMsg.edit({ embeds: [createEmbed('Warn', `${THEME.icons.loading} Application des sanctions...`, 'loading')] });
+        await replyMsg.edit({ embeds: [createEmbed(await t('moderation.warn_title', message.guild.id), `${THEME.icons.loading} ${await t('common.processing', message.guild.id)}`, 'loading')] });
 
         const summary = [];
         let successCount = 0;
@@ -153,7 +153,7 @@ module.exports = {
                 const punishment = await applyPunishment(client, message.guild, targetMember, userStrike.strikes.length);
                 let punishmentText = "";
                 if (punishment) {
-                    punishmentText = `\n**Sanction Automatique :** ${punishment}`;
+                    punishmentText = `\n**${await t('moderation.warn_auto_punishment', message.guild.id)}** ${punishment}`;
                 }
 
                 // Log Sanction
@@ -161,11 +161,11 @@ module.exports = {
 
                 // Send DM
                 const dmEmbed = createEmbed(
-                    'Avertissement',
+                    await t('moderation.warn_dm_title', message.guild.id),
                     `${THEME.separators.line}\n` +
-                    `**Serveur :** ${message.guild.name}\n` +
-                    `**Action :** Warn\n` +
-                    `**Raison :** ${reason}\n` +
+                    `**${await t('common.server_label', message.guild.id)}** ${message.guild.name}\n` +
+                    `**${await t('common.action_label', message.guild.id)}** ${await t('moderation.warn_title', message.guild.id)}\n` +
+                    `**${await t('common.reason_label', message.guild.id)}** ${reason}\n` +
                     (punishmentText ? punishmentText + '\n' : '') +
                     `${THEME.separators.line}`,
                     'warning'
@@ -173,7 +173,7 @@ module.exports = {
                 targetMember.send({ embeds: [dmEmbed] }).catch(() => {});
 
                 successCount++;
-                summary.push(`${THEME.icons.success} **${targetMember.user.tag}**: Averti (Total: ${userStrike.strikes.length})${punishmentText}`);
+                summary.push(`${THEME.icons.success} **${targetMember.user.tag}**: ${await t('moderation.warn_success_msg', message.guild.id, { count: userStrike.strikes.length })}${punishmentText}`);
 
             } catch (err) {
                 console.error(err);
@@ -190,11 +190,11 @@ module.exports = {
             type = 'warning';
             finalDescription = 
                 `${THEME.separators.line}\n` +
-                `👤 **Membre :** ${target.user.tag}\n` +
-                `📌 **Action :** WARN\n` +
-                `✏️ **Raison :** ${reason}\n` +
-                (summary[0].includes('Sanction Automatique') ? `\n⚠️ **Sanction Auto :** ${summary[0].split('Sanction Automatique :')[1].trim()}\n` : '') +
-                `\n${THEME.icons.success} **Action effectuée avec succès**\n` +
+                `👤 **${await t('common.member_label', message.guild.id)}** ${target.user.tag}\n` +
+                `📌 **${await t('common.action_label', message.guild.id)}** ${await t('moderation.warn_title', message.guild.id).then(s => s.toUpperCase())}\n` +
+                `✏️ **${await t('common.reason_label', message.guild.id)}** ${reason}\n` +
+                (summary[0].includes(await t('moderation.warn_auto_punishment', message.guild.id)) ? `\n⚠️ **${await t('moderation.warn_auto_punishment', message.guild.id)}** ${summary[0].split(await t('moderation.warn_auto_punishment', message.guild.id))[1].trim()}\n` : '') +
+                `\n${THEME.icons.success} **${await t('common.success_action', message.guild.id)}**\n` +
                 `${THEME.separators.line}`;
         } else {
             type = successCount > 0 ? (successCount === members.length ? 'success' : 'warning') : 'error';
@@ -204,7 +204,7 @@ module.exports = {
             }
         }
 
-        const finalEmbed = createEmbed('Warn', finalDescription, type);
+        const finalEmbed = createEmbed(await t('moderation.warn_title', message.guild.id), finalDescription, type);
         await replyMsg.edit({ embeds: [finalEmbed] });
     }
 };

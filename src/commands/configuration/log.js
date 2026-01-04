@@ -116,7 +116,7 @@ module.exports = {
             let isRole = target.includes('&');
             let type = isRole ? 'ignoredRoles' : 'ignoredUsers';
             
-            const types = ['mod', 'message', 'voice', 'boost', 'role', 'raid'];
+            const types = ['mod', 'message', 'voice', 'boost', 'role', 'raid', 'server', 'member'];
             let modified = false;
 
             if (!config.logs) config.logs = {};

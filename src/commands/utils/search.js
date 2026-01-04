@@ -25,7 +25,7 @@ module.exports = {
                 }
 
                 const list = titles.map((title, i) => `**${title}** - [Lien](${urls[i]})`).join('\n');
-                await message.channel.send({ embeds: [createEmbed((await t('search.result_title', message.guild.id, { query: query })) + `\n${list}`, '', 'info')] });
+                await message.channel.send({ embeds: [createEmbed(await t('search.result_title', message.guild.id, { query: query }), list, 'info')] });
             } catch (e) {
                 return message.channel.send({ embeds: [createEmbed(await t('search.error', message.guild.id), '', 'error')] });
             }

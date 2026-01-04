@@ -219,7 +219,9 @@ const GuildConfigSchema = new mongoose.Schema({
         voice: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
         boost: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
         role: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
-        raid: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] }
+        raid: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
+        server: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] },
+        member: { enabled: { type: Boolean, default: false }, channelId: String, ignoredUsers: [String], ignoredRoles: [String] }
     }
 });
 

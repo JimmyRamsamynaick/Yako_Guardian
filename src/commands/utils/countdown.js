@@ -5,7 +5,7 @@ module.exports = {
     name: 'countdown',
     description: 'Crée un compte à rebours',
     category: 'Utils',
-    usage: 'countdown <date/heure> [event]',
+    usage: 'countdown <JJ/MM/AAAA> [event]',
     async run(client, message, args) {
         if (!args[0]) {
             return message.channel.send({ embeds: [createEmbed('Usage', await t('countdown.usage', message.guild.id), 'warning')] });
@@ -15,10 +15,20 @@ module.exports = {
         const event = args.slice(1).join(' ') || 'Événement';
         
         // Try to parse date
-        let targetDate = new Date(timeInput);
+        let targetDate;
         
-        // If invalid date, try to parse as relative (not implemented fully here without moment/ms, assuming user passes ISO or valid date string)
-        // For simplicity in this env without new deps, we assume standard Date constructor works or we accept timestamp.
+        // Support DD/MM/YYYY format (French)
+        const frDateRegex = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/;
+        const match = timeInput.match(frDateRegex);
+
+        if (match) {
+            const day = parseInt(match[1]);
+            const month = parseInt(match[2]) - 1; // Months are 0-indexed in JS
+            const year = parseInt(match[3]);
+            targetDate = new Date(year, month, day);
+        } else {
+            targetDate = new Date(timeInput);
+        }
         
         if (isNaN(targetDate.getTime())) {
              return message.channel.send({ embeds: [createEmbed('Erreur', await t('countdown.invalid_date', message.guild.id), 'error')] });

@@ -6,21 +6,21 @@ const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'ban',
-    description: 'Bannit un ou plusieurs membres (ou ID)',
+    description: 'ban.description',
     category: 'Moderation',
-    usage: 'ban <user> [raison] | ban <user1>,, <user2> [raison]',
+    usage: 'ban.usage',
     examples: ['ban @user Spam', 'ban 123456789012345678 Spam', 'ban @user1,, @user2 Spam'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission', await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args)) return;
 
         // Loading state
         const loadingEmbed = createEmbed(
-            'Bannissement',
-            `${THEME.icons.loading} Recherche des utilisateurs...`,
+            await t('moderation.ban_title', message.guild.id),
+            `${THEME.icons.loading} ${await t('common.loading_users', message.guild.id)}`,
             'loading'
         );
         const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
@@ -66,11 +66,11 @@ module.exports = {
         }
 
         if (usersToBan.length === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.user_not_found', message.guild.id), 'error')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.user_not_found', message.guild.id), 'error')] });
         }
 
         // Update loading state
-        await replyMsg.edit({ embeds: [createEmbed('Bannissement', `${THEME.icons.loading} Application des sanctions...`, 'loading')] });
+        await replyMsg.edit({ embeds: [createEmbed(await t('moderation.ban_title', message.guild.id), `${THEME.icons.loading} ${await t('common.processing', message.guild.id)}`, 'loading')] });
 
         const summary = [];
         const successUsers = [];
@@ -106,34 +106,34 @@ module.exports = {
             // Single Success - Premium Style
             const user = successUsers[0];
             const description = `${THEME.separators.line}\n` +
-                `👤 **Membre :** ${user.tag}\n` +
-                `📌 **Action :** BANNISSEMENT\n` +
-                `✏️ **Raison :** ${reason}\n\n` +
-                `${THEME.icons.success} **Action effectuée avec succès**\n` +
+                `👤 **${await t('common.member_label', message.guild.id)}** ${user.tag}\n` +
+                `📌 **${await t('common.action_label', message.guild.id)}** ${await t('moderation.ban_title', message.guild.id).then(s => s.toUpperCase())}\n` +
+                `✏️ **${await t('common.reason_label', message.guild.id)}** ${reason}\n\n` +
+                `${THEME.icons.success} **${await t('common.success_action', message.guild.id)}**\n` +
                 `${THEME.separators.line}`;
             
             embed = createEmbed(
-                'MODÉRATION',
+                await t('moderation.ban_moderation_title', message.guild.id),
                 description,
                 'moderation',
-                { footer: `Modérateur: ${message.author.tag}` }
+                { footer: await t('common.moderator_footer', message.guild.id, { tag: message.author.tag }) }
             );
         } else {
             // Bulk or Partial
             let description = "";
             if (successUsers.length > 0) {
-                description += `✅ **Succès (${successUsers.length}):**\n${successUsers.map(u => `\`${u.tag}\``).join(', ')}\n\n`;
+                description += `✅ **${await t('common.success_count', message.guild.id, { count: successUsers.length })}**\n${successUsers.map(u => `\`${u.tag}\``).join(', ')}\n\n`;
             }
             if (summary.length > 0) {
-                description += `⚠️ **Erreurs:**\n${summary.join('\n')}\n\n`;
+                description += `⚠️ **${await t('common.errors_label', message.guild.id)}**\n${summary.join('\n')}\n\n`;
             }
-            description += `**Raison:** ${reason}`;
+            description += `**${await t('common.reason_label', message.guild.id)}** ${reason}`;
             
             embed = createEmbed(
-                'Bannissement Effectué',
+                await t('moderation.ban_executed_title', message.guild.id),
                 description,
                 successUsers.length > 0 ? (summary.length > 0 ? 'warning' : 'success') : 'error',
-                { footer: `Modérateur: ${message.author.tag}` }
+                { footer: await t('common.moderator_footer', message.guild.id, { tag: message.author.tag }) }
             );
         }
 

@@ -1,20 +1,29 @@
-const { sendLog } = require('../../utils/logManager');
-const { t } = require('../../utils/lang');
+const { AuditLogEvent } = require('discord.js');
+const { sendLog } = require('../../utils/logUtils');
+const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'messageUpdate',
     async execute(client, oldMessage, newMessage) {
         if (!newMessage.guild || newMessage.author?.bot) return;
         if (oldMessage.content === newMessage.content) return; // Ignore embed updates
-        
-        const description = await t('logs.descriptions.message_update', newMessage.guild.id, { user: newMessage.author, channel: newMessage.channel });
-        
-        const fields = [
-            { name: await t('logs.fields.old', newMessage.guild.id), value: oldMessage.content ? oldMessage.content.substring(0, 1024) : '*Vide*' },
-            { name: await t('logs.fields.new', newMessage.guild.id), value: newMessage.content ? newMessage.content.substring(0, 1024) : '*Vide*' },
-            { name: await t('logs.fields.link', newMessage.guild.id), value: await t('logs.fields.go_to_message', newMessage.guild.id, { url: newMessage.url }) }
-        ];
-        
-        sendLog(newMessage.guild, await t('logs.titles.message_update', newMessage.guild.id), description, '#FFA500', fields, newMessage.author);
+
+        const description = await t('logs.details.message_edit', newMessage.guild.id, {
+            channel: newMessage.channel,
+            url: newMessage.url
+        });
+        const beforeLabel = await t('logs.fields.before', newMessage.guild.id);
+        const afterLabel = await t('logs.fields.after', newMessage.guild.id);
+        const emptyLabel = await t('logs.fields.empty', newMessage.guild.id);
+
+        await sendLog(newMessage.guild, 'messageUpdate', {
+            description: description,
+            fields: [
+                { name: beforeLabel, value: oldMessage.content ? oldMessage.content.substring(0, 1024) : emptyLabel, inline: false },
+                { name: afterLabel, value: newMessage.content ? newMessage.content.substring(0, 1024) : emptyLabel, inline: false }
+            ],
+            footer: `Author: ${newMessage.author.id} | Message ID: ${newMessage.id}`,
+            authorUser: newMessage.author
+        });
     }
 };

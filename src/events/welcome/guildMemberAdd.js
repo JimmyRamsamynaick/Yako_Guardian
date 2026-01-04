@@ -87,7 +87,10 @@ module.exports = {
                         .replace(/{server}/g, member.guild.name)
                         .replace(/{count}/g, member.guild.memberCount.toString());
                     
-                    await channel.send({ content: message }).catch(() => {});
+                    await channel.send({ 
+                        content: member.toString(),
+                        embeds: [createEmbed(await t('welcome.title', member.guild.id), message, 'default')] 
+                    }).catch(() => {});
                 }
             }
 

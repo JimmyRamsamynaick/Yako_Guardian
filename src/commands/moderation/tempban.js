@@ -26,21 +26,21 @@ async function resolveUser(client, text) {
 
 module.exports = {
     name: 'tempban',
-    description: 'Bannit temporairement un ou plusieurs membres',
+    description: 'tempban.description',
     category: 'Moderation',
-    usage: 'tempban <user> <durée> [raison] | tempban <user1>,, <user2> <durée> [raison]',
+    usage: 'tempban.usage',
     examples: ['tempban @user 1d Spam', 'tempban 123456789012345678 7d Spam', 'tempban @user1,, @user2 1d Spam'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args, 2)) return;
 
         // Loading state
         const loadingEmbed = createEmbed(
-            'TempBan',
-            `${THEME.icons.loading} Recherche des utilisateurs...`,
+            await t('moderation.tempban_title', message.guild.id),
+            `${THEME.icons.loading} ${await t('common.loading_users', message.guild.id)}`,
             'loading'
         );
         const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
@@ -82,7 +82,7 @@ module.exports = {
         }
 
         if (usersToBan.length === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.user_not_found', message.guild.id), 'error')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.user_not_found', message.guild.id), 'error')] });
         }
 
         // Parse duration
@@ -96,10 +96,10 @@ module.exports = {
         } catch { }
 
         if (!duration || duration < 1000) {
-            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.duration_invalid', message.guild.id), 'error')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.duration_invalid', message.guild.id), 'error')] });
         }
 
-        await replyMsg.edit({ embeds: [createEmbed('TempBan', `${THEME.icons.loading} Application des sanctions...`, 'loading')] });
+        await replyMsg.edit({ embeds: [createEmbed(await t('moderation.tempban_title', message.guild.id), `${THEME.icons.loading} ${await t('common.sanction_processing', message.guild.id)}`, 'loading')] });
 
         const summary = [];
         let successCount = 0;
@@ -121,12 +121,12 @@ module.exports = {
             try {
                 // Send DM
                 const dmEmbed = createEmbed(
-                    'Sanction Temporaire',
+                    await t('moderation.dm_sanction_temp_title', message.guild.id),
                     `${THEME.separators.line}\n` +
-                    `**Serveur :** ${message.guild.name}\n` +
-                    `**Action :** Bannissement Temporaire\n` +
-                    `**Durée :** ${durationStr}\n` +
-                    `**Raison :** ${reason}\n` +
+                    `**${await t('common.server_label', message.guild.id)}** ${message.guild.name}\n` +
+                    `**${await t('common.action_label', message.guild.id)}** ${await t('moderation.dm_action_tempban', message.guild.id)}\n` +
+                    `**${await t('common.duration_label', message.guild.id)}** ${durationStr}\n` +
+                    `**${await t('common.reason_label', message.guild.id)}** ${reason}\n` +
                     `${THEME.separators.line}`,
                     'moderation'
                 );
@@ -138,7 +138,7 @@ module.exports = {
                 await addSanction(message.guild.id, targetUser.id, message.author.id, 'tempban', reason, duration);
 
                 successCount++;
-                summary.push(`${THEME.icons.success} **${targetUser.tag}**: Banni (${durationStr})`);
+                summary.push(`${THEME.icons.success} **${targetUser.tag}**: ${await t('moderation.tempban_success', message.guild.id, { duration: durationStr })}`);
 
             } catch (err) {
                 console.error(err);
@@ -155,11 +155,11 @@ module.exports = {
             type = 'success';
             finalDescription = 
                 `${THEME.separators.line}\n` +
-                `👤 **Membre :** ${target.tag}\n` +
-                `📌 **Action :** TEMPBAN\n` +
-                `⏱️ **Durée :** ${durationStr}\n` +
-                `✏️ **Raison :** ${reason}\n\n` +
-                `${THEME.icons.success} **Action effectuée avec succès**\n` +
+                `👤 **${await t('common.member_label', message.guild.id)}** ${target.tag}\n` +
+                `📌 **${await t('common.action_label', message.guild.id)}** TEMPBAN\n` +
+                `⏱️ **${await t('common.duration_label', message.guild.id)}** ${durationStr}\n` +
+                `✏️ **${await t('common.reason_label', message.guild.id)}** ${reason}\n\n` +
+                `${THEME.icons.success} **${await t('common.success_action', message.guild.id)}**\n` +
                 `${THEME.separators.line}`;
         } else {
             type = successCount > 0 ? (successCount === usersToBan.length ? 'success' : 'warning') : 'error';
@@ -169,7 +169,7 @@ module.exports = {
             }
         }
 
-        const finalEmbed = createEmbed('TempBan', finalDescription, type);
+        const finalEmbed = createEmbed(await t('moderation.tempban_title', message.guild.id), finalDescription, type);
         await replyMsg.edit({ embeds: [finalEmbed] });
     }
 };

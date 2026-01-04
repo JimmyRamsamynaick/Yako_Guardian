@@ -5,12 +5,12 @@ const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'unmuteall',
-    description: 'Retire tous les mutes (Timeout et Rôle) du serveur',
+    description: 'unmuteall.description',
     category: 'Moderation',
-    usage: 'unmuteall',
+    usage: 'unmuteall.usage',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.admin_only', message.guild.id), 'error')] });
         }
 
         // Confirmation
@@ -30,7 +30,7 @@ module.exports = {
             );
 
         const msg = await message.channel.send({
-            embeds: [createEmbed('Confirmation', await t('moderation.unmuteall_confirm', message.guild.id), 'warning')],
+            embeds: [createEmbed(await t('common.confirmation_title', message.guild.id), await t('moderation.unmuteall_confirm', message.guild.id), 'warning')],
             components: [row]
         });
 
@@ -39,7 +39,7 @@ module.exports = {
 
         collector.on('collect', async i => {
             if (i.customId === confirmId) {
-                await i.update({ embeds: [createEmbed('UnmuteAll', `${THEME.icons.loading} Traitement en cours...`, 'loading')], components: [] });
+                await i.update({ embeds: [createEmbed(await t('moderation.unmuteall_title', message.guild.id), `${THEME.icons.loading} ${await t('common.processing', message.guild.id)}`, 'loading')], components: [] });
                 
                 const config = await getGuildConfig(message.guild.id);
                 const muteRoleId = config.moderation?.muteRole;
@@ -52,7 +52,7 @@ module.exports = {
                 });
 
                 if (mutedMembers.size === 0) {
-                    return msg.edit({ embeds: [createEmbed('UnmuteAll', await t('moderation.unmuteall_no_mutes', message.guild.id), 'info')], components: [] });
+                    return msg.edit({ embeds: [createEmbed(await t('moderation.unmuteall_title', message.guild.id), await t('moderation.unmuteall_no_mutes', message.guild.id), 'info')], components: [] });
                 }
 
                 let count = 0;
@@ -60,11 +60,11 @@ module.exports = {
                     try {
                         // Remove Timeout
                         if (member.communicationDisabledUntilTimestamp > Date.now()) {
-                            if (member.moderatable) await member.timeout(null, "Unmute All");
+                            if (member.moderatable) await member.timeout(null, await t('moderation.unmuteall_audit_reason', message.guild.id));
                         }
                         // Remove Role
                         if (muteRoleId && member.roles.cache.has(muteRoleId)) {
-                             if (member.manageable) await member.roles.remove(muteRoleId, "Unmute All");
+                             if (member.manageable) await member.roles.remove(muteRoleId, await t('moderation.unmuteall_audit_reason', message.guild.id));
                         }
                         count++;
                     } catch (err) {
@@ -72,15 +72,15 @@ module.exports = {
                     }
                 }
 
-                await msg.edit({ embeds: [createEmbed('Succès', await t('moderation.unmuteall_success', message.guild.id, { count }), 'success')], components: [] });
+                await msg.edit({ embeds: [createEmbed(await t('common.success_title', message.guild.id), await t('moderation.unmuteall_success', message.guild.id, { count }), 'success')], components: [] });
 
             } else {
-                await i.update({ embeds: [createEmbed('Annulé', await t('moderation.unmuteall_cancel', message.guild.id), 'error')], components: [] });
+                await i.update({ embeds: [createEmbed(await t('moderation.cancelled', message.guild.id), await t('moderation.unmuteall_cancel', message.guild.id), 'error')], components: [] });
             }
         });
 
         collector.on('end', async collected => {
-            if (collected.size === 0) msg.edit({ embeds: [createEmbed('Expiré', await t('moderation.unmuteall_timeout', message.guild.id), 'error')], components: [] }).catch(() => {});
+            if (collected.size === 0) msg.edit({ embeds: [createEmbed(await t('moderation.expired', message.guild.id), await t('moderation.unmuteall_timeout', message.guild.id), 'error')], components: [] }).catch(() => {});
         });
     }
 };

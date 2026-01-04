@@ -4,30 +4,30 @@ const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'hide',
-    description: 'Masque un salon (empêche @everyone de voir)',
+    description: 'hide.description',
     category: 'Moderation',
-    usage: 'hide [channel]',
+    usage: 'hide.usage',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ManageChannels' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ManageChannels' }), 'error')] });
         }
 
         const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]) || message.channel;
 
-        const replyMsg = await message.channel.send({ embeds: [createEmbed('Hide', `${THEME.icons.loading} Masquage du salon...`, 'loading')] });
+        const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.hide_success_title', message.guild.id), `${THEME.icons.loading} ${await t('moderation.hide_loading', message.guild.id)}`, 'loading')] });
 
         try {
             await channel.permissionOverwrites.edit(message.guild.roles.everyone, {
                 ViewChannel: false
             });
             await replyMsg.edit({ embeds: [createEmbed(
-                'Salon Masqué',
-                `${THEME.icons.success} Le salon <#${channel.id}> est maintenant masqué.`,
+                await t('moderation.hide_success_title', message.guild.id),
+                `${THEME.icons.success} ${await t('moderation.hide_success_desc', message.guild.id, { channel: channel.id })}`,
                 'success'
             )] });
         } catch (err) {
             console.error(err);
-            await replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.hide_error', message.guild.id), 'error')] });
+            await replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.hide_error', message.guild.id), 'error')] });
         }
     }
 };

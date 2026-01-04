@@ -5,10 +5,10 @@ const { createEmbed, THEME } = require('../../utils/design');
 
 module.exports = {
     name: 'strikes',
-    description: 'Affiche les strikes (avertissements) d\'un membre',
+    description: 'strikes.description',
     category: 'Moderation',
     aliases: ['warnings', 'warns'],
-    usage: 'strikes [user]',
+    usage: 'strikes.usage',
     async run(client, message, args) {
         let target;
         if (args[0]) {
@@ -18,19 +18,19 @@ module.exports = {
             target = message.author;
         }
 
-        if (!target) return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.strikes_user_not_found', message.guild.id), 'error')] });
-
+        if (!target) return message.channel.send({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.strikes_user_not_found', message.guild.id), 'error')] });
+        
         // Permission check: You can view your own, but need Perms to view others
         if (target.id !== message.author.id && !message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-             return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('moderation.strikes_view_self_only', message.guild.id), 'error')] });
+             return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('moderation.strikes_view_self_only', message.guild.id), 'error')] });
         }
 
-        const replyMsg = await message.channel.send({ embeds: [createEmbed('Strikes', `${THEME.icons.loading} Récupération des avertissements...`, 'loading')] });
+        const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.strikes_title', message.guild.id), `${THEME.icons.loading} ${await t('moderation.strikes_loading', message.guild.id)}`, 'loading')] });
 
         const data = await UserStrike.findOne({ guildId: message.guild.id, userId: target.id });
         
         if (!data || !data.strikes || data.strikes.length === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('Casier Vierge', await t('moderation.strikes_none', message.guild.id, { user: target.tag }), 'success')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('moderation.strikes_none_title', message.guild.id), await t('moderation.strikes_none', message.guild.id, { user: target.tag }), 'success')] });
         }
 
         const recent = data.strikes.slice(-10).reverse();

@@ -5,27 +5,27 @@ const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'sanctions',
-    description: 'Affiche les sanctions d\'un membre',
+    description: 'sanctions.description',
     category: 'Moderation',
-    usage: 'sanctions <membre>',
+    usage: 'sanctions.usage',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
         }
 
         const targetMember = message.mentions.members.first() || await message.guild.members.fetch(args[0]).catch(() => null);
         const userId = targetMember ? targetMember.id : args[0];
 
         if (!userId) {
-            return message.channel.send({ embeds: [createEmbed('Erreur', await t('moderation.user_not_found', message.guild.id), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.user_not_found', message.guild.id), 'error')] });
         }
 
-        const replyMsg = await message.channel.send({ embeds: [createEmbed('Sanctions', `${THEME.icons.loading} Récupération de l'historique...`, 'loading')] });
+        const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.sanctions_title_loading', message.guild.id), `${THEME.icons.loading} ${await t('moderation.sanctions_loading', message.guild.id)}`, 'loading')] });
 
         const sanctions = await getSanctions(message.guild.id, userId);
 
         if (sanctions.length === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('Historique Vierge', await t('moderation.sanctions_none', message.guild.id, { user: userId }), 'success')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('moderation.sanctions_none_title', message.guild.id), await t('moderation.sanctions_none', message.guild.id, { user: userId }), 'success')] });
         }
 
         // Pagination
@@ -39,7 +39,7 @@ module.exports = {
 
             const embed = createEmbed(
                 await t('moderation.sanctions_title', message.guild.id, { user: targetMember ? targetMember.user.tag : userId }),
-                `${THEME.separators.line}\n**Total:** ${sanctions.length} sanction(s)\n${THEME.separators.line}`,
+                `${THEME.separators.line}\n**${await t('common.total_label', message.guild.id)}** ${sanctions.length}\n${THEME.separators.line}`,
                 'primary',
                 { footer: await t('moderation.sanctions_page_footer', message.guild.id, { current: page + 1, total: totalPages, count: sanctions.length }) }
             );
@@ -63,7 +63,7 @@ module.exports = {
 
                 embed.addFields({
                     name: await t('moderation.sanctions_field_name', message.guild.id, { emoji: typeEmoji, caseId: s.caseId, type: s.type.toUpperCase() }),
-                    value: await t('moderation.sanctions_field_value', message.guild.id, { reason: s.reason, moderator: modName, date: date, duration: s.duration ? `\n**Durée:** ${require('ms')(s.duration)}` : '' })
+                    value: await t('moderation.sanctions_field_value', message.guild.id, { reason: s.reason, moderator: modName, date: date, duration: s.duration ? `\n**${await t('common.duration_label', message.guild.id)}** ${require('ms')(s.duration)}` : '' })
                 });
             }
 

@@ -69,7 +69,7 @@ function createEmbed(title, description, type = 'default', options = {}) {
     }
 
     // Add icon to title if present
-    const finalTitle = icon ? `${icon}  ${title.toUpperCase()}` : title.toUpperCase();
+    const finalTitle = icon ? `${icon}  ${title}` : title;
 
     const embed = new EmbedBuilder()
         .setColor(color);

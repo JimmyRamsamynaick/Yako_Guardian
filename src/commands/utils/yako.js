@@ -11,7 +11,7 @@ module.exports = {
 
         const embed = createEmbed(
             await t('yako.title', message.guild.id),
-            await t('yako.description', message.guild.id, { link: supportLink }),
+            await t('yako.embed_description', message.guild.id, { link: supportLink }),
             'info'
         );
 

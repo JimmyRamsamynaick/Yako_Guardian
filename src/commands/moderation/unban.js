@@ -6,21 +6,21 @@ const { checkUsage } = require('../../utils/moderation/helpUtils');
 
 module.exports = {
     name: 'unban',
-    description: 'Débannit un ou plusieurs utilisateurs (ID)',
+    description: 'unban.description',
     category: 'Moderation',
-    usage: 'unban <id> [raison] | unban <id1>,, <id2> [raison]',
+    usage: 'unban.usage',
     examples: ['unban 123456789012345678', 'unban 123456789,, 987654321 Mistake'],
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'BanMembers' }), 'error')] });
         }
 
         if (!await checkUsage(client, message, module.exports, args)) return;
 
         // Loading state
         const loadingEmbed = createEmbed(
-            'Unban',
-            `${THEME.icons.loading} Recherche des bannissements...`,
+            await t('moderation.unban_title', message.guild.id),
+            `${THEME.icons.loading} ${await t('common.loading_bans', message.guild.id)}`,
             'loading'
         );
         const replyMsg = await message.channel.send({ embeds: [loadingEmbed] });
@@ -56,10 +56,10 @@ module.exports = {
         }
 
         if (idsToUnban.length === 0) {
-            return replyMsg.edit({ embeds: [createEmbed('Erreur', await t('moderation.id_invalid', message.guild.id), 'error')] });
+            return replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.id_invalid', message.guild.id), 'error')] });
         }
 
-        await replyMsg.edit({ embeds: [createEmbed('Unban', `${THEME.icons.loading} Levée des bannissements...`, 'loading')] });
+        await replyMsg.edit({ embeds: [createEmbed(await t('moderation.unban_title', message.guild.id), `${THEME.icons.loading} ${await t('moderation.unban_processing', message.guild.id)}`, 'loading')] });
 
         const summary = [];
         let successCount = 0;
@@ -77,7 +77,7 @@ module.exports = {
                 await addSanction(message.guild.id, userId, message.author.id, 'unban', reason);
                 
                 const userTag = ban.user ? ban.user.tag : userId;
-                summary.push(`${THEME.icons.success} **${userTag}**: Débanni`);
+                summary.push(`${THEME.icons.success} **${userTag}**: ${await t('moderation.unban_success_short', message.guild.id)}`);
                 successCount++;
             } catch (err) {
                 console.error(err);
@@ -94,10 +94,10 @@ module.exports = {
             type = 'success';
             finalDescription = 
                 `${THEME.separators.line}\n` +
-                `👤 **ID :** ${targetId}\n` +
-                `📌 **Action :** UNBAN\n` +
-                `✏️ **Raison :** ${reason}\n\n` +
-                `${THEME.icons.success} **Action effectuée avec succès**\n` +
+                `👤 **${await t('common.id_label', message.guild.id)}** ${targetId}\n` +
+                `📌 **${await t('common.action_label', message.guild.id)}** ${await t('moderation.unban_title', message.guild.id).then(s => s.toUpperCase())}\n` +
+                `✏️ **${await t('common.reason_label', message.guild.id)}** ${reason}\n\n` +
+                `${THEME.icons.success} **${await t('common.success_action', message.guild.id)}**\n` +
                 `${THEME.separators.line}`;
         } else {
             type = successCount > 0 ? (successCount === idsToUnban.length ? 'success' : 'warning') : 'error';
@@ -107,7 +107,7 @@ module.exports = {
             }
         }
 
-        const finalEmbed = createEmbed('Unban', finalDescription, type);
+        const finalEmbed = createEmbed(await t('moderation.unban_title', message.guild.id), finalDescription, type);
         await replyMsg.edit({ embeds: [finalEmbed] });
     }
 };

@@ -13,7 +13,7 @@ module.exports = {
         let content = (await t('snipe.from', message.guild.id, { author: snipe.author, date: `<t:${Math.floor(snipe.date.getTime() / 1000)}:R>` })) + "\n" +
                       (await t('snipe.content', message.guild.id, { content: snipe.content }));
         
-        const embed = createEmbed(content, '', 'info');
+        const embed = createEmbed('Snipe', content, 'info');
         if (snipe.image) embed.setImage(snipe.image);
 
         const msg = await message.channel.send({ embeds: [embed] });

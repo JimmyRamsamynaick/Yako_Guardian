@@ -24,6 +24,6 @@ module.exports = {
             `**${await t('role.created_at', message.guild.id)}:** <t:${Math.floor(role.createdTimestamp / 1000)}:R>`
         ].join('\n');
 
-        await message.channel.send({ embeds: [createEmbed((await t('role.title', message.guild.id, { name: role.name })) + `\n\n${info}`, '', 'info')] });
+        await message.channel.send({ embeds: [createEmbed(await t('role.title', message.guild.id, { name: role.name }), info, 'info')] });
     }
 };

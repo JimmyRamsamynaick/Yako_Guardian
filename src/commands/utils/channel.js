@@ -27,6 +27,6 @@ module.exports = {
         ].join('\n');
 
         const header = await t('channel.info_title', message.guild.id, { name: channel.name });
-        await message.channel.send({ embeds: [createEmbed(`${header}\n\n${info}`, '', 'info')] });
+        await message.channel.send({ embeds: [createEmbed(header, info, 'info')] });
     }
 };
