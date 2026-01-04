@@ -1105,6 +1105,8 @@
 
     "set": {
         "permission": "❌ Permission Administrateur requise.",
+        "help_title": "🔧 Configuration du Bot",
+        "help_description": "Voici les commandes disponibles pour configurer le bot :\n\n`+set perm <cmd> <cible>`\n> Gérer les permissions d'une commande.\n\n`+set muterole <role>`\n> Définir le rôle Mute manuellement.\n\n`+set vocal <on/off> [salon]`\n> Faire rejoindre le bot en vocal (24/7).\n\n`+set name <pseudo>`\n> Changer le pseudo du bot sur le serveur.\n\n`+set pic <url>`\n> Changer l'avatar du bot (via lien).\n\n`+set banner <url>`\n> Changer la bannière du bot (via lien).\n\n`+set profil`\n> Ouvrir le menu de modification de profil.\n\n`+set lang <fr/en>`\n> Changer la langue du bot.\n\n`+set boostembed <#salon>`\n> Définir le salon de logs des boosts.\n\n`+set levels <on/off>`\n> Activer ou désactiver le système de niveaux.",
         "usage": "**Utilisation:** `+set <type> <valeur>`",
         "usage_perm": "❌ Utilisation: `+set perm <commande> <cible>`",
         "target_not_found": "❌ Utilisateur ou rôle cible introuvable.",
@@ -1131,7 +1133,7 @@
         "levels_success": "✅ Système de niveaux : **{{state}}**",
         "lang_invalid": "❌ Langue invalide.",
         "lang_success": "✅ Langue mise à jour avec succès en Français 🇫🇷.",
-        "invalid_option": "❌ Option invalide."
+        "invalid_option": "❌ Option invalide. Faites `+set` pour voir la liste."
     },
     "lang": {
         "permission": "❌ Permission Administrateur requise.",

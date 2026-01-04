@@ -24,10 +24,10 @@ module.exports = {
         const type = args[0]?.toLowerCase();
         let value = args.slice(1).join(' ');
 
-        if (!type || !value) {
+        if (!type) {
             return message.channel.send({ embeds: [createEmbed(
-                await t('set.usage', message.guild.id),
-                '',
+                await t('set.help_title', message.guild.id),
+                await t('set.help_description', message.guild.id),
                 'info'
             )] });
         }
@@ -130,6 +130,7 @@ module.exports = {
             )] });
         }
         else if (type === 'name') {
+            if (!value) return message.channel.send({ embeds: [createEmbed(await t('set.usage', message.guild.id), '', 'info')] });
             try {
                 await message.guild.members.me.setNickname(value);
                 return message.channel.send({ embeds: [createEmbed(
@@ -146,6 +147,7 @@ module.exports = {
             }
         } 
         else if (type === 'vocal' || type === 'vc') {
+            if (!value) return message.channel.send({ embeds: [createEmbed(await t('set.vocal_usage', message.guild.id), '', 'info')] });
             // ... (vocal code unchanged) ...
             // Handle "+set vocal on <ID>" format
             if (args[1]?.toLowerCase() === 'on' && args[2]) {
@@ -206,6 +208,7 @@ module.exports = {
             }
         }
         else if (type === 'pic' || type === 'avatar') {
+            if (!value) return message.channel.send({ embeds: [createEmbed(await t('set.usage', message.guild.id), '', 'info')] });
             try {
                 const dataUri = await getBase64FromUrl(value);
                 // Attempt using @me endpoint which is specifically for updating OWN profile
@@ -228,6 +231,7 @@ module.exports = {
             }
         }
         else if (type === 'banner') {
+            if (!value) return message.channel.send({ embeds: [createEmbed(await t('set.usage', message.guild.id), '', 'info')] });
             try {
                 const dataUri = await getBase64FromUrl(value);
                 // Attempt using @me endpoint
@@ -269,6 +273,7 @@ module.exports = {
             });
         }
         else if (type === 'lang' || type === 'language') {
+            if (!value) return message.channel.send({ embeds: [createEmbed(await t('set.usage', message.guild.id), '', 'info')] });
             const lang = value.toLowerCase();
             if (!['fr', 'en'].includes(lang)) {
                  return message.channel.send({ embeds: [createEmbed(
