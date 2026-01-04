@@ -25,6 +25,8 @@ const { handleAutoInteraction } = require('./autoInteractionHandler');
 const { handleSuggestionButton } = require('./suggestionHandler');
 const { t } = require('../utils/i18n');
 const { createEmbed } = require('../utils/design');
+const { getGuildConfig } = require('../utils/mongoUtils');
+const GuildConfig = require('../database/models/GuildConfig');
 
 module.exports = (client) => {
     client.on('interactionCreate', async (interaction) => {
@@ -334,16 +336,20 @@ async function handleBackup(client, interaction) {
 
 
 // Helper functions for Secur Panel
-const generateSecurStatusText = async (guildId, s) => {
+const generateSecurStatusText = async (guildId, s, m) => {
     const modules = await t('secur.modules_title', guildId);
     const footer = await t('secur.footer', guildId);
 
     const tr = async (key) => {
-        if (key === 'on') return await t('common.state_on', guildId);
-        if (key === 'off') return await t('common.state_off', guildId);
+        if (key === 'on' || key === true) return await t('common.state_on', guildId);
+        if (key === 'off' || key === false) return await t('common.state_off', guildId);
         if (key === 'max') return await t('common.state_max', guildId);
         return key;
     };
+
+    const antispam = m?.moderation?.antispam?.enabled || false;
+    const antilink = m?.moderation?.antilink?.enabled || false;
+    const badwords = m?.moderation?.badwords?.enabled || false;
 
     return `${modules}
 \`Anti-Token\` : ${await tr(s.antitoken_level)}
@@ -356,6 +362,9 @@ const generateSecurStatusText = async (guildId, s) => {
 \`Anti-Ban\` : ${await tr(s.antiban)}
 \`Anti-Everyone\` : ${await tr(s.antieveryone)}
 \`Anti-Deco\` : ${await tr(s.antideco)}
+\`Anti-Spam\` : ${await tr(antispam)}
+\`Anti-Link\` : ${await tr(antilink)}
+\`Bad Words\` : ${await tr(badwords)}
 
 ${footer}`;
 };
@@ -375,6 +384,9 @@ const getSecurRowSelect = async (guildId) => new ActionRowBuilder()
                     { label: await t('secur.module_antieveryone', guildId), value: 'antieveryone', description: await t('secur.desc_antieveryone', guildId), emoji: '📢' },
                     { label: await t('secur.module_antiupdate', guildId), value: 'antiupdate', description: await t('secur.desc_antiupdate', guildId), emoji: '⚙️' },
                     { label: await t('secur.module_antideco', guildId), value: 'antideco', description: await t('secur.desc_antideco', guildId), emoji: '🔌' },
+                    { label: 'Anti-Spam', value: 'antispam', description: 'Empêche le spam de messages', emoji: '📨' },
+                    { label: 'Anti-Link', value: 'antilink', description: 'Bloque les liens et invitations', emoji: '🔗' },
+                    { label: 'Bad Words', value: 'badwords', description: 'Censure les mots interdits', emoji: '🤬' },
                 ])
         );
 
@@ -400,16 +412,13 @@ const getSecurRowButtons = async (guildId) => new ActionRowBuilder()
 
 const sendSecurPanel = async (target, guildId) => {
     const settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    const mongoSettings = await getGuildConfig(guildId);
     if (!settings) return; 
     
-    const embed = createEmbed(await t('secur.panel_title', guildId), await generateSecurStatusText(guildId, settings), 'info');
+    const embed = createEmbed(await t('secur.panel_title', guildId), await generateSecurStatusText(guildId, settings, mongoSettings), 'info');
     const components = [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)];
     
     if (target.reply && typeof target.reply === 'function') {
-         // If interaction, we might want ephemeral? But user asked for panel. 
-         // If called from command, usually public or ephemeral depending on logic.
-         // Let's assume public if not specified.
-         // Actually, check if already replied.
          if (target.replied || target.deferred) {
              await target.editReply({ embeds: [embed], components });
          } else {
@@ -428,6 +437,7 @@ module.exports.sendSecurPanel = sendSecurPanel;
 async function handleSecurPanel(client, interaction) {
     const guildId = interaction.guild.id;
     let settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    let mongoSettings = await getGuildConfig(guildId);
     
     if (!settings) {
         try {
@@ -459,7 +469,6 @@ async function handleSecurPanel(client, interaction) {
             'success'
         );
 
-        // Rebuild components (same as in config button)
         const rowSanction = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId(`secur_select_sanction_${moduleName}`)
@@ -490,10 +499,15 @@ async function handleSecurPanel(client, interaction) {
 
     if (interaction.isStringSelectMenu() && interaction.customId === 'secur_select_module') {
         const module = interaction.values[0];
+        const isMongo = ['antispam', 'antilink', 'badwords'].includes(module);
         
-        // Show options for the selected module
-        // We can use a new row of buttons: OFF / ON / MAX / CONFIG
-        
+        let stateStr = 'OFF';
+        if (isMongo) {
+            stateStr = mongoSettings.moderation?.[module]?.enabled ? 'ON' : 'OFF';
+        } else {
+            stateStr = settings[module];
+        }
+
         const rowModuleActions = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
@@ -524,7 +538,7 @@ async function handleSecurPanel(client, interaction) {
 
         try {
             await interaction.update({ 
-                embeds: [createEmbed(await t('handlers.secur_config_title', interaction.guild.id, { module: module.toUpperCase(), state: settings[module] }), '', 'info')], 
+                embeds: [createEmbed(await t('handlers.secur_config_title', interaction.guild.id, { module: module.toUpperCase(), state: stateStr }), '', 'info')], 
                 components: [rowModuleActions, rowBack] 
             });
         } catch (error) {
@@ -538,8 +552,9 @@ async function handleSecurPanel(client, interaction) {
     if (interaction.isButton()) {
         if (interaction.customId === 'secur_back_main' || interaction.customId === 'secur_refresh') {
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+            mongoSettings = await getGuildConfig(guildId);
             try {
-                const statusText = await generateSecurStatusText(guildId, settings);
+                const statusText = await generateSecurStatusText(guildId, settings, mongoSettings);
                 await interaction.update({ 
                     embeds: [createEmbed(await t('secur.panel_title', guildId), statusText, 'info')], 
                     components: [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)] 
@@ -551,16 +566,26 @@ async function handleSecurPanel(client, interaction) {
         }
 
         if (interaction.customId === 'secur_toggle_all_on') {
-            // Update all to ON
+            // Update SQLite
             db.prepare(`UPDATE guild_settings SET 
                 antitoken_level='on', antiupdate='on', antichannel='on', antirole='on', 
                 antiwebhook='on', antiunban='on', antibot='on', antiban='on', 
                 antieveryone='on', antideco='on' 
                 WHERE guild_id = ?`).run(guildId);
             
+            // Update Mongo
+            await GuildConfig.updateOne({ guildId }, { 
+                $set: { 
+                    'moderation.antispam.enabled': true,
+                    'moderation.antilink.enabled': true,
+                    'moderation.badwords.enabled': true
+                }
+            });
+
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+            mongoSettings = await getGuildConfig(guildId);
             try {
-                const statusText = await generateSecurStatusText(guildId, settings);
+                const statusText = await generateSecurStatusText(guildId, settings, mongoSettings);
                 await interaction.update({ 
                     embeds: [createEmbed(await t('secur.panel_title', guildId), statusText, 'info')], 
                     components: [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)] 
@@ -572,16 +597,27 @@ async function handleSecurPanel(client, interaction) {
         }
 
         if (interaction.customId === 'secur_toggle_all_max') {
-            // Update all to MAX
+            // Update SQLite
             db.prepare(`UPDATE guild_settings SET 
                 antitoken_level='max', antiupdate='max', antichannel='max', antirole='max', 
                 antiwebhook='max', antiunban='max', antibot='max', antiban='max', 
                 antieveryone='max', antideco='max' 
                 WHERE guild_id = ?`).run(guildId);
+
+            // Update Mongo
+            await GuildConfig.updateOne({ guildId }, { 
+                $set: { 
+                    'moderation.antispam.enabled': true,
+                    'moderation.antilink.enabled': true,
+                    'moderation.antilink.mode': 'all', // Max protection
+                    'moderation.badwords.enabled': true
+                }
+            });
             
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+            mongoSettings = await getGuildConfig(guildId);
             try {
-                const statusText = await generateSecurStatusText(guildId, settings);
+                const statusText = await generateSecurStatusText(guildId, settings, mongoSettings);
                 await interaction.update({ 
                     embeds: [createEmbed(await t('secur.panel_title', guildId), statusText, 'info')], 
                     components: [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)] 
@@ -593,16 +629,26 @@ async function handleSecurPanel(client, interaction) {
         }
 
         if (interaction.customId === 'secur_toggle_all_off') {
-            // Update all to OFF
+            // Update SQLite
             db.prepare(`UPDATE guild_settings SET 
                 antitoken_level='off', antiupdate='off', antichannel='off', antirole='off', 
                 antiwebhook='off', antiunban='off', antibot='off', antiban='off', 
                 antieveryone='off', antideco='off' 
                 WHERE guild_id = ?`).run(guildId);
             
+            // Update Mongo
+            await GuildConfig.updateOne({ guildId }, { 
+                $set: { 
+                    'moderation.antispam.enabled': false,
+                    'moderation.antilink.enabled': false,
+                    'moderation.badwords.enabled': false
+                }
+            });
+
             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+            mongoSettings = await getGuildConfig(guildId);
             try {
-                const statusText = await generateSecurStatusText(guildId, settings);
+                const statusText = await generateSecurStatusText(guildId, settings, mongoSettings);
                 await interaction.update({ 
                     embeds: [createEmbed(await t('secur.panel_title', guildId), statusText, 'info')], 
                     components: [await getSecurRowSelect(guildId), await getSecurRowButtons(guildId)] 
@@ -617,6 +663,35 @@ async function handleSecurPanel(client, interaction) {
         const matchLimits = interaction.customId.match(/^secur_btn_limits_(.+)$/);
         if (matchLimits) {
             const moduleName = matchLimits[1];
+            const isMongo = ['antispam', 'antilink', 'badwords'].includes(moduleName);
+
+            // Mongo Limit Modal (Only for Antispam for now)
+            if (isMongo && moduleName === 'antispam') {
+                 const modal = new ModalBuilder()
+                    .setCustomId(`secur_modal_mongo_${moduleName}`)
+                    .setTitle(`Config ${moduleName}`);
+
+                const limitInput = new TextInputBuilder()
+                    .setCustomId('limit_count')
+                    .setLabel(await t('secur.config_limit_label', interaction.guild.id))
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(false);
+
+                const timeInput = new TextInputBuilder()
+                    .setCustomId('limit_time')
+                    .setLabel(await t('secur.config_time_label', interaction.guild.id))
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(false);
+
+                modal.addComponents(new ActionRowBuilder().addComponents(limitInput), new ActionRowBuilder().addComponents(timeInput));
+                await interaction.showModal(modal);
+                return;
+            } else if (isMongo) {
+                 await interaction.reply({ content: "Configuration avancée indisponible pour ce module via le panel pour l'instant.", ephemeral: true });
+                 return;
+            }
+
+            // SQLite Limit Modal
             const modal = new ModalBuilder()
                 .setCustomId(`secur_modal_${moduleName}`)
                 .setTitle(`Config ${moduleName}`);
@@ -638,14 +713,90 @@ async function handleSecurPanel(client, interaction) {
             return;
         }
 
+        // Handle Mode Button (AntiLink)
+        if (interaction.customId === 'secur_btn_mode_antilink') {
+            const currentConfig = mongoSettings.moderation?.antilink || {};
+            const newMode = currentConfig.mode === 'all' ? 'invite' : 'all';
+            
+            await GuildConfig.updateOne({ guildId }, { 
+                $set: { 'moderation.antilink.mode': newMode }
+            });
+            
+            const embed = createEmbed(
+                `**Configuration : ANTILINK**`,
+                `Paramètres actuels :\nMode: ${newMode}`,
+                'info'
+            );
+            
+            const rowBtns = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`secur_btn_mode_antilink`)
+                    .setLabel('Changer Mode (Invite/All)')
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                    .setCustomId('secur_back_main')
+                    .setLabel('Retour')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+            
+            await interaction.update({ embeds: [embed], components: [rowBtns] });
+            return;
+        }
+
         // Regex to catch secur_mod_<module>_<action>
         const match = interaction.customId.match(/^secur_mod_(.+?)_(off|on|max|config)$/);
         if (match) {
             const moduleName = match[1];
             const action = match[2];
+            const isMongo = ['antispam', 'antilink', 'badwords'].includes(moduleName);
 
             if (action === 'config') {
-                // Fetch existing config
+                if (isMongo) {
+                     // For Mongo modules, we show simple info for now
+                     const modConfig = mongoSettings.moderation?.[moduleName] || {};
+                     const limit = modConfig.limit || 'N/A';
+                     const time = modConfig.time || 'N/A';
+                     const mode = modConfig.mode || 'N/A';
+                     
+                     let desc = "";
+                     if (moduleName === 'antispam') desc = `Limite: ${limit} msgs / ${time} ms`;
+                     if (moduleName === 'antilink') desc = `Mode: ${mode}`;
+                     
+                     const embed = createEmbed(
+                        `**Configuration : ${moduleName.toUpperCase()}**`,
+                        `Paramètres actuels :\n${desc}`,
+                        'info'
+                    );
+                    
+                    const rowBtns = new ActionRowBuilder();
+                    if (moduleName === 'antispam') {
+                        rowBtns.addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`secur_btn_limits_${moduleName}`)
+                                .setLabel('Modifier Limites')
+                                .setStyle(ButtonStyle.Primary)
+                        );
+                    }
+                    if (moduleName === 'antilink') {
+                        rowBtns.addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`secur_btn_mode_${moduleName}`)
+                                .setLabel('Changer Mode (Invite/All)')
+                                .setStyle(ButtonStyle.Primary)
+                        );
+                    }
+                    rowBtns.addComponents(
+                        new ButtonBuilder()
+                            .setCustomId('secur_back_main')
+                            .setLabel('Retour')
+                            .setStyle(ButtonStyle.Secondary)
+                    );
+                    
+                    await interaction.update({ embeds: [embed], components: [rowBtns] });
+                    return;
+                }
+
+                // SQLite Config
                 const limitConfig = db.prepare('SELECT * FROM module_limits WHERE guild_id = ? AND module = ?').get(guildId, moduleName);
                 const currentSanction = limitConfig?.sanction || 'kick';
                 const currentLimit = limitConfig?.limit_count || 3;
@@ -684,9 +835,27 @@ async function handleSecurPanel(client, interaction) {
                 return;
             } else {
                 // Update State (off, on, max)
-                db.prepare(`UPDATE guild_settings SET ${moduleName} = ? WHERE guild_id = ?`).run(action, guildId);
+                let newStateStr = action;
                 
-                settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+                if (isMongo) {
+                    const update = {};
+                    const state = (action === 'on' || action === 'max');
+                    update[`moderation.${moduleName}.enabled`] = state;
+                    
+                    if (action === 'max' && moduleName === 'antilink') {
+                         update[`moderation.${moduleName}.mode`] = 'all';
+                    } else if (action === 'on' && moduleName === 'antilink') {
+                         // Ensure default mode if not set?
+                    }
+                    
+                    await GuildConfig.updateOne({ guildId }, { $set: update });
+                    newStateStr = state ? 'ON' : 'OFF';
+                    settings[moduleName] = newStateStr; // Hack for display below? No, we use separate display logic.
+                } else {
+                    db.prepare(`UPDATE guild_settings SET ${moduleName} = ? WHERE guild_id = ?`).run(action, guildId);
+                    settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+                    newStateStr = settings[moduleName];
+                }
                 
                 // Re-render the module view
                 const rowModuleActions = new ActionRowBuilder()
@@ -700,7 +869,7 @@ async function handleSecurPanel(client, interaction) {
 
                 try {
                     await interaction.update({ 
-                        embeds: [createEmbed(`**Configuration : ${moduleName.toUpperCase()}**\nÉtat actuel : ${settings[moduleName]}\n\nChoisissez une action :`, '', 'info')], 
+                        embeds: [createEmbed(`**Configuration : ${moduleName.toUpperCase()}**\nÉtat actuel : ${newStateStr}\n\nChoisissez une action :`, '', 'info')], 
                         components: [rowModuleActions, rowBack] 
                     });
                 } catch (error) {
@@ -713,6 +882,27 @@ async function handleSecurPanel(client, interaction) {
     // --- Handling Modals ---
     if (interaction.isModalSubmit()) {
         const match = interaction.customId.match(/^secur_modal_(.+?)$/);
+        const matchMongo = interaction.customId.match(/^secur_modal_mongo_(.+?)$/);
+        
+        if (matchMongo) {
+            const moduleName = matchMongo[1];
+            const limitCount = parseInt(interaction.fields.getTextInputValue('limit_count'));
+            let limitTime = parseInt(interaction.fields.getTextInputValue('limit_time'));
+            
+            if (limitCount > 0 && limitTime > 0) {
+                 if (limitTime < 1000) limitTime = 1000;
+                 
+                 const update = {};
+                 update[`moderation.${moduleName}.limit`] = limitCount;
+                 update[`moderation.${moduleName}.time`] = limitTime;
+                 
+                 await GuildConfig.updateOne({ guildId }, { $set: update });
+                 
+                 await interaction.reply({ embeds: [createEmbed(`✅ Configuration sauvegardée pour ${moduleName}.`, '', 'success')], ephemeral: true });
+            }
+            return;
+        }
+
         if (match) {
             const moduleName = match[1];
             const limitCount = interaction.fields.getTextInputValue('limit_count');

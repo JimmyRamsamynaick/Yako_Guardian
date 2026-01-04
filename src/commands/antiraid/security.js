@@ -48,62 +48,10 @@ module.exports = {
             )] });
         }
 
-        if (sub === 'config') {
+        if (sub === 'config' || sub === 'status' || !sub) {
             await sendSecurPanel(message, message.guild.id);
             return;
         }
 
-        const config = await getGuildConfig(message.guild.id);
-
-        if (sub === 'status' || !sub) {
-            const sec = config.security || {};
-            const cap = sec.captcha || {};
-            const flood = sec.antiflood || {};
-
-            const bool = (b) => b ? "✅ ON" : "❌ OFF";
-            
-            const embed = createEmbed(
-                await t('security.status_title', message.guild.id),
-                '',
-                'default'
-            )
-                .addFields(
-                    { 
-                        name: await t('security.captcha_title', message.guild.id), 
-                        value: await t('security.captcha_status', message.guild.id, { 
-                            state: bool(cap.enabled), 
-                            diff: cap.difficulty || 'medium', 
-                            role: cap.roleId ? `<@&${cap.roleId}>` : 'None',
-                            bypass: cap.bypassRoles?.length || 0
-                        }), 
-                        inline: true 
-                    },
-                    { 
-                        name: await t('security.antibot_title', message.guild.id), 
-                        value: await t('security.antibot_status', message.guild.id, { state: bool(sec.antibot) }), 
-                        inline: true 
-                    },
-                    { 
-                        name: await t('security.antiflood_title', message.guild.id), 
-                        value: await t('security.antiflood_status', message.guild.id, { 
-                            state: bool(flood.enabled), 
-                            limit: flood.limit || 5, 
-                            time: (flood.time || 10000) / 1000 
-                        }), 
-                        inline: true 
-                    }
-                );
-
-            const row = new ActionRowBuilder()
-                .addComponents(
-                    new ButtonBuilder()
-                        .setCustomId('secur_refresh') // Triggers the panel via componentHandler
-                        .setLabel('Configuration Avancée')
-                        .setStyle(ButtonStyle.Primary)
-                        .setEmoji('🛡️')
-                );
-
-            return message.channel.send({ embeds: [embed], components: [row] });
-        }
     }
 };
