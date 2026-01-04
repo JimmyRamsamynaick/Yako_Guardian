@@ -47,6 +47,7 @@ async function createTicket(client, user, guild, initialContent) {
     });
 
     // Send Initial Message (No Embeds)
+    const title = await t('modmail.new_ticket_title', guild.id);
     const content = await t('modmail.new_ticket', guild.id, { 
         user: user.id, 
         tag: user.tag, 
@@ -69,7 +70,7 @@ async function createTicket(client, user, guild, initialContent) {
         );
     
     await channel.send({ content: "@here", components: [row] }); // Notify staff
-    await channel.send({ embeds: [createEmbed(content, '', 'info')] });
+    await channel.send({ embeds: [createEmbed(title, content, 'info')] });
 
     return channel;
 }
