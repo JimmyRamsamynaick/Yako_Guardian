@@ -85,7 +85,13 @@ async function checkAutomod(client, message, config) {
         if (message.deletable) await message.delete().catch(() => {});
         
         const warning = await t('automod.warning', message.guild.id, { user: message.author, reason });
-        const warningMsg = await message.channel.send({ embeds: [createEmbed(warning, '', 'error')] });
+        
+        let title = "AutoMod";
+        if (type === 'antilink') title = await t('moderation.antilink_title', message.guild.id);
+        else if (type === 'badwords') title = await t('moderation.badwords_title', message.guild.id);
+        else if (type === 'antispam') title = await t('moderation.antispam_title', message.guild.id);
+
+        const warningMsg = await message.channel.send({ embeds: [createEmbed(title, warning, 'moderation')] });
         setTimeout(() => warningMsg?.delete().catch(() => {}), 5000);
 
         // Add Strike

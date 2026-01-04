@@ -124,12 +124,6 @@ async function showModmailMenu(client, interaction, config) {
     const category = mm.categoryId ? `<#${mm.categoryId}>` : await t('modmail.handler.not_defined', guildId);
     const role = mm.staffRoleId ? `<@&${mm.staffRoleId}>` : await t('modmail.handler.not_defined', guildId);
 
-    const content = await t('modmail.title', guildId) + "\n\n" +
-                    `${await t('modmail.state_label', guildId)} : **${status}**\n` +
-                    `**${await t('modmail.category', guildId)}** : ${category}\n` +
-                    `**${await t('modmail.role', guildId)}** : ${role}\n\n` +
-                    await t('modmail.description', guildId);
-
     const rowControls = new ActionRowBuilder()
         .addComponents(
             new ButtonBuilder()
@@ -153,7 +147,13 @@ async function showModmailMenu(client, interaction, config) {
                 .setPlaceholder(await t('modmail.placeholder_role', guildId))
         );
 
-    const embed = createEmbed(content, '', 'info');
+    const embed = createEmbed(await t('modmail.title', guildId), await t('modmail.description', guildId), 'info');
+    
+    embed.addFields(
+        { name: await t('modmail.state_label', guildId), value: `**${status}**`, inline: true },
+        { name: await t('modmail.category', guildId), value: category, inline: true },
+        { name: await t('modmail.role', guildId), value: role, inline: true }
+    );
 
     if (interaction.type === 3) {
         await interaction.update({ embeds: [embed], components: [rowControls, rowCategory, rowRole] });
@@ -253,8 +253,7 @@ async function handleReportModal(client, interaction) {
         if (msg.attachments.size > 0) reportedContent += ` ${await t('modmail.handler.attachment', guildId)}`;
     } catch (e) {}
 
-    const reportContent = `🚨 **${await t('modmail.handler.new_report_title', guildId)}**\n\n` +
-                          `**${await t('modmail.handler.reported_by', guildId)}:** <@${interaction.user.id}>\n` +
+    const reportContent = `**${await t('modmail.handler.reported_by', guildId)}:** <@${interaction.user.id}>\n` +
                           `**${await t('modmail.handler.message_author', guildId)}:** ${reportedAuthor}\n` +
                           `**${await t('modmail.handler.reason', guildId)}:** ${reason}\n` +
                           `**${await t('modmail.handler.link', guildId)}:** [${await t('modmail.handler.view_message', guildId)}](${messageLink})\n\n` +
@@ -270,7 +269,7 @@ async function handleReportModal(client, interaction) {
         );
 
     // Using V2 for the log message too? Yes.
-    await logChannel.send({ embeds: [createEmbed(reportContent, '', 'error')], components: [row] });
+    await logChannel.send({ embeds: [createEmbed(await t('modmail.handler.new_report_title', guildId), reportContent, 'error')], components: [row] });
 
     await interaction.reply({ embeds: [createEmbed(await t('modmail.handler.report_sent', guildId), '', 'success')], ephemeral: true });
 }

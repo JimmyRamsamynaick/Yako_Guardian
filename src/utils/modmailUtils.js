@@ -69,7 +69,12 @@ async function createTicket(client, user, guild, initialContent) {
                 .setStyle(ButtonStyle.Danger)
         );
     
-    await channel.send({ content: "@here", components: [row] }); // Notify staff
+    let pingContent = "@here";
+    if (config.modmail.staffRoleId) {
+        pingContent = `<@&${config.modmail.staffRoleId}>`;
+    }
+    
+    await channel.send({ content: pingContent, components: [row] }); // Notify staff
     await channel.send({ embeds: [createEmbed(title, content, 'info')] });
 
     return channel;

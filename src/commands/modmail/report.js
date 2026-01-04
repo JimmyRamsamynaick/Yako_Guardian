@@ -23,12 +23,18 @@ module.exports = {
 async function showReportMenu(client, interaction, config) {
     const report = config.report || { enabled: false, channelId: null };
     const status = report.enabled ? await t('modmail.report.state_active', interaction.guild.id) : await t('modmail.report.state_inactive', interaction.guild.id);
-    const channel = report.channelId ? `<#${report.channelId}>` : "Non défini";
+    const channel = report.channelId ? `<#${report.channelId}>` : await t('modmail.handler.not_defined', interaction.guild.id);
 
-    const content = await t('modmail.report.title', interaction.guild.id) + "\n\n" +
-                    await t('modmail.report.state', interaction.guild.id, { status }) + "\n" +
-                    await t('modmail.report.logs', interaction.guild.id, { channel }) + "\n\n" +
-                    await t('modmail.report.description', interaction.guild.id);
+    const embed = createEmbed(
+        await t('modmail.report.title', interaction.guild.id), 
+        await t('modmail.report.description', interaction.guild.id), 
+        'info'
+    );
+
+    embed.addFields(
+        { name: await t('modmail.report.state_label', interaction.guild.id), value: `**${status}**`, inline: true },
+        { name: await t('modmail.report.logs_label', interaction.guild.id), value: channel, inline: true }
+    );
 
     const rowControls = new ActionRowBuilder()
         .addComponents(
@@ -45,8 +51,6 @@ async function showReportMenu(client, interaction, config) {
                 .setPlaceholder(await t('modmail.report.placeholder', interaction.guild.id))
                 .setChannelTypes(ChannelType.GuildText)
         );
-
-    const embed = createEmbed(content, '', 'info');
 
     if (interaction.type === 3) { // Component Interaction
         await interaction.update({ embeds: [embed], components: [rowControls, rowChannel] });

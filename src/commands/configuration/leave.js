@@ -48,11 +48,17 @@ module.exports = {
                 await t('leave.settings_title', message.guild.id),
                 (await t('leave.settings_channel', message.guild.id, { channel })) + '\n' +
                 (await t('leave.settings_message', message.guild.id)) + ` ${msgState}\n` +
-                `\`${msg}\``,
+                `\`${msg}\`` +
+                (await t('leave.settings_help', message.guild.id)),
                 'default'
             );
 
             return message.channel.send({ embeds: [embed] });
+        }
+
+        // +leave menu
+        if (sub === 'menu') {
+            return showLeaveMenu(message, config);
         }
 
         // +leave message <on/off>
@@ -69,6 +75,29 @@ module.exports = {
             await config.save();
 
             return replyMsg.edit({ embeds: [createEmbed('Succès', await t('leave.message_success', message.guild.id, { state: state.toUpperCase() }), 'success')] });
+        }
+
+        // +leave <channel> <message> (Shortcut)
+        if (sub) {
+            const channelId = sub.replace(/[<#>]/g, '');
+            const channel = message.guild.channels.cache.get(channelId);
+
+            if (channel) {
+                const msgContent = args.slice(1).join(' ');
+                if (!msgContent) {
+                    return message.channel.send({ embeds: [createEmbed('Usage', await t('leave.usage', message.guild.id), 'warning')] });
+                }
+
+                const replyMsg = await message.channel.send({ embeds: [createEmbed('Configuration', `${THEME.icons.loading} Sauvegarde en cours...`, 'loading')] });
+
+                if (!config.goodbye) config.goodbye = {};
+                config.goodbye.enabled = true;
+                config.goodbye.channelId = channel.id;
+                config.goodbye.message = msgContent;
+                await config.save();
+
+                return replyMsg.edit({ embeds: [createEmbed('Succès', await t('common.success', message.guild.id) + ` Message de départ configuré pour ${channel}.`, 'success')] });
+            }
         }
 
         return message.channel.send({ embeds: [createEmbed('Usage', await t('leave.usage', message.guild.id), 'warning')] });

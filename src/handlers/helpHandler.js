@@ -7,6 +7,8 @@ const {
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { t } = require('../utils/i18n');
 const { createEmbed, THEME } = require('../utils/design');
+const { getUserLevel, getCommandLevel } = require('../utils/permissionUtils');
+const { isBotOwner } = require('../utils/ownerUtils');
 
 async function handleHelpMenu(client, interaction) {
     const { customId } = interaction;
@@ -38,8 +40,19 @@ async function handleHelpMenu(client, interaction) {
         const config = await getGuildConfig(interaction.guildId);
         const prefix = config.prefix || client.config.prefix;
         
-        // Dynamic command list generation
-        const commands = client.commands.filter(c => (c.category ? c.category.toLowerCase() : '') === category.toLowerCase());
+        // Permission Check
+        const isOwner = await isBotOwner(interaction.user.id);
+        const userLevel = getUserLevel(interaction.member, config, isOwner);
+
+        // Dynamic command list generation & filtering
+        const commands = client.commands.filter(c => {
+            const cmdCat = c.category ? c.category.toLowerCase() : '';
+            if (cmdCat !== category.toLowerCase()) return false;
+            
+            // Check permission
+            const requiredLevel = getCommandLevel(c);
+            return userLevel >= requiredLevel;
+        });
         
         let embed;
 

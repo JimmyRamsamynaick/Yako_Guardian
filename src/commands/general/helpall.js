@@ -1,11 +1,18 @@
 const { t } = require('../../utils/i18n');
 const { createEmbed } = require('../../utils/design');
+const { getCommandLevel, getUserLevel } = require('../../utils/permissionUtils');
+const { getGuildConfig } = require('../../utils/mongoUtils');
+const { isBotOwner } = require('../../utils/ownerUtils');
 
 module.exports = {
     name: 'helpall',
     description: 'Affiche toutes les commandes par niveau de permission',
     category: 'General',
     async run(client, message, args) {
+        const isOwner = await isBotOwner(message.author.id);
+        const config = await getGuildConfig(message.guild.id);
+        const userLevel = getUserLevel(message.member, config, isOwner);
+
         const levels = {
             '0': [], // Public
             '1': [], // Support
@@ -17,23 +24,19 @@ module.exports = {
         };
 
         client.commands.forEach(cmd => {
-            let requiredLevel = cmd.permLevel || 0;
-            if (cmd.permLevel === undefined) {
-                const cat = cmd.category ? cmd.category.toLowerCase() : 'general';
-                if (cat === 'owner') requiredLevel = 10;
-                else if (cat === 'antiraid' || cat === 'secur' || cmd.name === 'backup') requiredLevel = 4;
-                else if (cat === 'configuration' || cat === 'administration') requiredLevel = 3;
-                else if (cat === 'moderation' || cat === 'modmail') requiredLevel = 2;
-                else if (cat === 'roles' || cat === 'tickets') requiredLevel = 1;
-                else requiredLevel = 0;
-            }
+            const requiredLevel = getCommandLevel(cmd);
             
-            if (levels[requiredLevel.toString()]) {
-                levels[requiredLevel.toString()].push(cmd.name);
+            // Only show commands that the user can access (requiredLevel <= userLevel)
+            // Exception: Bot Owner sees everything (userLevel 10)
+            if (requiredLevel <= userLevel) {
+                 if (levels[requiredLevel.toString()]) {
+                    levels[requiredLevel.toString()].push(cmd.name);
+                }
             }
         });
 
         let content = (await t('helpall.title', message.guild.id)) + "\n\n";
+        content += `**Votre Niveau : ${userLevel}**\n\n`;
 
         // Level 0
         if (levels['0'].length > 0) content += (await t('helpall.level0', message.guild.id)) + `\n${levels['0'].map(c => `\`${c}\``).join(', ')}\n\n`;
@@ -48,6 +51,11 @@ module.exports = {
         // Level 5
         if (levels['5'].length > 0) content += (await t('helpall.level5', message.guild.id)) + `\n${levels['5'].map(c => `\`${c}\``).join(', ')}\n\n`;
         
+        // Level 10 (Bot Owner) - Only show if user is bot owner
+        if (userLevel === 10 && levels['10'].length > 0) {
+             content += `**👑 Bot Owner**\n${levels['10'].map(c => `\`${c}\``).join(', ')}\n\n`;
+        }
+
         return message.channel.send({ embeds: [createEmbed('Help All', content, 'info')] });
     }
 };

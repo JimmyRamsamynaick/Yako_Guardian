@@ -892,9 +892,10 @@
         "added": "✅ **{{target}}** added to level **{{level}}**.",
         "removed": "✅ Removed from level **{{level}}**.",
         "reset_success": "✅ Permission levels reset.",
-        "unknown_sub": "❌ Unknown subcommand. Usage: `{{prefix}}perms list/set/del/reset`.",
+        "unknown_sub": "❌ Unknown subcommand.",
         "description": "Manages the level-based permission system (1-5)",
-        "usage": "**Usage:** `+perms`"
+        "usage_title": "🛡️ PERMISSION SYSTEM",
+        "usage_description": "`+perms set <lvl> <target>` : Add a permission.\n`+perms del <lvl> <target>` : Remove a permission.\n`+perms list` : View configuration.\n`+perms reset` : Reset all."
     },
     "set": {
         "permission": "❌ Administrator permission required.",
@@ -1600,7 +1601,11 @@
                 "btn_add": "Add",
                 "btn_del": "Remove",
                 "btn_list": "List",
-                "config_title": "**🟣 Twitch Configuration**\n\nStatus: {{status}}"
+                "config_title": "**🟣 Twitch Configuration**\n\nStatus: {{status}}",
+                "alert_title": "{{streamer}} is live!",
+                "alert_game": "Game",
+                "alert_viewers": "Viewers",
+                "alert_footer": "Twitch Notification"
             },
             "join": {
                 "modal_title": "Welcome Message",
@@ -2045,7 +2050,8 @@
         "no_banner": "❌ This server has no banner.",
         "banner_title": "**Server Banner**",
         "usage": "**Usage:** `+server pic`, `+server banner`",
-        "description": "Gestion des serveurs (Owner)"
+        "description": "Here are the available commands for this server:",
+        "title": "Server Management"
     },
     "user": {
         "not_found": "❌ User not found.",
@@ -2092,12 +2098,13 @@
     },
     "join": {
         "description": "Configure welcome messages",
-        "usage": "❌ Usage: `+join <settings/dm/role>`",
+        "usage": "❌ Usage: `+join <settings/menu/dm/role>` or `+join <#channel> <message>`",
         "settings_title": "📥 Join Settings",
         "settings_dm": "**Welcome DM:** {{state}}",
         "settings_role": "**Autorole:** {{role}}",
         "settings_channel": "**Channel:** {{channel}}",
         "settings_message": "**Message:**",
+        "settings_help": "\n\n**How to modify?**\nUse `+join <#channel> <message>` to set channel and message.\nOr type `+join menu` to use the interactive menu.",
         "dm_usage": "❌ Usage: `+join dm <on/off>`",
         "dm_success": "✅ Welcome DM: **{{state}}**",
         "role_usage": "❌ Usage: `+join role <@role/ID/off>`",
@@ -2111,6 +2118,7 @@
         "settings_title": "📤 Leave Settings",
         "settings_channel": "**Channel:** {{channel}}",
         "settings_message": "**Message:**",
+        "settings_help": "\n\n**How to modify?**\nUse `+leave menu` to use the interactive menu.",
         "message_usage": "❌ Usage: `+leave message <on/off>`",
         "message_success": "✅ Leave message: **{{state}}**",
         "description": "Configure leave messages",
@@ -2402,6 +2410,7 @@
         "test_sent": "✅ Test message sent to {{channel}}.",
         "test_error": "❌ Error sending test: {{error}}",
         "usage": "`+boostembed <on/off/channel/message/title/description/image/thumbnail/test>`",
+        "help_title": "Boost Help",
         "description": "Configure boost announcements (channel, message, embed, image...).",
         "help_details": "**🚀 Boost Configuration**\n\n`+boostembed <on/off>`: Enable/Disable module.\n`+boostembed channel <#channel>`: Set announcement channel.\n`+boostembed message <text/reset>`: Message outside embed (e.g. \"Thx {{user}}!\").\n`+boostembed title <text/reset>`: Embed title.\n`+boostembed description <text/reset>`: Embed description.\n`+boostembed image <url/reset>`: Embed image (GIF/PNG).\n`+boostembed thumbnail <url/reset>`: Thumbnail (default: booster avatar).\n`+boostembed test`: Send test message.\n\n**Variables:** `{{user}}` (mention), `{{count}}` (boost count).",
         "image_usage": "❌ Usage: `+boostembed image <url/reset>`",
@@ -2662,13 +2671,15 @@
         "report": {
             "state_active": "Active",
             "state_inactive": "Inactive",
-            "title": "Report",
+            "title": "Report Configuration",
             "state": "State",
             "logs": "Logs",
-            "description": "Description",
+            "state_label": "Status",
+            "logs_label": "Log Channel",
+            "description": "Allows members to report inappropriate messages via right-click > Apps > Report Message.",
             "btn_deactivate": "Deactivate",
             "btn_activate": "Activate",
-            "placeholder": "Select..."
+            "placeholder": "Select log channel..."
         },
         "title": "Modmail Configuration",
         "state_label": "Status",
@@ -2696,7 +2707,8 @@
     },
     "formulaire": {
         "permission": "❌ Administrator permission required.",
-        "usage": "**📝 FORM SYSTEM**\n\n`+formulaire create <id>` : Create interactive form.\n`+formulaire delete <id>` : Delete form.\n`+formulaire list` : List forms.\n`+formulaire post <id> [channel]` : Post form button.",
+        "usage_title": "📝 FORM SYSTEM",
+        "usage_description": "`+formulaire create <id>` : Create interactive form.\n`+formulaire delete <id>` : Delete form.\n`+formulaire list` : List forms.\n`+formulaire post <id> [channel]` : Post form button.",
         "missing_id": "❌ Specify a unique ID for this form (e.g., `recruitment`).",
         "exists": "❌ A form with this ID already exists.",
         "btn_config": "Configure Form",
@@ -2740,3 +2752,4 @@
         "default_message": "Goodbye {user}!"
     }
 }
+

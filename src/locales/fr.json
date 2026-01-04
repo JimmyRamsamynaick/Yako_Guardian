@@ -425,12 +425,13 @@
     },
     "join": {
         "description": "Configure les messages de bienvenue",
-        "usage": "❌ Usage: `+join <settings/dm/role>`",
+        "usage": "❌ Usage: `+join <settings/menu/dm/role>` ou `+join <#salon> <message>`",
         "settings_title": "📥 Paramètres d'Arrivée",
         "settings_dm": "**DM de Bienvenue:** {{state}}",
         "settings_role": "**Autorole:** {{role}}",
         "settings_channel": "**Salon:** {{channel}}",
         "settings_message": "**Message:**",
+        "settings_help": "\n\n**Comment modifier ?**\nUtilisez `+join <#salon> <message>` pour définir le salon et le message.\nOu tapez `+join menu` pour utiliser le menu interactif.",
         "dm_usage": "❌ Usage: `+join dm <on/off>`",
         "dm_success": "✅ DM de bienvenue: **{{state}}**",
         "role_usage": "❌ Usage: `+join role <@role/ID/off>`",
@@ -443,6 +444,7 @@
         "settings_title": "📤 Paramètres de Départ",
         "settings_channel": "**Salon:** {{channel}}",
         "settings_message": "**Message:**",
+        "settings_help": "\n\n**Comment modifier ?**\nUtilisez `+leave menu` pour utiliser le menu interactif.",
         "message_usage": "❌ Usage: `+leave message <on/off>`",
         "message_success": "✅ Message de départ: **{{state}}**",
         "description": "Configure les messages de départ",
@@ -1092,9 +1094,10 @@
         "added": "✅ **{{target}}** ajouté au niveau **{{level}}**.",
         "removed": "✅ Retiré du niveau **{{level}}**.",
         "reset_success": "✅ Niveaux de permission réinitialisés.",
-        "unknown_sub": "❌ Sous-commande inconnue. Utilisation: `{{prefix}}perms list/set/del/reset`.",
+        "unknown_sub": "❌ Sous-commande inconnue.",
         "description": "Gère le système de permissions par niveaux (1-5)",
-        "usage": "**Utilisation:** `+perms`"
+        "usage_title": "🛡️ SYSTÈME DE PERMISSIONS",
+        "usage_description": "`+perms set <lvl> <cible>` : Ajouter une permission.\n`+perms del <lvl> <cible>` : Retirer une permission.\n`+perms list` : Voir la configuration.\n`+perms reset` : Réinitialiser tout."
     },
 
     "set": {
@@ -1273,13 +1276,15 @@
         "report": {
             "state_active": "Actif",
             "state_inactive": "Inactif",
-            "title": "Signalement",
+            "title": "Configuration Signalement",
             "state": "État",
             "logs": "Logs",
-            "description": "Description",
+            "state_label": "Statut",
+            "logs_label": "Salon de Logs",
+            "description": "Permet aux membres de signaler des messages inappropriés via clic-droit > Applications > Report Message.",
             "btn_deactivate": "Désactiver",
             "btn_activate": "Activer",
-            "placeholder": "Sélectionnez..."
+            "placeholder": "Sélectionnez le salon de logs..."
         },
         "title": "Configuration Modmail",
         "state_label": "Statut",
@@ -1339,7 +1344,8 @@
     },
     "formulaire": {
         "permission": "❌ Permission Administrateur requise.",
-        "usage": "**📝 SYSTÈME DE FORMULAIRES**\n\n`+formulaire create <id>` : Créer un formulaire interactif.\n`+formulaire delete <id>` : Supprimer un formulaire.\n`+formulaire list` : Voir les formulaires.\n`+formulaire post <id> [salon]` : Poster le bouton du formulaire.",
+        "usage_title": "📝 SYSTÈME DE FORMULAIRES",
+        "usage_description": "`+formulaire create <id>` : Créer un formulaire interactif.\n`+formulaire delete <id>` : Supprimer un formulaire.\n`+formulaire list` : Voir les formulaires.\n`+formulaire post <id> [salon]` : Poster le bouton du formulaire.",
         "missing_id": "❌ Précisez un ID unique pour ce formulaire (ex: `recrutement`).",
         "exists": "❌ Un formulaire avec cet ID existe déjà.",
         "btn_config": "Configurer le Formulaire",
@@ -1977,7 +1983,11 @@
                 "btn_add": "Ajouter",
                 "btn_del": "Supprimer",
                 "btn_list": "Liste",
-                "config_title": "**🟣 Configuration Twitch**\n\nStatut: {{status}}"
+                "config_title": "**🟣 Configuration Twitch**\n\nStatut: {{status}}",
+                "alert_title": "{{streamer}} est en live !",
+                "alert_game": "Jeu",
+                "alert_viewers": "Spectateurs",
+                "alert_footer": "Notification Twitch"
             },
             "join": {
                 "modal_title": "Message de Bienvenue",
@@ -2393,7 +2403,8 @@
         "no_banner": "❌ Ce serveur n'a pas de bannière.",
         "banner_title": "**Bannière du serveur**",
         "usage": "**Usage:** `+server pic`, `+server banner`",
-        "description": "Gestion des serveurs (Owner)"
+        "description": "Voici les commandes disponibles pour ce serveur :",
+        "title": "Gestion du Serveur"
     },
     "user": {
         "not_found": "❌ Utilisateur introuvable.",
@@ -2725,6 +2736,7 @@
         "test_sent": "✅ Message de test envoyé dans {{channel}}.",
         "test_error": "❌ Erreur lors de l'envoi du test : {{error}}",
         "usage": "`+boostembed <on/off/channel/message/title/description/image/thumbnail/test>`",
+        "help_title": "Aide Boost",
         "description": "Configure les annonces de boost (salon, message, embed, image...).",
         "help_details": "**🚀 Configuration du Boost**\n\n`+boostembed <on/off>` : Active/Désactive le module.\n`+boostembed channel <#salon>` : Définit le salon d'annonce.\n`+boostembed message <texte/reset>` : Message hors embed (ex: \"Merci {{user}}!\").\n`+boostembed title <texte/reset>` : Titre de l'embed.\n`+boostembed description <texte/reset>` : Description de l'embed.\n`+boostembed image <url/reset>` : Image de l'embed (GIF/PNG).\n`+boostembed thumbnail <url/reset>` : Miniature (par défaut: avatar du booster).\n`+boostembed test` : Envoie un message de test.\n\n**Variables :** `{{user}}` (mention), `{{count}}` (compteur boosts).",
         "image_usage": "❌ Usage: `+boostembed image <url/reset>`",

@@ -1,6 +1,7 @@
 const { createEmbed } = require('../../utils/design');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const { t } = require('../../utils/i18n');
+const serverInfoCommand = require('./serverinfo');
 
 module.exports = {
     name: 'server',
@@ -9,6 +10,11 @@ module.exports = {
     async run(client, message, args) {
         const sub = args[0]?.toLowerCase();
         
+        // --- Redirect +server info to +serverinfo ---
+        if (sub === 'info') {
+            return serverInfoCommand.run(client, message, args);
+        }
+
         // --- OWNER: LIST ---
         if (sub === 'list') {
             if (!await isBotOwner(message.author.id)) return;
@@ -37,6 +43,23 @@ module.exports = {
             return message.channel.send({ embeds: [embed] });
         }
 
-        return message.channel.send({ embeds: [createEmbed(await t('server.usage', message.guild.id) + (await isBotOwner(message.author.id) ? ", `+server list`" : ""), '', 'info')] });
+        // --- IMPROVED DEFAULT DISPLAY ---
+        const embed = createEmbed(
+            await t('server.title', message.guild.id),
+            await t('server.description', message.guild.id),
+            'info'
+        );
+        
+        embed.addFields(
+            { name: '🖼️ Icon', value: `\`+server pic\``, inline: true },
+            { name: '🚩 Banner', value: `\`+server banner\``, inline: true },
+            { name: 'ℹ️ Info', value: `\`+server info\``, inline: true }
+        );
+        
+        if (await isBotOwner(message.author.id)) {
+            embed.addFields({ name: '👑 Owner', value: `\`+server list\``, inline: true });
+        }
+        
+        return message.channel.send({ embeds: [embed] });
     }
 };

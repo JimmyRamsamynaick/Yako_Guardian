@@ -16,7 +16,7 @@ module.exports = {
         const formId = args[1];
 
         if (!sub) {
-            return message.channel.send({ embeds: [createEmbed(await t('formulaire.usage', message.guild.id), '', 'info')] });
+            return message.channel.send({ embeds: [createEmbed(await t('formulaire.usage_title', message.guild.id), await t('formulaire.usage_description', message.guild.id), 'info')] });
         }
 
         if (sub === 'create') {

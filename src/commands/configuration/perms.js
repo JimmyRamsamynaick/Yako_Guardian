@@ -1,5 +1,4 @@
 const { getGuildConfig } = require('../../utils/mongoUtils');
-const { PermissionsBitField } = require('discord.js');
 const { t } = require('../../utils/i18n');
 const { createEmbed } = require('../../utils/design');
 
@@ -8,10 +7,9 @@ module.exports = {
     description: 'Gère le système de permissions par niveaux (1-5)',
     category: 'Configuration',
     aliases: ['perm'],
+    permLevel: 5, // Only Guild Owner (Level 5) or Bot Owner (Level 10) can use this
     async run(client, message, args) {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && message.author.id !== message.guild.ownerId) {
-            return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('perms.permission', message.guild.id), 'error')] });
-        }
+        // No manual permission check needed; handled by messageCreate.js via permLevel: 5
 
         const config = await getGuildConfig(message.guild.id);
         const prefix = config.prefix || client.config.prefix;
@@ -23,7 +21,12 @@ module.exports = {
         
         const sub = args[0]?.toLowerCase();
 
-        if (!sub || sub === 'list') {
+        // If no subcommand, show usage dashboard
+        if (!sub) {
+             return message.channel.send({ embeds: [createEmbed(await t('perms.usage_title', message.guild.id), await t('perms.usage_description', message.guild.id), 'info')] });
+        }
+
+        if (sub === 'list') {
             // List View
             let content = "";
             for (let i = 1; i <= 5; i++) {

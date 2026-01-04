@@ -49,8 +49,15 @@ async function handleTwitchInteraction(client, interaction, config) {
         modal.addComponents(new ActionRowBuilder().addComponents(nameInput), new ActionRowBuilder().addComponents(channelInput));
         await interaction.showModal(modal);
     } else if (customId === 'twitch_add_modal') {
-        const streamerName = interaction.fields.getTextInputValue('streamer_name');
+        let streamerName = interaction.fields.getTextInputValue('streamer_name').trim();
         let channelId = interaction.fields.getTextInputValue('discord_channel_id') || interaction.channelId;
+
+        // Extract username from URL if provided
+        // Supports: https://www.twitch.tv/username, twitch.tv/username, username
+        const urlMatch = streamerName.match(/^(?:https?:\/\/)?(?:www\.)?twitch\.tv\/([a-zA-Z0-9_]+)\/?$/);
+        if (urlMatch) {
+            streamerName = urlMatch[1];
+        }
 
         // Verify channel
         const channel = interaction.guild.channels.cache.get(channelId);
@@ -116,15 +123,30 @@ async function handleTwitchInteraction(client, interaction, config) {
         await showTwitchMenu(interaction, config);
     } else if (customId === 'twitch_list') {
         const alerts = await TwitchAlert.find({ guildId: interaction.guildId });
-        let content = await t('notifications.handler.twitch.list_title', guildId);
-        if (alerts.length === 0) content += await t('notifications.handler.twitch.list_empty', guildId);
-        else {
-            for (const alert of alerts) {
-                content += await t('notifications.handler.twitch.channel_list', guildId, { channelName: alert.channelName, channelId: alert.discordChannelId }) + '\n';
-            }
+        
+        const embed = createEmbed(await t('notifications.handler.twitch.list_title', guildId), '', 'info');
+        
+        if (alerts.length === 0) {
+            embed.setDescription(await t('notifications.handler.twitch.list_empty', guildId));
+        } else {
+            const fields = await Promise.all(alerts.map(async (alert, index) => {
+                let name = alert.channelName;
+                // Clean name for display if it's a URL
+                const match = name.match(/^(?:https?:\/\/)?(?:www\.)?twitch\.tv\/([a-zA-Z0-9_]+)\/?$/);
+                if (match) name = match[1];
+
+                return {
+                    name: `🎥 ${name}`,
+                    value: `🔗 [Twitch](https://twitch.tv/${name}) -> <#${alert.discordChannelId}>`,
+                    inline: true
+                };
+            }));
+            
+            embed.addFields(fields);
+            embed.setThumbnail('https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png');
         }
         
-        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], ephemeral: true });
+        await interaction.reply({ embeds: [embed], ephemeral: true });
     }
 }
 

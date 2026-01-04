@@ -7,6 +7,7 @@ const { getGuildConfig } = require('../utils/mongoUtils');
 const CustomCommand = require('../database/models/CustomCommand');
 const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
+const { getCommandLevel, getUserLevel } = require('../utils/permissionUtils');
 
 module.exports = {
     name: 'messageCreate',
@@ -167,44 +168,11 @@ module.exports = {
             }
 
             // --- PERMISSION LEVEL SYSTEM (1-5) ---
-            let userLevel = 0;
-            if (isOwner) userLevel = 10; // Bot Owner
-            else if (message.author.id === message.guild.ownerId) userLevel = 5;
-            else if (message.member.permissions.has(PermissionsBitField.Flags.Administrator)) userLevel = 4; // Admins default to Level 4 (can be overridden by Perm 5 assignment?)
-            // Actually, let's keep Admins at 0/4? 
-            // Better: If they have Admin perm, they should have high access. Let's say Level 4.
-            // But if they are assigned specific level, that might be higher/lower.
-            // Let's rely on configured levels first, then fallback to Admin=4 if not set?
-            // User request: "Level 5 c'est all".
-            
-            if (config.permissionLevels) {
-                for (let i = 5; i >= 1; i--) {
-                    const ids = config.permissionLevels[i.toString()] || [];
-                    if (ids.includes(message.author.id) || (message.member && message.member.roles.cache.hasAny(...ids))) {
-                        if (i > userLevel) userLevel = i;
-                        break;
-                    }
-                }
-            }
-            // Fallback for Administrator if not explicitly restricted/assigned?
-            // If user has Admin permission but is not in any Level, should they get Level 4?
-            // Let's say yes, to prevent locking out admins.
-            if (userLevel < 4 && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                userLevel = 4;
-            }
+            const userLevel = getUserLevel(message.member, config, isOwner);
+            // --- END PERMISSION SYSTEM (Calculation) ---
 
             // Determine Required Level
-            let requiredLevel = command.permLevel || 0;
-            if (command.permLevel === undefined) {
-                // Default Categories
-                const cat = command.category ? command.category.toLowerCase() : 'general';
-                if (cat === 'owner') requiredLevel = 10;
-                else if (cat === 'antiraid' || cat === 'secur' || command.name === 'backup') requiredLevel = 4;
-                else if (cat === 'configuration' || cat === 'administration') requiredLevel = 3;
-                else if (cat === 'moderation' || cat === 'modmail') requiredLevel = 2;
-                else if (cat === 'roles' || cat === 'tickets') requiredLevel = 1; // Basic setup
-                else requiredLevel = 0;
-            }
+            const requiredLevel = getCommandLevel(command);
 
             if (userLevel < requiredLevel) {
                 if (requiredLevel === 10) {

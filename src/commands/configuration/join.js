@@ -2,12 +2,13 @@ const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
 const { createEmbed, THEME } = require('../../utils/design');
+const { showJoinMenu } = require('../../handlers/notificationHandler');
 
 module.exports = {
     name: 'join',
     description: 'Gère les paramètres d\'arrivée (Welcome, Autorole)',
     category: 'Configuration',
-    usage: 'join <settings/dm/role>',
+    usage: 'join <settings/menu/dm/role> [args]',
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('common.admin_only', message.guild.id), 'error')] });
@@ -30,11 +31,17 @@ module.exports = {
                 (await t('join.settings_role', message.guild.id, { role })) + '\n' +
                 (await t('join.settings_dm', message.guild.id, { state: dmState })) + '\n\n' +
                 (await t('join.settings_message', message.guild.id)) + '\n' +
-                `\`${msg}\``,
+                `\`${msg}\`` + 
+                (await t('join.settings_help', message.guild.id)),
                 'default'
             );
 
             return message.channel.send({ embeds: [embed] });
+        }
+
+        // +join menu
+        if (sub === 'menu') {
+            return showJoinMenu(message, config);
         }
 
         // +join dm <on/off>
@@ -86,6 +93,23 @@ module.exports = {
             await config.save();
 
             return replyMsg.edit({ embeds: [createEmbed('Succès', await t('join.role_success', message.guild.id, { role: role.toString() }), 'success')] });
+        }
+
+        // +join <channel> <message> (Shortcut)
+        if (sub) {
+            const channelId = sub.replace(/[<#>]/g, '');
+            const channel = message.guild.channels.cache.get(channelId);
+            if (channel) {
+                const msgContent = args.slice(1).join(' ');
+                if (msgContent) {
+                    if (!config.welcome) config.welcome = {};
+                    config.welcome.enabled = true;
+                    config.welcome.channelId = channel.id;
+                    config.welcome.message = msgContent;
+                    await config.save();
+                    return message.channel.send({ embeds: [createEmbed(await t('common.success', message.guild.id) + ` Message de bienvenue configuré pour ${channel}.`, '', 'success')] });
+                }
+            }
         }
 
         return message.channel.send({ embeds: [createEmbed('Usage', await t('join.usage', message.guild.id), 'warning')] });

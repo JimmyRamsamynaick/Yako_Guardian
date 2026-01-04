@@ -182,6 +182,6 @@ module.exports = {
         }
 
         // Default Usage
-        return message.channel.send({ embeds: [createEmbed(await t('boostembed.help_details', message.guild.id), '', 'info')] });
+        return message.channel.send({ embeds: [createEmbed(await t('boostembed.help_title', message.guild.id), await t('boostembed.help_details', message.guild.id), 'info')] });
     }
 };
