@@ -343,7 +343,7 @@
         "permission_admin": "❌ You do not have permission (Administrator required).",
         "not_configured": "❌ The suggestion system is not enabled or configured.",
         "channel_not_found": "❌ The suggestion channel cannot be found.",
-        "usage": "**Usage:** `+suggestion <your idea>`",
+        "usage": "**Usage:** `+suggestion <your idea>` or `+suggestion config`",
         "success": "✅ Your suggestion has been sent!",
         "error": "❌ Error sending the suggestion.",
         "message_title": "**💡 Suggestion**",
@@ -358,7 +358,7 @@
         "btn_delete": "Delete",
         "description": "Submit a suggestion or configure the system",
         "suggestion": {
-            "not_configured": "❌ Not configured.",
+            "not_configured": "❌ Not configured. Use `+suggestion config`.",
             "channel_not_found": "❌ Channel not found.",
             "usage": "Usage: +suggestion <msg>",
             "message_title": "New Suggestion",

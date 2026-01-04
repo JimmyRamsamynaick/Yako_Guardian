@@ -12,7 +12,7 @@ module.exports = {
     category: 'Suggestion',
     async execute(client, message, args) {
         // Settings
-        if (args[0] === 'settings') {
+        if (args[0] === 'settings' || args[0] === 'config') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
                 return message.channel.send({ embeds: [createEmbed(await t('suggestion.permission_admin', message.guild.id), '', 'error')] });
             }

@@ -237,7 +237,7 @@
         "permission_admin": "❌ Vous n'avez pas la permission (Administrator requis).",
         "not_configured": "❌ Le système de suggestions n'est pas configuré.",
         "channel_not_found": "❌ Le salon de suggestions est introuvable.",
-        "usage": "**Utilisation:** `+suggestion <message>`",
+        "usage": "**Utilisation:** `+suggestion <message>` ou `+suggestion config`",
         "success": "✅ Votre suggestion a été envoyée !",
         "error": "❌ Erreur lors de l'envoi de la suggestion.",
         "message_title": "Nouvelle Suggestion",
@@ -252,7 +252,7 @@
         "btn_delete": "Supprimer",
         "description": "Soumettre une suggestion ou configurer le système",
         "suggestion": {
-            "not_configured": "❌ Non configuré.",
+            "not_configured": "❌ Non configuré. Utilisez `+suggestion config`.",
             "channel_not_found": "❌ Salon introuvable.",
             "usage": "Usage: +suggestion <msg>",
             "message_title": "Nouvelle Suggestion",
