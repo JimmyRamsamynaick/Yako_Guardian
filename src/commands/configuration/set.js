@@ -323,6 +323,19 @@ module.exports = {
                 'success'
             )] });
         }
+        else if (type === 'levels' || type === 'xp') {
+            const state = value.toLowerCase();
+            if (!['on', 'off'].includes(state)) {
+                 return message.channel.send({ embeds: [createEmbed(await t('set.levels_usage', message.guild.id), '', 'error')] });
+            }
+            const config = await getGuildConfig(message.guild.id);
+            if (!config.community) config.community = {};
+            if (!config.community.levels) config.community.levels = {};
+            config.community.levels.enabled = (state === 'on');
+            config.markModified('community');
+            await config.save();
+            return message.channel.send({ embeds: [createEmbed(await t('set.levels_success', message.guild.id, { state: state.toUpperCase() }), '', 'success')] });
+        }
         else {
             return message.channel.send({ embeds: [createEmbed(
                 await t('set.invalid_option', message.guild.id),

@@ -1127,6 +1127,8 @@
         "boost_usage": "❌ Utilisation: `+set boostembed <#salon>`",
         "boost_success": "✅ Salon de boost défini sur {{channel}}.",
         "channel_invalid": "❌ Salon invalide.",
+        "levels_usage": "❌ Usage: `+set levels <on/off>`",
+        "levels_success": "✅ Système de niveaux : **{{state}}**",
         "lang_invalid": "❌ Langue invalide.",
         "lang_success": "✅ Langue mise à jour avec succès en Français 🇫🇷.",
         "invalid_option": "❌ Option invalide."
