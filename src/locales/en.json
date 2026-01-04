@@ -405,7 +405,7 @@
     "ticket_add": {
         "not_ticket": "❌ This command is only available in a ticket.",
         "usage": "**Usage:** `+add <@member>`",
-        "success": "✅ <@{{user}}> has been added to the ticket.",
+        "success": "<@{{user}}> has been added to the ticket.",
         "error": "❌ Unable to add member."
     },
     "ticket_del": {
@@ -420,7 +420,7 @@
     "ticket_claim": {
         "not_ticket": "❌ This channel is not an active ticket.",
         "already_claimed": "❌ This ticket is already claimed by <@{{user}}>.",
-        "success": "🙋‍♂️ **Ticket claimed by** <@{{user}}>."
+        "success": "Ticket claimed by <@{{user}}>."
     },
     "ticket_rename": {
         "not_ticket": "❌ This channel is not an active ticket.",

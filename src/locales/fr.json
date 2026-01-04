@@ -299,13 +299,13 @@
     "ticket_add": {
         "not_ticket": "❌ Cette commande n'est disponible que dans un ticket.",
         "usage": "**Usage:** `+add <@membre>`",
-        "success": "✅ <@{{user}}> a été ajouté au ticket.",
+        "success": "<@{{user}}> a été ajouté au ticket.",
         "error": "❌ Impossible d'ajouter le membre."
     },
     "ticket_claim": {
         "not_ticket": "❌ Ce salon n'est pas un ticket actif.",
         "already_claimed": "❌ Ce ticket est déjà pris en charge par <@{{user}}>.",
-        "success": "🙋‍♂️ **Ticket pris en charge par** <@{{user}}>."
+        "success": "Ticket pris en charge par <@{{user}}>."
     },
     "ticket_rename": {
         "not_ticket": "❌ Ce salon n'est pas un ticket actif.",
