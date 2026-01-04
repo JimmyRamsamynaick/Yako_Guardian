@@ -2587,13 +2587,14 @@
         },
         "soutien": {
             "permission": "❌ Vous n'avez pas la permission.",
-            "info": "Info Soutien",
-            "enabled": "Activé",
-            "disabled": "Désactivé",
-            "invalid_role": "Rôle invalide",
-            "role_set": "Rôle défini",
-            "invalid_text": "Texte invalide",
-            "status_set": "Statut défini"
+            "title": "**🤝 Rôle de Soutien**",
+            "info": "**Statut:** {{enabled}}\n**Rôle:** {{role}}\n**Message de statut:** {{status}}\n\n__Commandes:__\n`+soutien on/off` - Activer/Désactiver\n`+soutien role <@role>` - Définir le rôle\n`+soutien status <texte>` - Définir le texte de statut",
+            "enabled": "✅ Système de soutien **activé**.",
+            "disabled": "❌ Système de soutien **désactivé**.",
+            "invalid_role": "❌ Rôle invalide ou introuvable.",
+            "role_set": "✅ Rôle de soutien défini sur **{{role}}**.",
+            "invalid_text": "❌ Veuillez spécifier un texte.",
+            "status_set": "✅ Texte de statut défini sur : **{{text}}**."
         },
         "temprole": {
             "permission_manage_roles": "❌ Permission Gérer les Rôles requise.",

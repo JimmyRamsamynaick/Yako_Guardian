@@ -2264,13 +2264,14 @@
         },
         "soutien": {
             "permission": "❌ You do not have permission.",
-            "info": "Support Info",
-            "enabled": "Enabled",
-            "disabled": "Disabled",
-            "invalid_role": "Invalid Role",
-            "role_set": "Role set",
-            "invalid_text": "Invalid text",
-            "status_set": "Status set"
+            "title": "**🤝 Support Role**",
+            "info": "**Status:** {{enabled}}\n**Role:** {{role}}\n**Status Message:** {{status}}\n\n__Commands:__\n`+soutien on/off` - Enable/Disable\n`+soutien role <@role>` - Set role\n`+soutien status <text>` - Set status text",
+            "enabled": "✅ Support system **enabled**.",
+            "disabled": "❌ Support system **disabled**.",
+            "invalid_role": "❌ Invalid or missing role.",
+            "role_set": "✅ Support role set to **{{role}}**.",
+            "invalid_text": "❌ Please specify text.",
+            "status_set": "✅ Status text set to: **{{text}}**."
         },
         "temprole": {
             "permission_manage_roles": "❌ Manage Roles permission required.",
