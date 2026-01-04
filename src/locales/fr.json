@@ -2562,12 +2562,12 @@
             "success_remove": "✅ Supprimé avec succès."
         },
         "restrict": {
-            "permission": "❌ Vous n'avez pas la permission.",
-            "usage": "Usage Restrict",
-            "multiple_matches": "Plusieurs correspondances.",
-            "no_option_found": "Aucune option trouvée.",
-            "no_menus": "Aucun menu.",
-            "success": "✅ Opération réussie."
+            "permission": "❌ Vous devez être administrateur pour utiliser cette commande.",
+            "usage": "**Utilisation:** `+restrict <NomOption/Emoji> <@RôleAutorisé>`\n\nExemple:\n`+restrict Jeux @Membre` (Seul @Membre peut prendre l'option 'Jeux')\n`+restrict 🛡️ @Staff`",
+            "multiple_matches": "❌ Plusieurs options correspondent à **{{query}}**. Soyez plus précis.",
+            "no_option_found": "❌ Aucune option trouvée pour **\"{{query}}\"**.\n\n**Options disponibles:**\n",
+            "no_menus": "❌ Aucun menu ou option configuré sur ce serveur.",
+            "success": "✅ L'option **{{option}}** est maintenant réservée au rôle **{{role}}**."
         },
         "rolemenu": {
             "permission_admin": "❌ Vous devez être administrateur pour utiliser cette commande.",
@@ -2614,11 +2614,11 @@
             "success": "✅ Opération réussie."
         },
         "unrestrict": {
-            "permission": "❌ Vous n'avez pas la permission.",
-            "usage": "Usage Unrestrict",
-            "multiple_matches": "Plusieurs correspondances",
-            "no_option_found": "Aucune option",
-            "success": "✅ Opération réussie."
+            "permission": "❌ Vous devez être administrateur pour utiliser cette commande.",
+            "usage": "**Utilisation:** `+unrestrict <NomOption/Emoji>`\nExemple: `+unrestrict Jeux`",
+            "multiple_matches": "❌ Plusieurs options correspondent à **{{query}}**. Soyez plus précis.",
+            "no_option_found": "❌ Aucune option trouvée pour **\"{{query}}\"**.",
+            "success": "✅ Restrictions retirées pour l'option **{{option}}** du menu **{{menu}}**."
         },
         "untemprole": {
             "usage": "Usage Untemprole",

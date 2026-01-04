@@ -2239,12 +2239,12 @@
             "success_remove": "✅ Role removed successfully."
         },
         "restrict": {
-            "permission": "❌ You do not have permission.",
-            "usage": "**Usage:** `+restrict <OptionName/Emoji> <@AllowedRole>`",
+            "permission": "❌ Administrator permission required.",
+            "usage": "**Usage:** `+restrict <OptionName/Emoji> <@AllowedRole>`\n\nExample:\n`+restrict Games @Member` (Only @Member can take the 'Games' option)\n`+restrict 🛡️ @Staff`",
             "multiple_matches": "❌ Multiple options match **{{query}}**. Be more specific.",
-            "no_option_found": "❌ No option found for **\"{{query}}\"**.",
+            "no_option_found": "❌ No option found for **\"{{query}}\"**.\n\n**Available options:**\n",
             "no_menus": "❌ No menu/option configured on this server.",
-            "success": "✅ Operation successful."
+            "success": "✅ Option **{{option}}** is now reserved for role **{{role}}**."
         },
         "rolemenu": {
             "permission_admin": "❌ Admin permission required.",
@@ -2291,11 +2291,11 @@
             "success": "✅ Operation successful."
         },
         "unrestrict": {
-            "permission": "❌ You do not have permission.",
-            "usage": "Usage Unrestrict",
-            "multiple_matches": "Multiple matches",
-            "no_option_found": "No option found",
-            "success": "✅ Operation successful."
+            "permission": "❌ Administrator permission required.",
+            "usage": "**Usage:** `+unrestrict <OptionName/Emoji>`\nExample: `+unrestrict Games`",
+            "multiple_matches": "❌ Multiple options match **{{query}}**. Be more specific.",
+            "no_option_found": "❌ No option found for **\"{{query}}\"**.",
+            "success": "✅ Restrictions removed for option **{{option}}** of menu **{{menu}}**."
         },
         "untemprole": {
             "usage": "**Usage:** `+untemprole <user> <role>`",
