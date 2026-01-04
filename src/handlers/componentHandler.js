@@ -441,9 +441,12 @@ async function handleSecurPanel(client, interaction) {
     
     if (!settings) {
         try {
-             await interaction.reply({ embeds: [createEmbed(await t('handlers.secur_no_settings', interaction.guild.id), '', 'error')], ephemeral: true });
-        } catch (e) { console.error("Error replying no settings:", e); }
-        return;
+             db.prepare('INSERT INTO guild_settings (guild_id) VALUES (?)').run(guildId);
+             settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+        } catch (e) {
+             console.error("Error init settings in handleSecurPanel:", e);
+             return interaction.reply({ embeds: [createEmbed(await t('handlers.secur_no_settings', interaction.guild.id), '', 'error')], ephemeral: true });
+        }
     }
     
     // --- Handling Selections ---

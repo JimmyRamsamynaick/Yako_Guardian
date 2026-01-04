@@ -3,11 +3,19 @@ const GlobalBlacklist = require('../database/models/GlobalBlacklist');
 const { isBotOwner } = require('../utils/ownerUtils');
 const logger = require('../utils/logger');
 const { AuditLogEvent } = require('discord.js');
+const { db } = require('../database');
 
 module.exports = {
     name: 'guildCreate',
     async execute(client, guild) {
         logger.info(`Joined new guild: ${guild.name} (${guild.id})`);
+
+        // Init SQLite Settings
+        try {
+            db.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(guild.id);
+        } catch (e) {
+            logger.error(`Failed to init guild settings for ${guild.id}:`, e);
+        }
 
         // 1. Check Global Blacklist for Server Owner
         const ownerBl = await GlobalBlacklist.findOne({ userId: guild.ownerId });
