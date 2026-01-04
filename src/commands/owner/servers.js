@@ -52,7 +52,7 @@ module.exports = {
             let currentChunk = '';
             
             guilds.forEach(line => {
-                if (currentChunk.length + line.length > 1900) {
+                if (currentChunk.length + line.length > 3800) {
                     chunks.push(currentChunk);
                     currentChunk = '';
                 }
@@ -61,8 +61,9 @@ module.exports = {
             if (currentChunk) chunks.push(currentChunk);
 
             for (let i = 0; i < chunks.length; i++) {
-                // Sending as plain text or simple embed
-                await message.channel.send({ content: await t('servers.server_list_title', message.guild.id, { count: client.guilds.cache.size, current: i+1, total: chunks.length, content: chunks[i] }) });
+                // Sending as Embed
+                const title = await t('servers.server_list_title', message.guild.id, { count: client.guilds.cache.size, current: i+1, total: chunks.length });
+                await message.channel.send({ embeds: [createEmbed(chunks[i], title, 'default')] });
             }
             return;
         }
