@@ -359,12 +359,21 @@ async function handleTicketCreate(client, interaction) {
 
 // --- TICKET ACTIONS ---
 async function handleTicketClaim(client, interaction) {
-    const { guild, user, channel } = interaction;
+    const { guild, user, channel, member } = interaction;
     const ticket = await ActiveTicket.findOne({ channelId: channel.id });
     if (!ticket) return interaction.reply({ embeds: [createEmbed(await t('tickets.handler.error_ticket_db', guild.id), '', 'error')], ephemeral: true });
 
+    // Permission Check
+    const config = await TicketConfig.findOne({ guildId: guild.id });
+    const isAdmin = member.permissions.has(PermissionsBitField.Flags.Administrator);
+    const isStaff = config && config.staffRoles && config.staffRoles.some(roleId => member.roles.cache.has(roleId));
+
+    if (!isAdmin && !isStaff) {
+        return interaction.reply({ embeds: [createEmbed('', await t('ticket.permission', guild.id), 'error')], ephemeral: true });
+    }
+
     if (ticket.claimedBy) {
-        return interaction.reply({ embeds: [createEmbed(await t('tickets.handler.error_already_claimed', guild.id, { user: `<@${ticket.claimedBy}>` }), '', 'error')], ephemeral: true });
+        return interaction.reply({ embeds: [createEmbed('', await t('tickets.handler.error_already_claimed', guild.id, { user: `<@${ticket.claimedBy}>` }), 'error')], ephemeral: true });
     }
 
     ticket.claimedBy = user.id;
@@ -373,7 +382,7 @@ async function handleTicketClaim(client, interaction) {
     await channel.permissionOverwrites.edit(user.id, { ViewChannel: true, SendMessages: true });
     
     // Notify
-    await interaction.reply({ embeds: [createEmbed(await t('tickets.handler.ticket_claimed', guild.id, { user: user.toString() }), '', 'success')] });
+    await interaction.reply({ embeds: [createEmbed('', await t('tickets.handler.ticket_claimed', guild.id, { user: user.toString() }), 'success')] });
 }
 
 async function handleTicketClose(client, interaction) {
