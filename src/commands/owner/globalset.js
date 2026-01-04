@@ -1,6 +1,7 @@
 const { createEmbed } = require('../../utils/design');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const { t } = require('../../utils/i18n');
+const { ActivityType } = require('discord.js');
 
 module.exports = {
     name: 'globalset',
@@ -36,6 +37,62 @@ module.exports = {
                     '',
                     'success'
                 )] });
+            } else if (type === 'activity') {
+                // Usage: +globalset activity <type> <text>
+                // Types: playing, watching, listening, competing, streaming
+                const activityType = args[1]?.toLowerCase();
+                const activityText = args.slice(2).join(' ');
+
+                if (!activityType || !activityText) {
+                    return message.channel.send({ embeds: [createEmbed(
+                         await t('globalset.usage', message.guild.id),
+                        '',
+                        'error'
+                    )] });
+                }
+
+                const typeMap = {
+                    playing: ActivityType.Playing,
+                    watching: ActivityType.Watching,
+                    listening: ActivityType.Listening,
+                    competing: ActivityType.Competing,
+                    streaming: ActivityType.Streaming
+                };
+
+                const resolvedType = typeMap[activityType];
+                if (resolvedType === undefined) {
+                     return message.channel.send({ embeds: [createEmbed(
+                        await t('globalset.invalid_activity_type', message.guild.id),
+                        '',
+                        'error'
+                    )] });
+                }
+
+                await client.user.setActivity(activityText, { type: resolvedType });
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('globalset.activity_success', message.guild.id),
+                    '',
+                    'success'
+                )] });
+
+            } else if (type === 'status') {
+                 // Usage: +globalset status <online/idle/dnd/invisible>
+                 const status = args[1]?.toLowerCase();
+                 if (!['online', 'idle', 'dnd', 'invisible'].includes(status)) {
+                    return message.channel.send({ embeds: [createEmbed(
+                        await t('globalset.invalid_status', message.guild.id),
+                        '',
+                        'error'
+                    )] });
+                 }
+
+                 await client.user.setStatus(status);
+                 return message.channel.send({ embeds: [createEmbed(
+                    await t('globalset.status_success', message.guild.id),
+                    '',
+                    'success'
+                )] });
+
             } else if (['banner'].includes(type)) {
                 // Bots need to be verified/partnered? Not always, but usually tricky via API for normal bots?
                 // Actually setBanner is not a method on client.user directly in v14?

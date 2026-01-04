@@ -32,10 +32,25 @@ module.exports = {
         )] });
 
         const invite = await channel.createInvite({ maxAge: 0, maxUses: 1 });
-        return message.channel.send({ embeds: [createEmbed(
-            await t('invite.success', message.guild.id, { guildName: guild.name, url: invite.url }),
-            '',
-            'success'
-        )] });
+        
+        try {
+            await message.author.send({ embeds: [createEmbed(
+                await t('invite.dm_message', message.guild.id, { guildName: guild.name, url: invite.url }),
+                '',
+                'success'
+            )] });
+            
+            return message.channel.send({ embeds: [createEmbed(
+                await t('invite.success', message.guild.id),
+                '',
+                'success'
+            )] });
+        } catch (e) {
+            return message.channel.send({ embeds: [createEmbed(
+                await t('invite.dm_error', message.guild.id),
+                '',
+                'error'
+            )] });
+        }
     }
 };

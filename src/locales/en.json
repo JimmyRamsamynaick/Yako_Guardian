@@ -1726,6 +1726,7 @@
         "setting_enabled": "Modmail (MP)",
         "setting_autoreply": "Auto Reply",
         "setting_message": "Auto Message",
+        "settings_usage": "📝 **Edit:** `+mp autoreply <on/off> [message]`",
         "usage_blacklist": "❌ Usage: `+mp blacklist <add/del> <ID>`",
         "blacklist_added": "✅ **{{user}}** added to MP blacklist.",
         "blacklist_removed": "✅ **{{user}}** removed from MP blacklist.",
@@ -2151,16 +2152,20 @@
     },
     "genkey": {
         "description": "Generate a Premium Key (Owner)",
-        "usage": "**Usage:** +genkey",
-        "dm_success": "✅ Key sent in DM.",
-        "channel_success": "✅ Key sent in channel.",
+        "usage": "**Usage:** `+genkey <days>`",
+        "dm_success": "✅ Key generated: `{{key}}` ({{days}} days)",
+        "channel_success": "✅ Key sent in DM.",
         "public_success": "✅ Public key generated."
     },
     "globalset": {
         "description": "Modify GLOBAL bot profile (Owner only)",
-        "usage": "**Usage:** +globalset",
+        "usage": "**Usage:**\n`+globalset name <NewName>`\n`+globalset avatar <URL>`\n`+globalset activity <type> <text>`\n`+globalset status <mode>`",
         "name_changed": "✅ Name changed.",
         "avatar_updated": "✅ Avatar updated.",
+        "activity_success": "✅ Activity updated.",
+        "status_success": "✅ Status updated.",
+        "invalid_activity_type": "❌ Invalid activity type (playing, watching, listening, competing, streaming).",
+        "invalid_status": "❌ Invalid status (online, idle, dnd, invisible).",
         "banner_not_supported": "❌ Banner not supported.",
         "invalid_option": "❌ Invalid option.",
         "error": "❌ An error occurred."
@@ -2171,7 +2176,9 @@
         "missing_id": "❌ Missing ID.",
         "guild_not_found": "❌ Server not found.",
         "create_error": "❌ Error creating invite.",
-        "success": "✅ Operation successful."
+        "success": "✅ Invite sent in DM.",
+        "dm_message": "✅ Invite for **{{guildName}}**:\n{{url}}",
+        "dm_error": "❌ Cannot send DM."
     },
 
     "reset": {

@@ -21,14 +21,14 @@ module.exports = {
             const sub = args[0]?.toLowerCase();
 
             // +mp settings
-            if (sub === 'settings') {
+            if (sub === 'settings' || !sub) {
                 const settings = await GlobalSettings.findOne({ clientId: client.user.id });
                 
                 const mpEnabled = settings?.mpEnabled ?? true;
                 const autoReply = settings?.mpAutoReplyEnabled ?? false;
                 const autoReplyMsg = settings?.mpAutoReplyMessage ?? 'Je suis un bot, je ne lis pas les MP.';
 
-                const embed = createEmbed(await t('mp.settings_title', message.guild.id), '', 'info')
+                const embed = createEmbed(await t('mp.settings_title', message.guild.id), await t('mp.settings_usage', message.guild.id), 'info')
                     .addFields(
                         { name: await t('mp.setting_enabled', message.guild.id), value: mpEnabled ? '✅ ON' : '❌ OFF', inline: true },
                         { name: await t('mp.setting_autoreply', message.guild.id), value: autoReply ? '✅ ON' : '❌ OFF', inline: true },

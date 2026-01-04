@@ -2103,6 +2103,7 @@
         "setting_enabled": "Modmail (MP)",
         "setting_autoreply": "Réponse Auto",
         "setting_message": "Message Auto",
+        "settings_usage": "📝 **Modifier:** `+mp autoreply <on/off> [message]`",
         "usage_blacklist": "❌ Usage: `+mp blacklist <add/del> <ID>`",
         "blacklist_added": "✅ **{{user}}** ajouté à la blacklist MP.",
         "blacklist_removed": "✅ **{{user}}** retiré de la blacklist MP.",
@@ -2474,16 +2475,20 @@
     },
     "genkey": {
         "description": "Aucune description.",
-        "usage": "**Utilisation:** +genkey",
-        "dm_success": "✅ Clé envoyée en DM.",
-        "channel_success": "✅ Clé envoyée dans le salon.",
+        "usage": "**Utilisation:** `+genkey <jours>`",
+        "dm_success": "✅ Clé générée: `{{key}}` ({{days}} jours)",
+        "channel_success": "✅ Clé envoyée en DM.",
         "public_success": "✅ Clé publique générée."
     },
     "globalset": {
         "description": "Modifie le profil GLOBAL du bot (Owner uniquement)",
-        "usage": "**Utilisation:** +globalset",
+        "usage": "**Utilisation:**\n`+globalset name <NouveauNom>`\n`+globalset avatar <URL>`\n`+globalset activity <type> <text>`\n`+globalset status <mode>`",
         "name_changed": "✅ Nom changé.",
         "avatar_updated": "✅ Avatar mis à jour.",
+        "activity_success": "✅ Activité mise à jour.",
+        "status_success": "✅ Statut mis à jour.",
+        "invalid_activity_type": "❌ Type invalide (playing, watching, listening, competing, streaming).",
+        "invalid_status": "❌ Statut invalide (online, idle, dnd, invisible).",
         "banner_not_supported": "❌ Bannière non supportée.",
         "invalid_option": "❌ Option invalide.",
         "error": "❌ Une erreur est survenue."
@@ -2494,7 +2499,9 @@
         "missing_id": "❌ ID manquant.",
         "guild_not_found": "❌ Serveur introuvable.",
         "create_error": "❌ Erreur de création.",
-        "success": "✅ Opération réussie."
+        "success": "✅ Invitation envoyée en DM.",
+        "dm_message": "✅ Invitation pour **{{guildName}}**:\n{{url}}",
+        "dm_error": "❌ Impossible d'envoyer le DM."
     },
 
     "reset": {
