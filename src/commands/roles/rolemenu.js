@@ -21,7 +21,7 @@ module.exports = {
             if (menus.length === 0) {
                 return message.channel.send({ embeds: [createEmbed(await t('roles.rolemenu.no_menus', message.guild.id), '', 'error')] });
             }
-            const list = menus.map(m => `- **${m.name}** (ID: ${m.id})`).join('\n');
+            const list = menus.map(m => `- **${m.name}** (ID: ${m.id})${m.channelId ? ` <#${m.channelId}>` : ''}`).join('\n');
             return message.channel.send({ embeds: [createEmbed(await t('roles.rolemenu.list_menus', message.guild.id, { list }), '', 'info')] });
         }
 
