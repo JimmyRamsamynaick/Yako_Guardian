@@ -12,7 +12,30 @@ module.exports = {
             return message.channel.send({ embeds: [createEmbed(await t('roles.unrestrict.permission', message.guild.id), '', 'error')] });
         }
 
-        const query = args.join(' ');
+        // Check for role mention to ignore
+        let targetRole = message.mentions.roles.first();
+        let query = "";
+
+        if (targetRole) {
+            query = args.filter(a => !a.includes(targetRole.id)).join(' ');
+        } else {
+            // Check for Role ID at the end
+            const lastArg = args[args.length - 1];
+            if (lastArg && lastArg.match(/^\d+$/)) {
+                // Check if it's a role to be safe, though unrestrict doesn't need the role object
+                // We just assume if it looks like an ID at the end, the user might be trying to pass a role ID
+                // But wait, an option name could be a number.
+                // Safest is to try to resolve it as a role.
+                const potentialRole = message.guild.roles.cache.get(lastArg);
+                if (potentialRole) {
+                    query = args.slice(0, -1).join(' ');
+                } else {
+                    query = args.join(' ');
+                }
+            } else {
+                query = args.join(' ');
+            }
+        }
 
         if (!query) {
             return message.channel.send({ embeds: [createEmbed(await t('roles.unrestrict.usage', message.guild.id), '', 'error')] });

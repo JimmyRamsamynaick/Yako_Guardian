@@ -91,6 +91,6 @@ module.exports = {
             await foundMenu.save();
         }
 
-        return message.channel.send({ embeds: [createEmbed(await t('roles.restrict.success', message.guild.id, { option: foundMenu.options[foundOptionIndex].label, role: targetRole.name }), '', 'success')] });
+        return message.channel.send({ embeds: [createEmbed(await t('roles.restrict.success', message.guild.id, { option: foundMenu.options[foundOptionIndex].label, role: targetRole.toString() }), '', 'success')] });
     }
 };
