@@ -1221,7 +1221,7 @@
             "attachment": "[Pièce jointe]",
             "send_error": "❌ Erreur lors de l'envoi.",
             "choose_server": "Choisissez le serveur à contacter",
-            "ticket_opened": "✅ **Ticket ouvert sur {{server}} !**\nUn membre du staff vous répondra bientôt.",
+            "ticket_opened": "**Ticket ouvert sur {{server}} !**\nUn membre du staff vous répondra bientôt.",
             "ticket_create_error": "❌ Erreur: {{error}}",
             "no_common_guild": "❌ Aucun serveur commun n'a le modmail activé.",
             "staff_reply": "**Staff ({{server}})**: {{content}}",

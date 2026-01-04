@@ -46,6 +46,13 @@ module.exports = {
             }
         }
 
+        // Notify user if it's a modmail ticket or if we want to notify regular ticket users too
+        const user = await client.users.fetch(ticket.userId).catch(() => null);
+        if (user) {
+            // Using modmail.ticket_closed_dm as a generic closed message or we can create a specific one
+            user.send(await t('modmail.ticket_closed_dm', message.guild.id, { server: message.guild.name })).catch(() => {});
+        }
+
         // Delete active ticket entry
         await ActiveTicket.deleteOne({ channelId: message.channel.id });
 

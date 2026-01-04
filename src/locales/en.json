@@ -2602,7 +2602,7 @@
             "attachment": "[Attachment]",
             "send_error": "❌ Error sending message.",
             "choose_server": "Choose server to contact",
-            "ticket_opened": "✅ **Ticket opened on {{server}}!**\nA staff member will reply shortly.",
+            "ticket_opened": "**Ticket opened on {{server}}!**\nA staff member will reply shortly.",
             "ticket_create_error": "❌ Error: {{error}}",
             "no_common_guild": "❌ No common server has modmail enabled.",
             "staff_reply": "**Staff ({{server}})**: {{content}}",
