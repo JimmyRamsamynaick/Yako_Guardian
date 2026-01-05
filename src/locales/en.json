@@ -983,7 +983,12 @@
         "permission": "❌ Administrator permission required.",
         "usage": "**Usage:** `+helptype <button/select/hybrid>`",
         "success": "✅ Help menu type set to: **{{type}}**",
-        "description": "Configure the help menu style (Button, Select, Hybrid)"
+        "description": "Configure the help menu style (Button, Select, Hybrid)",
+        "help_title": "⚙️ Help Menu Configuration",
+        "current_type": "Current Type",
+        "help_button": "**BUTTON**: Navigation via buttons (Pages).",
+        "help_select": "**SELECT**: Dropdown menu for categories.",
+        "help_hybrid": "**HYBRID**: Combines buttons and dropdown menu."
     },
     "buy": {
         "title": "**💎 Yako Guardian Premium**",
@@ -1065,13 +1070,13 @@
             "administration": "__**⚖️ Administration**__\n\n`{{prefix}}backup <create/load/list/delete> [name]` - *Backup System*\n`{{prefix}}unbanall` - *Unban all users*\n`{{prefix}}autobackup <on/off>` - *Auto Backups*\n`{{prefix}}renew` - *Renewal*\n`{{prefix}}sync` - *Synchronization*\n`{{prefix}}discussion` - *Interactive session*",
             "antiraid": "__**🛡️ Anti-Raid**__\n\n`{{prefix}}secur <on/off>` - *Toggle security*\n`{{prefix}}antitoken <on/off/lock>` - *Manage anti-token*\n`{{prefix}}raidlog <on/off> [channel]` - *Toggle raid logs*\n`{{prefix}}raidping <@role>` - *Set raid ping role*\n`{{prefix}}punition <antiraid/all> <derank/kick/ban>` - *Set punishment*",
             "auto": "__**🤖 Automation**__\n\n`{{prefix}}autopublish <on/off>` - *Auto publish messages*\n`{{prefix}}showpics <on/off>` - *Show images*",
-            "configuration": "__**⚙️ Configuration**__\n\n`{{prefix}}config` - *Show current configuration*\n`{{prefix}}set <type> <value>` - *Modify an option*\n`{{prefix}}remove <perm/activity>` - *Remove config*\n`{{prefix}}prefix <new>` - *Change bot prefix*\n`{{prefix}}lang <fr/en/custom>` - *Change bot language*\n`{{prefix}}helptype <button/select/hybrid>` - *Change help menu style*\n`{{prefix}}perms <set/del/reset>` - *Manage permission levels*\n`{{prefix}}wl <add/remove/list>` - *Manage whitelist*\n`{{prefix}}blrank <on/off>` - *Manage blacklist rank*\n`{{prefix}}theme <#HexColor>` - *Change embed color*\n`{{prefix}}creation limit <time>` - *Limit account creation*\n`{{prefix}}alias <add/remove>` - *Manage aliases*\n`{{prefix}}activity <type> <txt>` - *Activity*\n`{{prefix}}stream <txt>` - *Stream Status*\n`{{prefix}}clearperms` - *Reset permissions*\n`{{prefix}}change <cmd> <perm>` - *Manage command permissions*\n`{{prefix}}compet <text>` - *Activity Competing*\n`{{prefix}}dnd` - *Status DND*\n`{{prefix}}idle` - *Status Idle*\n`{{prefix}}invisible` - *Status Invisible*\n`{{prefix}}online` - *Status Online*\n`{{prefix}}listen <text>` - *Activity Listening*\n`{{prefix}}playto <text>` - *Activity Playing*\n`{{prefix}}watch <text>` - *Activity Watching*",
+            "configuration": "__**⚙️ Configuration**__\n\n`{{prefix}}config` - *Show current configuration*\n`{{prefix}}set <type> <value>` - *Modify an option*\n`{{prefix}}remove <perm/activity>` - *Remove config*\n`{{prefix}}prefix <new>` - *Change bot prefix*\n`{{prefix}}lang <fr/en/custom>` - *Change bot language*\n`{{prefix}}helptype <button/select/hybrid>` - *Change help menu style*\n`{{prefix}}perms <set/del/reset>` - *Manage permission levels*\n`{{prefix}}wl <add/remove/list>` - *Manage whitelist*\n`{{prefix}}blrank <on/off>` - *Manage blacklist rank*\n`{{prefix}}theme <#HexColor>` - *Change embed color*\n`{{prefix}}creation limit <time>` - *Limit account creation*\n`{{prefix}}alias <add/remove>` - *Manage aliases*\n`{{prefix}}clearperms` - *Reset permissions*\n`{{prefix}}change <cmd> <perm>` - *Manage command permissions*",
             "custom": "__**🎨 Custom Commands**__\n\n`{{prefix}}custom <name> <response>` - *Create command*\n`{{prefix}}autoreact <add/remove> <emoji>` - *Auto reaction*\n`{{prefix}}button <text>` - *Create button*\n`{{prefix}}clearcustoms` - *Clear all*\n`{{prefix}}customlist` - *List commands*",
             "general": "__**📌 General**__\n\n`{{prefix}}help` - *Help menu*\n`{{prefix}}helpall` - *All commands*\n`{{prefix}}buy` - *Buy*\n`{{prefix}}subscription` - *Subscription*",
             "moderation": "__**🔨 Moderation**__\n\n`{{prefix}}slowmode <time>` - *Slowmode*\n`{{prefix}}autodelete <time>` - *Auto delete*",
             "modmail": "__**📨 Modmail**__\n\n`{{prefix}}modmail <open/close>` - *Manage modmail*\n`{{prefix}}report <member> <reason>` - *Report member*\n`{{prefix}}formulaire` - *Configure form*\n`{{prefix}}openmodmail` - *Open ticket*",
             "notifications": "__**🔔 Notifications**__\n\n`{{prefix}}join <channel> <message>` - *Welcome message*\n`{{prefix}}leave <channel> <message>` - *Leave message*\n`{{prefix}}twitch <channel> <streamer>` - *Twitch alert*",
-            "owner": "__**👑 Owner**__\n\n`{{prefix}}owner <add/remove> <user>` - *Manage owners*\n`{{prefix}}genkey <duration>` - *Generate key*\n`{{prefix}}servers` - *Server list*\n`{{prefix}}leave` - *Leave server*\n`{{prefix}}mp <user> <message>` - *DM member*\n`{{prefix}}bl <user>` - *Global blacklist*\n`{{prefix}}invite` - *Invite bot*\n`{{prefix}}reset` - *Reset server*\n`{{prefix}}update` - *Update*\n`{{prefix}}globalset <opt> <val>` - *Global config*",
+            "owner": "__**👑 Owner**__\n\n`{{prefix}}owner <add/remove> <user>` - *Manage owners*\n`{{prefix}}genkey <duration>` - *Generate key*\n`{{prefix}}servers` - *Server list*\n`{{prefix}}leave` - *Leave server*\n`{{prefix}}mp <user> <message>` - *DM member*\n`{{prefix}}bl <user>` - *Global blacklist*\n`{{prefix}}invite` - *Invite bot*\n`{{prefix}}reset` - *Reset server*\n`{{prefix}}update` - *Update*\n`{{prefix}}globalset <opt> <val>` - *Global config*\n`{{prefix}}activity <type> <txt>` - *Activity*\n`{{prefix}}stream <txt>` - *Change bot activity (Streaming...)*\n`{{prefix}}compet <text>` - *Activity Competing*\n`{{prefix}}dnd` - *Status DND*\n`{{prefix}}idle` - *Status Idle*\n`{{prefix}}invisible` - *Status Invisible*\n`{{prefix}}online` - *Status Online*\n`{{prefix}}listen <text>` - *Activity Listening*\n`{{prefix}}playto <text>` - *Activity Playing*\n`{{prefix}}watch <text>` - *Activity Watching*",
             "roles": "__**🎭 Roles**__\n\n`{{prefix}}massiverole <add/remove> <role>` - *Massive role*\n`{{prefix}}unmassiverole <role>` - *Undo massive role*\n`{{prefix}}temprole <user> <role> <time>` - *Temp role*\n`{{prefix}}untemprole <user> <role>` - *Remove temp role*\n`{{prefix}}rolemenu` - *Role menu*\n`{{prefix}}soutien` - *Support role*\n`{{prefix}}restrict` - *Restriction*\n`{{prefix}}unrestrict <option>` - *Remove restriction*",
             "suggestion": "__**💡 Suggestions**__\n\n`{{prefix}}suggestion <channel>` - *Suggestion system*",
             "tickets": "__**🎫 Tickets**__\n\n`{{prefix}}ticket <create/close/add/remove>` - *Ticket panel*\n`{{prefix}}add <user>` - *Add member*\n`{{prefix}}remove <user>` - *Remove member*\n`{{prefix}}close` - *Close ticket*\n`{{prefix}}rename <name>` - *Rename ticket*\n`{{prefix}}claim` - *Claim ticket*\n`{{prefix}}del` - *Delete ticket*",
@@ -1164,7 +1169,7 @@
         "state_success": "✅ Anti-Token: **{{state}}**",
         "invalid_format": "❌ Invalid format.",
         "config_success": "✅ Anti-Token Config: **{{count}}** accounts in **{{duration}}**.",
-        "description": "No description."
+        "description": "Protects the server against token raids (fake accounts)"
     },
     "unwl": {
         "owner_only": "❌ Only the server owner can manage the whitelist.",
@@ -1391,6 +1396,8 @@
     },
     "custom": {
         "permission": "❌ You do not have permission (Administrator required).",
+        "help_title": "🎨 Custom Commands",
+        "help_description": "Here is how to use the custom commands system:\n\n🔹 **Create / Edit**\n`+custom <name> <response>`\n> *Creates a command or edits its response.*\n\n🔹 **Delete**\n`+custom delete <name>`\n> *Deletes an existing command.*\n\n🔹 **Rename**\n`+custom transfer <old> <new>`\n> *Changes the trigger of a command.*\n\n🔹 **List**\n`+customlist`\n> *Displays all commands.*",
         "usage": "**Usage:** \n`+custom <keyword> <response>` : Create/Edit\n`+custom delete <keyword>` : Delete\n`+custom transfer <old> <new>` : Rename",
         "usage_delete": "Usage: `+custom delete <keyword>`",
         "deleted": "✅ Command `{{trigger}}` deleted.",
@@ -1458,7 +1465,25 @@
         "user_not_found": "❌ User not found.",
         "added": "✅ **{{tag}}** added to Blacklist Rank.",
         "removed": "✅ **{{tag}}** removed from Blacklist Rank.",
-        "description": "Manage rank blacklist (Prevent permission access)"
+        "description": "Manage rank blacklist (Prevent permission access)",
+        "help_title": "🛡️ BLRank Configuration",
+        "help_on": "**ON**: Enable the module. Bans blacklisted members on join.",
+        "help_off": "**OFF**: Disable the module.",
+        "help_max": "**MAX**: Strict mode (Same as ON for now).",
+        "help_danger": "**DANGER**: Set blacklist type to 'Danger'.",
+        "help_all": "**ALL**: Set blacklist type to 'All'.",
+        "help_add": "**ADD**: Add a member to the blacklist.\n`+blrank add <ID/Mention>`",
+        "help_del": "**DEL**: Remove a member from the blacklist.\n`+blrank del <ID/Mention>`",
+        "help_list": "**LIST**: Show blacklisted members.\n`+blrank list`",
+        "help_clear": "**CLEAR**: Remove all members from the blacklist.\n`+blrank clear`",
+        "list_title": "Blacklist ({{count}})",
+        "list_empty": "No members in the blacklist.",
+        "clear_success": "✅ Blacklist cleared ({{count}} members removed).",
+        "warning_off": "\n⚠️ **Warning:** Module is disabled. The member will not be banned on join.\nUse `+blrank on` to enable.",
+        "user_banned": "\n🔨 Member was in the server and has been banned.",
+        "current_status": "**Current Status:** {{status}}",
+        "status_on_msg": "✅ **ENABLED** (Sanctions are applied)",
+        "status_off_msg": "⚠️ **DISABLED** (No sanctions will be applied)\n> Use `+blrank on` to enable."
     },
     "change": {
         "permission": "❌ Administrator permission required.",
@@ -1829,7 +1854,11 @@
         "usage": "**Usage:** `+creation limit <time>` (e.g. 1d)",
         "invalid_duration": "❌ Invalid duration.",
         "success": "✅ Account creation limit set to: **{{duration}}**",
-        "description": "Set account age limit for joining"
+        "description": "Set account age limit for joining",
+        "disabled": "✅ Account age limit disabled.",
+        "none": "None",
+        "help_title": "👶 Anti-Creation Configuration",
+        "current_limit": "Current Limit"
     },
     "delperm": {
         "permission": "❌ Administrator permission required.",
@@ -2518,15 +2547,25 @@
     },
     "automation": {
         "usage": "**Usage:** `+automation <autonick/autothread/autoslowmode> [args]`",
+        "help_title": "🤖 Automation Configuration",
+        "help_description": "Configure automation modules for your server.",
+        "help_autonick": "Automatically change the nickname of new members.\n`+automation autonick set [format]`\n`+automation autonick disable`",
+        "help_autothread": "Automatically create a thread in specified channels.\n`+automation autothread add #channel`\n`+automation autothread remove #channel`\n`+automation autothread list`",
+        "help_autoslowmode": "Automatically enable slowmode in case of spam.\n`+automation autoslowmode set <limit> <time> <duration>`\n`+automation autoslowmode disable`",
         "autonick_usage": "**Usage:** `+automation autonick <set/disable> [format]`\nVariables: `{username}`",
         "autonick_set": "✅ AutoNick configured: `{{format}}`",
         "autonick_disabled": "✅ AutoNick disabled.",
         "autothread_usage": "**Usage:** `+automation autothread <add/remove/list> [channel]`",
         "autothread_added": "✅ AutoThread enabled for {{channel}}.",
         "autothread_removed": "✅ AutoThread disabled for {{channel}}.",
-        "autothread_list": "📝 **AutoThread Channels:**\n{{channels}}",
+        "autothread_list_title": "📝 AutoThread Configuration",
+        "autothread_list_channels": "Enabled Channels",
+        "autothread_list_empty": "No channels configured.",
         "autoslowmode_usage": "**Usage:** `+automation autoslowmode <set/disable> [limit] [time]`\nLimit: message count, Time: interval in seconds.",
-        "autoslowmode_set": "✅ AutoSlowmode configured: If > {{limit}} messages in {{time}}s -> Slowmode {{duration}}s.",
+        "autoslowmode_set_title": "✅ AutoSlowmode Configured",
+        "autoslowmode_set_limit": "Limit",
+        "autoslowmode_set_time": "Interval",
+        "autoslowmode_set_duration": "Slowmode Duration",
         "autoslowmode_disabled": "✅ AutoSlowmode disabled."
     },
     "poll": {

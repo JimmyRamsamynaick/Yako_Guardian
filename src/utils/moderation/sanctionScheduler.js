@@ -1,5 +1,6 @@
 const Sanction = require('../../database/models/Sanction');
 const { getGuildConfig } = require('../mongoUtils');
+const { t } = require('../../utils/i18n');
 const logger = require('../logger');
 
 const checkSanctions = async (client) => {

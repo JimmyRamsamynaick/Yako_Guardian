@@ -27,7 +27,11 @@ module.exports = {
             const list = config.moderation.strikes.punishments.sort((a, b) => a.count - b.count);
             
             if (list.length === 0) {
-                return message.channel.send({ embeds: [createEmbed(await t('moderation.punish_title', message.guild.id), await t('moderation.punish_list_empty', message.guild.id), 'info')] });
+                const emptyMsg = await t('moderation.punish_list_empty', message.guild.id);
+                const usageMsg = await t('moderation.punish_add_usage', message.guild.id);
+                const removeMsg = await t('moderation.punish_remove_usage', message.guild.id).then(s => s.replace('❌ ', '')); // Remove error icon if present for help text
+                
+                return message.channel.send({ embeds: [createEmbed(await t('moderation.punish_title', message.guild.id), `${emptyMsg}\n\n${usageMsg}\n${removeMsg}`, 'info')] });
             }
 
             let desc = "";
@@ -35,6 +39,9 @@ module.exports = {
                 let dur = p.duration ? `(${ms(p.duration)})` : "";
                 desc += (await t('moderation.punish_list_item', message.guild.id, { count: p.count, action: p.action.toUpperCase(), duration: dur })) + "\n";
             }
+            
+            desc += `\n${await t('moderation.punish_add_usage', message.guild.id)}`;
+            desc += `\n${await t('moderation.punish_remove_usage', message.guild.id).then(s => s.replace('❌ ', ''))}`;
 
             const embed = createEmbed(
                 await t('moderation.punish_list_title', message.guild.id, { guild: message.guild.name }),

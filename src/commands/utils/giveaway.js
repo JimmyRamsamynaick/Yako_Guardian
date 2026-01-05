@@ -14,7 +14,20 @@ module.exports = {
         const subCmd = args[0] ? args[0].toLowerCase() : null;
         
         if (!subCmd) {
-            return message.channel.send({ embeds: [createEmbed(await t('giveaway.usage', message.guild.id), '', 'info')] });
+            const startUsage = await t('giveaway.start_usage', message.guild.id);
+            const endUsage = await t('giveaway.end_usage', message.guild.id);
+            const rerollUsage = await t('giveaway.reroll_usage', message.guild.id);
+            
+            const embed = createEmbed(
+                await t('giveaway.embed_title', message.guild.id), 
+                `${await t('giveaway.usage', message.guild.id)}\n\n` +
+                `${startUsage.replace('❌ ', '🔹 ')}\n` +
+                `${endUsage.replace('❌ ', '🔹 ')}\n` +
+                `${rerollUsage.replace('❌ ', '🔹 ')}\n` +
+                `🔹 \`+giveaway list\``, 
+                'info'
+            );
+            return message.channel.send({ embeds: [embed] });
         }
 
         if (subCmd === 'start') {
@@ -82,7 +95,20 @@ module.exports = {
             
             message.channel.send({ embeds: [embed] });
         } else {
-             return message.channel.send({ embeds: [createEmbed(await t('giveaway.usage', message.guild.id), '', 'info')] });
+             const startUsage = await t('giveaway.start_usage', message.guild.id);
+             const endUsage = await t('giveaway.end_usage', message.guild.id);
+             const rerollUsage = await t('giveaway.reroll_usage', message.guild.id);
+             
+             const embed = createEmbed(
+                 await t('giveaway.embed_title', message.guild.id), 
+                 `${await t('giveaway.usage', message.guild.id)}\n\n` +
+                 `${startUsage.replace('❌ ', '🔹 ')}\n` +
+                 `${endUsage.replace('❌ ', '🔹 ')}\n` +
+                 `${rerollUsage.replace('❌ ', '🔹 ')}\n` +
+                 `🔹 \`+giveaway list\``, 
+                 'info'
+             );
+             return message.channel.send({ embeds: [embed] });
         }
     }
 };

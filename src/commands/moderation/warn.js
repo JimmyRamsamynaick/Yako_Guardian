@@ -7,6 +7,7 @@ const { createEmbed, THEME } = require('../../utils/design');
 const { addSanction } = require('../../utils/moderation/sanctionUtils');
 const { resolveMembers } = require('../../utils/moderation/memberUtils');
 const { checkUsage } = require('../../utils/moderation/helpUtils');
+const { checkAutodeleteResponse } = require('../../utils/autodelete');
 
 module.exports = {
     name: 'warn',
@@ -206,5 +207,7 @@ module.exports = {
 
         const finalEmbed = createEmbed(await t('moderation.warn_title', message.guild.id), finalDescription, type);
         await replyMsg.edit({ embeds: [finalEmbed] });
+        
+        await checkAutodeleteResponse(message, replyMsg, 'moderation');
     }
 };

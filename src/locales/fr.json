@@ -313,6 +313,15 @@
         "success": "✅ Ticket renommé en **{{name}}**.",
         "error": "❌ Impossible de renommer le salon (Rate limit ou Permissions)."
     },
+    "ticket_del": {
+        "not_ticket": "❌ Cette commande n'est disponible que dans un ticket.",
+        "usage": "❌ Usage: `+del <@membre>`",
+        "success": "<@{{user}}> a été retiré du ticket.",
+        "error": "❌ Impossible de retirer le membre.",
+        "sanction_usage": "❌ Usage: `+del sanction <ID>`",
+        "sanction_success": "Sanction #{{caseId}} supprimée.",
+        "sanction_not_found": "❌ Sanction #{{caseId}} introuvable."
+    },
     "tickets": {
         "handler": {
             "error_not_configured": "❌ Le système de tickets n'est pas configuré sur ce serveur.",
@@ -364,9 +373,6 @@
         }
     },
     "common": {
-        "state_on": "ON",
-        "state_off": "OFF",
-        "state_max": "MAX",
         "yes": "Oui",
         "no": "Non",
         "none": "Aucun",
@@ -511,15 +517,25 @@
     },
     "automation": {
         "usage": "**Utilisation:** `+automation <autonick/autothread/autoslowmode> [args]`",
+        "help_title": "🤖 Configuration Automation",
+        "help_description": "Configurez les modules d'automatisation pour votre serveur.",
+        "help_autonick": "Change automatiquement le pseudo des nouveaux membres.\n`+automation autonick set [format]`\n`+automation autonick disable`",
+        "help_autothread": "Crée automatiquement un fil de discussion dans les salons spécifiés.\n`+automation autothread add #channel`\n`+automation autothread remove #channel`\n`+automation autothread list`",
+        "help_autoslowmode": "Active le mode lent automatiquement en cas de spam.\n`+automation autoslowmode set <limit> <time> <duration>`\n`+automation autoslowmode disable`",
         "autonick_usage": "**Utilisation:** `+automation autonick <set/disable> [format]`\nVariables: `{username}`",
         "autonick_set": "✅ AutoNick configuré : `{{format}}`",
         "autonick_disabled": "✅ AutoNick désactivé.",
         "autothread_usage": "**Utilisation:** `+automation autothread <add/remove/list> [channel]`",
         "autothread_added": "✅ AutoThread activé pour {{channel}}.",
         "autothread_removed": "✅ AutoThread désactivé pour {{channel}}.",
-        "autothread_list": "📝 **Salons AutoThread :**\n{{channels}}",
+        "autothread_list_title": "📝 Configuration AutoThread",
+        "autothread_list_channels": "Salons Activés",
+        "autothread_list_empty": "Aucun salon configuré.",
         "autoslowmode_usage": "**Utilisation:** `+automation autoslowmode <set/disable> [limit] [time]`\nLimite: nombre de messages, Temps: intervalle en secondes.",
-        "autoslowmode_set": "✅ AutoSlowmode configuré : Si > {{limit}} messages en {{time}}s -> Slowmode {{duration}}s.",
+        "autoslowmode_set_title": "✅ AutoSlowmode Configuré",
+        "autoslowmode_set_limit": "Limite",
+        "autoslowmode_set_time": "Intervalle",
+        "autoslowmode_set_duration": "Durée Slowmode",
         "autoslowmode_disabled": "✅ AutoSlowmode désactivé."
     },
     "poll": {
@@ -1193,7 +1209,12 @@
         "permission": "❌ Permission Administrateur requise.",
         "usage": "**Utilisation:** `+helptype <button/select/hybrid>`",
         "success": "✅ Type de menu d'aide défini sur: **{{type}}**",
-        "description": "Configure le style du menu d'aide (Button, Select, Hybrid)"
+        "description": "Configure le style du menu d'aide (Button, Select, Hybrid)",
+        "help_title": "⚙️ Configuration du Menu d'Aide",
+        "current_type": "Type Actuel",
+        "help_button": "**BUTTON** : Navigation par boutons (Pages).",
+        "help_select": "**SELECT** : Menu déroulant pour les catégories.",
+        "help_hybrid": "**HYBRID** : Combine boutons et menu déroulant."
     },
     "buy": {
         "title": "**💎 Yako Guardian Premium**",
@@ -1452,13 +1473,13 @@
             "administration": "__**⚖️ Administration**__\n\n`{{prefix}}backup <create/load/list/delete> [nom]` - *Système de sauvegarde*\n`{{prefix}}unbanall` - *Débannir tous les utilisateurs*\n`{{prefix}}autobackup <on/off>` - *Sauvegardes automatiques*\n`{{prefix}}renew` - *Renouvellement*\n`{{prefix}}sync` - *Synchronisation*\n`{{prefix}}discussion` - *Session interactive*",
             "antiraid": "__**🛡️ Anti-Raid**__\n\n`{{prefix}}secur <on/off>` - *Active/Désactive la sécurité*\n`{{prefix}}antitoken <on/off/lock>` - *Gestion anti-token*\n`{{prefix}}raidlog <on/off> [salon]` - *Active les logs de raid*\n`{{prefix}}raidping <@role>` - *Définit le rôle à ping*\n`{{prefix}}punition <antiraid/all> <derank/kick/ban>` - *Définit la sanction*",
             "auto": "__**🤖 Automatisation**__\n\n`{{prefix}}autopublish <on/off>` - *Publication automatique*\n`{{prefix}}showpics <on/off>` - *Affichage images*",
-            "configuration": "__**⚙️ Configuration**__\n\n`{{prefix}}config` - *Affiche la configuration actuelle*\n`{{prefix}}set <type> <valeur>` - *Modifie une option*\n`{{prefix}}remove <perm/activity>` - *Supprimer config*\n`{{prefix}}prefix <nouveau>` - *Change le préfixe*\n`{{prefix}}lang <fr/en/custom>` - *Change la langue*\n`{{prefix}}helptype <button/select/hybrid>` - *Style menu aide*\n`{{prefix}}perms <set/del/reset>` - *Permissions par niveau*\n`{{prefix}}wl <add/remove/list>` - *Whitelist*\n`{{prefix}}blrank <on/off>` - *Blacklist rank*\n`{{prefix}}theme <#HexColor>` - *Couleur embeds*\n`{{prefix}}creation limit <temps>` - *Limite création*\n`{{prefix}}alias <add/remove>` - *Gérer alias*\n`{{prefix}}activity <type> <txt>` - *Activité*\n`{{prefix}}stream <txt>` - *Statut Stream*\n`{{prefix}}clearperms` - *Reset permissions*\n`{{prefix}}change <cmd> <perm>` - *Gérer permissions commande*\n`{{prefix}}compet <texte>` - *Activité Participe*\n`{{prefix}}dnd` - *Statut NPD*\n`{{prefix}}idle` - *Statut Inactif*\n`{{prefix}}invisible` - *Statut Invisible*\n`{{prefix}}online` - *Statut En ligne*\n`{{prefix}}listen <texte>` - *Activité Écoute*\n`{{prefix}}playto <texte>` - *Activité Joue*\n`{{prefix}}watch <texte>` - *Activité Regarde*",
+            "configuration": "__**⚙️ Configuration**__\n\n`{{prefix}}config` - *Affiche la configuration actuelle*\n`{{prefix}}set <type> <valeur>` - *Modifie une option*\n`{{prefix}}remove <perm/activity>` - *Supprimer config*\n`{{prefix}}prefix <nouveau>` - *Change le préfixe*\n`{{prefix}}lang <fr/en/custom>` - *Change la langue*\n`{{prefix}}helptype <button/select/hybrid>` - *Style menu aide*\n`{{prefix}}perms <set/del/reset>` - *Permissions par niveau*\n`{{prefix}}wl <add/remove/list>` - *Whitelist*\n`{{prefix}}blrank <on/off>` - *Blacklist rank*\n`{{prefix}}theme <#HexColor>` - *Couleur embeds*\n`{{prefix}}creation limit <temps>` - *Limite création*\n`{{prefix}}alias <add/remove>` - *Gérer alias*\n`{{prefix}}clearperms` - *Reset permissions*\n`{{prefix}}change <cmd> <perm>` - *Gérer permissions commande*",
             "custom": "__**🎨 Commandes Perso**__\n\n`{{prefix}}custom <nom> <réponse>` - *Créer commande*\n`{{prefix}}autoreact <add/remove> <emoji>` - *Auto réaction*\n`{{prefix}}button <texte>` - *Créer bouton*\n`{{prefix}}clearcustoms` - *Tout supprimer*\n`{{prefix}}customlist` - *Liste commandes*",
             "general": "__**📌 Général**__\n\n`{{prefix}}help` - *Menu d'aide*\n`{{prefix}}helpall` - *Toutes les commandes*\n`{{prefix}}buy` - *Acheter*\n`{{prefix}}subscription` - *Abonnement*",
             "moderation": "__**🔨 Modération**__\n\n`{{prefix}}clear <nb>` - *Supprimer messages*\n`{{prefix}}warn <user>` - *Avertir*\n`{{prefix}}mute <user>` - *Mute*\n`{{prefix}}unmute <user>` - *Unmute*\n`{{prefix}}tempmute <user>` - *Mute temp*\n`{{prefix}}kick <user>` - *Expulser*\n`{{prefix}}ban <user>` - *Bannir*\n`{{prefix}}unban <user>` - *Débannir*\n`{{prefix}}tempban <user>` - *Ban temp*\n`{{prefix}}cmute <user>` - *Mute salon*\n`{{prefix}}tempcmute <user>` - *Mute salon temp*\n`{{prefix}}uncmute <user>` - *Unmute salon*\n`{{prefix}}slowmode <temps>` - *Mode lent*\n`{{prefix}}autodelete <temps>` - *Auto suppression*",
             "modmail": "__**📨 Modmail**__\n\n`{{prefix}}modmail <open/close>` - *Gérer modmail*\n`{{prefix}}report <membre> <raison>` - *Signaler membre*\n`{{prefix}}formulaire` - *Configurer formulaire*\n`{{prefix}}openmodmail` - *Ouvrir ticket*",
             "notifications": "__**🔔 Notifications**__\n\n`{{prefix}}join <salon> <message>` - *Message bienvenue*\n`{{prefix}}leave <salon> <message>` - *Message départ*\n`{{prefix}}twitch <salon> <streamer>` - *Alerte Twitch*",
-            "owner": "__**👑 Owner**__\n\n`{{prefix}}owner <add/remove> <user>` - *Gérer owners*\n`{{prefix}}genkey <durée>` - *Générer clé*\n`{{prefix}}servers` - *Liste serveurs*\n`{{prefix}}leaveserver` - *Quitter serveur*\n`{{prefix}}mp <user> <message>` - *DM membre*\n`{{prefix}}bl <user>` - *Blacklist globale*\n`{{prefix}}invite` - *Inviter bot*\n`{{prefix}}reset` - *Reset serveur*\n`{{prefix}}update` - *Mise à jour*\n`{{prefix}}globalset <opt> <val>` - *Config globale*",
+            "owner": "__**👑 Owner**__\n\n`{{prefix}}owner <add/remove> <user>` - *Gérer owners*\n`{{prefix}}genkey <durée>` - *Générer clé*\n`{{prefix}}servers` - *Liste serveurs*\n`{{prefix}}leaveserver` - *Quitter serveur*\n`{{prefix}}mp <user> <message>` - *DM membre*\n`{{prefix}}bl <user>` - *Blacklist globale*\n`{{prefix}}invite` - *Inviter bot*\n`{{prefix}}reset` - *Reset serveur*\n`{{prefix}}update` - *Mise à jour*\n`{{prefix}}globalset <opt> <val>` - *Config globale*\n`{{prefix}}activity <type> <txt>` - *Activité*\n`{{prefix}}stream <txt>` - *Change l'activité du bot (Streame...)*\n`{{prefix}}compet <texte>` - *Activité Participe*\n`{{prefix}}dnd` - *Statut NPD*\n`{{prefix}}idle` - *Statut Inactif*\n`{{prefix}}invisible` - *Statut Invisible*\n`{{prefix}}online` - *Statut En ligne*\n`{{prefix}}listen <texte>` - *Activité Écoute*\n`{{prefix}}playto <texte>` - *Activité Joue*\n`{{prefix}}watch <texte>` - *Activité Regarde*",
             "roles": "__**🎭 Rôles**__\n\n`{{prefix}}massiverole <add/remove> <role>` - *Rôle massif*\n`{{prefix}}unmassiverole <role>` - *Retirer rôle massif*\n`{{prefix}}temprole <user> <role> <temps>` - *Rôle temporaire*\n`{{prefix}}untemprole <user> <role>` - *Retirer rôle temporaire*\n`{{prefix}}rolemenu` - *Menu rôles*\n`{{prefix}}soutien` - *Rôle soutien*\n`{{prefix}}restrict` - *Restriction*\n`{{prefix}}unrestrict <option>` - *Retirer restriction*",
             "suggestion": "__**💡 Suggestions**__\n\n`{{prefix}}suggestion <salon>` - *Système suggestions*",
             "tickets": "__**🎫 Tickets**__\n\n`{{prefix}}ticket` - *Panel ticket*\n`{{prefix}}add <user>` - *Ajouter membre*\n`{{prefix}}remove <user>` - *Retirer membre*\n`{{prefix}}close` - *Fermer ticket*\n`{{prefix}}rename <nom>` - *Renommer ticket*\n`{{prefix}}claim` - *Prendre en charge*\n`{{prefix}}del` - *Supprimer ticket*",
@@ -1534,7 +1555,7 @@
         "state_success": "✅ Anti-Token: **{{state}}**",
         "invalid_format": "❌ Format invalide.",
         "config_success": "✅ Config Anti-Token: **{{count}}** comptes en **{{duration}}**.",
-        "description": "Aucune description."
+        "description": "Protège le serveur contre les raids de tokens (faux comptes)"
     },
     "unwl": {
         "owner_only": "❌ Seul le propriétaire peut gérer la whitelist.",
@@ -1751,6 +1772,8 @@
     },
     "custom": {
         "permission": "❌ Vous n'avez pas la permission (Administrator requis).",
+        "help_title": "🎨 Commandes Personnalisées",
+        "help_description": "Voici comment utiliser le système de commandes personnalisées :\n\n🔹 **Créer / Modifier**\n`+custom <nom> <réponse>`\n> *Crée une commande ou modifie sa réponse.*\n\n🔹 **Supprimer**\n`+custom delete <nom>`\n> *Supprime une commande existante.*\n\n🔹 **Renommer**\n`+custom transfer <ancien> <nouveau>`\n> *Change le déclencheur d'une commande.*\n\n🔹 **Liste**\n`+customlist`\n> *Affiche toutes les commandes.*",
         "usage": "**Utilisation:** \n`+custom <mot-clé> <réponse>` : Créer/Modifier\n`+custom delete <mot-clé>` : Supprimer\n`+custom transfer <ancien> <nouveau>` : Renommer",
         "usage_delete": "Utilisation: `+custom delete <mot-clé>`",
         "deleted": "✅ Commande `{{trigger}}` supprimée.",
@@ -1817,8 +1840,26 @@
         "type_set": "✅ Type BLRank défini sur: **{{type}}**",
         "user_not_found": "❌ Utilisateur introuvable.",
         "added": "✅ **{{tag}}** ajouté à la Blacklist Rank.",
-        "removed": "✅ **{{tag}}** retiré de la Blacklist Rank.",
-        "description": "Gère la blacklist de rang (Empêche l'accès aux perms)"
+        "removed": "✅ **{{tag}}** retiré du Blacklist Rank.",
+        "description": "Gérer la blacklist de rank (Empêche l'accès aux permissions)",
+        "help_title": "🛡️ Configuration BLRank",
+        "help_on": "**ON** : Active le module. Bannit les membres blacklistés à leur arrivée.",
+        "help_off": "**OFF** : Désactive le module.",
+        "help_max": "**MAX** : Mode strict (Identique à ON pour le moment).",
+        "help_danger": "**DANGER** : Configure le type de blacklist sur 'Danger'.",
+        "help_all": "**ALL** : Configure le type de blacklist sur 'Tous'.",
+        "help_add": "**ADD** : Ajoute un membre à la blacklist.\n`+blrank add <ID/Mention>`",
+        "help_del": "**DEL** : Retire un membre de la blacklist.\n`+blrank del <ID/Mention>`",
+        "help_list": "**LIST** : Affiche la liste des membres blacklistés.\n`+blrank list`",
+        "help_clear": "**CLEAR** : Supprime tous les membres de la blacklist.\n`+blrank clear`",
+        "list_title": "Liste Noire ({{count}})",
+        "list_empty": "Aucun membre dans la liste noire.",
+        "clear_success": "✅ La liste noire a été vidée ({{count}} membres retirés).",
+        "warning_off": "\n⚠️ **Attention :** Le module est désactivé. Le membre ne sera pas banni s'il rejoint.\nFaites `+blrank on` pour l'activer.",
+        "user_banned": "\n🔨 Le membre était sur le serveur et a été banni.",
+        "current_status": "**Statut Actuel :** {{status}}",
+        "status_on_msg": "✅ **ACTIVÉ** (Les sanctions sont appliquées)",
+        "status_off_msg": "⚠️ **DÉSACTIVÉ** (Aucune sanction ne sera appliquée)\n> Utilisez `+blrank on` pour activer."
     },
     "change": {
         "permission": "❌ Permission Administrateur requise.",
@@ -1854,7 +1895,11 @@
         "usage": "**Utilisation:** `+creation limit <temps>` (ex: 1d)",
         "invalid_duration": "❌ Durée invalide.",
         "success": "✅ Limite de création de compte définie à: **{{duration}}**",
-        "description": "Définit la limite d'âge de compte pour rejoindre"
+        "description": "Définit la limite d'âge de compte pour rejoindre",
+        "disabled": "✅ Limite d'âge désactivée.",
+        "none": "Aucune",
+        "help_title": "👶 Configuration Anti-Creation",
+        "current_limit": "Limite Actuelle"
     },
     "delperm": {
         "permission": "❌ Permission Administrateur requise.",

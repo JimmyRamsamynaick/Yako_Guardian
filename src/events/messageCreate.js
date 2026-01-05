@@ -9,6 +9,8 @@ const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 const { getCommandLevel, getUserLevel } = require('../utils/permissionUtils');
 
+const slowmodeMap = new Map();
+
 module.exports = {
     name: 'messageCreate',
     async execute(client, message) {

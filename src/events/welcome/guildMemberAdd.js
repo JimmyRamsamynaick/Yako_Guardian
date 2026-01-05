@@ -1,5 +1,6 @@
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
+const { createEmbed } = require('../../utils/design');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 const joinFloodMap = new Map(); // guildId -> [timestamps]
@@ -43,6 +44,29 @@ module.exports = {
                         await member.kick('Anti-Flood Join System');
                     } catch(e) {}
                     return;
+                }
+            }
+
+            // 2.5 AutoNick
+            if (config.automations?.autonick?.enabled) {
+                const mask = config.automations.autonick.format || config.automations.autonick.mask;
+                if (mask) {
+                    let nickname = mask
+                        .replace(/{username}/g, member.user.username)
+                        .replace(/{tag}/g, member.user.discriminator === '0' ? member.user.username : member.user.tag)
+                        .replace(/{id}/g, member.id);
+                    
+                    if (nickname.length > 32) nickname = nickname.substring(0, 32);
+
+                    try {
+                        if (member.manageable && member.guild.members.me.permissions.has('ManageNicknames')) {
+                            if (member.nickname !== nickname) {
+                                await member.setNickname(nickname);
+                            }
+                        }
+                    } catch (e) {
+                        console.log(`Failed to autonick ${member.user.tag}: ${e.message}`);
+                    }
                 }
             }
 

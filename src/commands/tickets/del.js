@@ -34,7 +34,7 @@ module.exports = {
             const result = await deleteSanction(message.guild.id, parseInt(caseId));
 
             if (result) {
-                return message.channel.send({ embeds: [createEmbed(await t('ticket_del.sanction_success', message.guild.id, { caseId }), '', 'success')] });
+                return message.channel.send({ embeds: [createEmbed(await t('common.success_title', message.guild.id), await t('ticket_del.sanction_success', message.guild.id, { caseId }), 'success')] });
             } else {
                 return message.channel.send({ embeds: [createEmbed(await t('ticket_del.sanction_not_found', message.guild.id, { caseId }), '', 'error')] });
             }
@@ -48,12 +48,19 @@ module.exports = {
 
         const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
         if (!member) {
-            return message.channel.send({ embeds: [createEmbed(await t('ticket_del.usage', message.guild.id), '', 'info')] });
+            const usageUser = await t('ticket_del.usage', message.guild.id);
+            const usageSanction = await t('ticket_del.sanction_usage', message.guild.id);
+
+            return message.channel.send({ embeds: [createEmbed(
+                await t('common.usage', message.guild.id), 
+                `${usageUser.replace('❌ ', '🔹 ')}\n${usageSanction.replace('❌ ', '🔹 ')}`, 
+                'info'
+            )] });
         }
 
         try {
             await message.channel.permissionOverwrites.delete(member);
-            return message.channel.send({ embeds: [createEmbed(await t('ticket_del.success', message.guild.id, { user: member.id }), '', 'success')] });
+            return message.channel.send({ embeds: [createEmbed(await t('common.success_title', message.guild.id), await t('ticket_del.success', message.guild.id, { user: member.id }), 'success')] });
         } catch (e) {
             return message.channel.send({ embeds: [createEmbed(await t('ticket_del.error', message.guild.id), '', 'error')] });
         }

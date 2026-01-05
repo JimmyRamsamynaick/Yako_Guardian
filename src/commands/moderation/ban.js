@@ -3,6 +3,7 @@ const { t } = require('../../utils/i18n');
 const { addSanction } = require('../../utils/moderation/sanctionUtils');
 const { checkUsage } = require('../../utils/moderation/helpUtils');
 const { createEmbed, THEME } = require('../../utils/design');
+const { checkAutodeleteResponse } = require('../../utils/autodelete');
 
 module.exports = {
     name: 'ban',
@@ -138,6 +139,8 @@ module.exports = {
         }
 
         await replyMsg.edit({ embeds: [embed] });
+
+        await checkAutodeleteResponse(message, replyMsg, 'moderation');
     }
 };
 

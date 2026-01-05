@@ -5,6 +5,7 @@ const {
     ButtonStyle 
 } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
+const { db } = require('../../database');
 const { t } = require('../../utils/i18n');
 const { createEmbed, THEME } = require('../../utils/design');
 const { getUserLevel, getCommandLevel } = require('../../utils/permissionUtils');
@@ -16,7 +17,11 @@ module.exports = {
     run: async (client, message, args) => {
         // Get help type configuration
         const config = await getGuildConfig(message.guild.id);
-        const helpType = config.helpType || 'select'; // select, button, hybrid
+        
+        // Read help_type from SQLite (Source of Truth)
+        const settings = db.prepare('SELECT help_type FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
+        const helpType = settings?.help_type || 'select'; // select, button, hybrid
+        
         const prefix = config.prefix || client.config.prefix;
 
         // Permission Check

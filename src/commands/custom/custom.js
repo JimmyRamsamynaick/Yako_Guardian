@@ -13,7 +13,7 @@ module.exports = {
         }
 
         if (args.length < 1) {
-            return message.channel.send({ embeds: [createEmbed(await t('custom.usage', message.guild.id), '', 'info')] });
+            return message.channel.send({ embeds: [createEmbed(await t('custom.help_title', message.guild.id), await t('custom.help_description', message.guild.id), 'info')] });
         }
 
         const sub = args[0].toLowerCase();

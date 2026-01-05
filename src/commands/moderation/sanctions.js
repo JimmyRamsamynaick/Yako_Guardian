@@ -2,6 +2,7 @@ const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = re
 const { getSanctions } = require('../../utils/moderation/sanctionUtils');
 const { createEmbed, THEME } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
+const ms = require('ms');
 
 module.exports = {
     name: 'sanctions',
@@ -48,7 +49,7 @@ module.exports = {
                 embed.setThumbnail(targetMember.user.displayAvatarURL({ dynamic: true }));
             }
 
-            for (const s of currentSanctions) {
+            const userPromises = currentSanctions.map(async (s) => {
                 const moderator = await client.users.fetch(s.moderatorId).catch(() => null);
                 const modName = moderator ? moderator.tag : s.moderatorId;
                 const date = new Date(s.timestamp).toLocaleDateString();
@@ -61,11 +62,14 @@ module.exports = {
                     'tempban': '🔨'
                 }[s.type] || '❓';
 
-                embed.addFields({
+                return {
                     name: await t('moderation.sanctions_field_name', message.guild.id, { emoji: typeEmoji, caseId: s.caseId, type: s.type.toUpperCase() }),
-                    value: await t('moderation.sanctions_field_value', message.guild.id, { reason: s.reason, moderator: modName, date: date, duration: s.duration ? `\n**${await t('common.duration_label', message.guild.id)}** ${require('ms')(s.duration)}` : '' })
-                });
-            }
+                    value: await t('moderation.sanctions_field_value', message.guild.id, { reason: s.reason, moderator: modName, date: date, duration: s.duration ? `\n**${await t('common.duration_label', message.guild.id)}** ${ms(s.duration)}` : '' })
+                };
+            });
+
+            const fields = await Promise.all(userPromises);
+            embed.addFields(fields);
 
             return embed;
         };
@@ -85,15 +89,20 @@ module.exports = {
         await replyMsg.edit({ embeds: [embed], components });
 
         if (totalPages > 1) {
-            const collector = replyMsg.createMessageComponentCollector({ time: 60000 });
+            const collector = replyMsg.createMessageComponentCollector({ idle: 300000 }); // 5 minutes d'inactivité
 
             collector.on('collect', async (i) => {
                 if (i.user.id !== message.author.id) {
                     return i.reply({ content: await t('moderation.sanctions_button_error', message.guild.id), ephemeral: true });
                 }
 
+                await i.deferUpdate();
+
                 if (i.customId === 'prev_page') currentPage--;
                 if (i.customId === 'next_page') currentPage++;
+
+                if (currentPage < 0) currentPage = 0;
+                if (currentPage >= totalPages) currentPage = totalPages - 1;
 
                 const newEmbed = await generateEmbed(currentPage);
                 const newRow = new ActionRowBuilder()
@@ -102,7 +111,16 @@ module.exports = {
                         new ButtonBuilder().setCustomId('next_page').setLabel('▶️').setStyle(ButtonStyle.Primary).setDisabled(currentPage === totalPages - 1)
                     );
 
-                await i.update({ embeds: [newEmbed], components: [newRow] });
+                await i.editReply({ embeds: [newEmbed], components: [newRow] });
+            });
+
+            collector.on('end', () => {
+                const disabledRow = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder().setCustomId('prev_page').setLabel('◀️').setStyle(ButtonStyle.Primary).setDisabled(true),
+                        new ButtonBuilder().setCustomId('next_page').setLabel('▶️').setStyle(ButtonStyle.Primary).setDisabled(true)
+                    );
+                replyMsg.edit({ components: [disabledRow] }).catch(() => {});
             });
         }
     }

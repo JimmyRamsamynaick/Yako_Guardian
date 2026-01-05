@@ -6,7 +6,8 @@ const {
     ModalBuilder, 
     TextInputBuilder, 
     TextInputStyle,
-    Routes
+    Routes,
+    PermissionsBitField
 } = require('discord.js');
 const { db } = require('../database');
 const logger = require('../utils/logger');
@@ -162,7 +163,7 @@ async function handleSetProfilButton(client, interaction) {
         return interaction.reply({ embeds: [createEmbed(await t('handlers.permission_denied', interaction.guild.id), '', 'error')], ephemeral: true });
     }
 
-    const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField } = require('discord.js');
+    const { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
     
     const modal = new ModalBuilder()
         .setCustomId('modal_set_profil')

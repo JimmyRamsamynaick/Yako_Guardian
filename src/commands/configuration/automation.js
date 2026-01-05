@@ -94,12 +94,19 @@ module.exports = {
                     'success'
                 )] });
             } else if (action === 'list') {
-                const channels = config.automations.autothread.channels.map(id => `<#${id}>`).join(', ') || 'Aucun';
-                return message.channel.send({ embeds: [createEmbed(
-                    await t('automation.autothread_list', message.guild.id, { channels }),
+                const channels = config.automations.autothread.channels.map(id => `<#${id}>`).join('\n') || await t('automation.autothread_list_empty', message.guild.id);
+                
+                const embed = createEmbed(
+                    await t('automation.autothread_list_title', message.guild.id),
                     '',
                     'info'
-                )] });
+                );
+
+                embed.addFields([
+                    { name: await t('automation.autothread_list_channels', message.guild.id), value: channels, inline: false }
+                ]);
+
+                return message.channel.send({ embeds: [embed] });
             } else {
                 return message.channel.send({ embeds: [createEmbed(
                     await t('automation.autothread_usage', message.guild.id),
@@ -131,11 +138,20 @@ module.exports = {
                     duration: duration
                 };
                 await config.save();
-                return message.channel.send({ embeds: [createEmbed(
-                    await t('automation.autoslowmode_set', message.guild.id, { limit, time, duration }),
+
+                const embed = createEmbed(
+                    await t('automation.autoslowmode_set_title', message.guild.id),
                     '',
                     'success'
-                )] });
+                );
+                
+                embed.addFields([
+                    { name: await t('automation.autoslowmode_set_limit', message.guild.id), value: `${limit} messages`, inline: true },
+                    { name: await t('automation.autoslowmode_set_time', message.guild.id), value: `${time}s`, inline: true },
+                    { name: await t('automation.autoslowmode_set_duration', message.guild.id), value: `${duration}s`, inline: true }
+                ]);
+
+                return message.channel.send({ embeds: [embed] });
 
              } else if (action === 'disable') {
                  if (config.automations.autoslowmode) {
@@ -156,10 +172,18 @@ module.exports = {
              }
         }
 
-        return message.channel.send({ embeds: [createEmbed(
-            await t('automation.usage', message.guild.id),
-            '',
+        const embed = createEmbed(
+            await t('automation.help_title', message.guild.id),
+            await t('automation.help_description', message.guild.id),
             'info'
-        )] });
+        );
+
+        embed.addFields([
+            { name: 'AutoNick', value: await t('automation.help_autonick', message.guild.id), inline: false },
+            { name: 'AutoThread', value: await t('automation.help_autothread', message.guild.id), inline: false },
+            { name: 'AutoSlowmode', value: await t('automation.help_autoslowmode', message.guild.id), inline: false }
+        ]);
+
+        return message.channel.send({ embeds: [embed] });
     }
 };

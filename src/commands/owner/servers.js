@@ -9,14 +9,15 @@ module.exports = {
     name: 'servers',
     description: 'Gestion des serveurs (Owner)',
     category: 'Owner',
-    aliases: ['invite', 'leave', 'secur', 'server'],
+    aliases: ['invite', 'leave', 'server'],
     async run(client, message, args) {
         if (!await isBotOwner(message.author.id)) return;
 
         const commandName = message.content.split(' ')[0].slice(client.config.prefix.length).toLowerCase();
         const sub = args[0]?.toLowerCase();
 
-        // --- SECUR INVITE ---
+        // --- SECUR INVITE (Moved to security.js) ---
+        /*
         if (commandName === 'secur' && sub === 'invite') {
             const state = args[1];
             if (!state || !['on', 'off'].includes(state.toLowerCase())) {
@@ -41,6 +42,7 @@ module.exports = {
                 'success'
             )] });
         }
+        */
 
         // --- SERVER LIST ---
         if (commandName === 'servers' && (!sub || sub === 'list')) {

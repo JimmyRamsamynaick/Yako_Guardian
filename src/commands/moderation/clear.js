@@ -115,7 +115,7 @@ module.exports = {
                 'success'
             );
             
-            await replyMsg.edit({ embeds: [successEmbed] });
+            await replyMsg.edit({ embeds: [successEmbed] }).catch(() => {});
             
             // Auto delete success message after 3s
             setTimeout(async () => {
@@ -128,7 +128,7 @@ module.exports = {
 
         } catch (error) {
             console.error(error);
-            await replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.clear_error_old', message.guild.id), 'error')] });
+            await replyMsg.edit({ embeds: [createEmbed(await t('common.error_title', message.guild.id), await t('moderation.clear_error_old', message.guild.id), 'error')] }).catch(() => {});
             setTimeout(() => replyMsg.delete().catch(() => {}), 5000);
         }
     }

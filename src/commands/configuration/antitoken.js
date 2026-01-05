@@ -5,6 +5,8 @@ const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'antitoken',
+    description: 'Protège le serveur contre les raids de tokens (faux comptes)',
+    category: 'Antiraid',
     run: async (client, message, args) => {
         if (!args[0]) return message.channel.send({ embeds: [createEmbed(await t('antitoken.usage', message.guild.id), '', 'info')] });
 
