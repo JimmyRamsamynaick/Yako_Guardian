@@ -70,7 +70,7 @@ app.post('/request-license', async (req, res) => {
 
 function startServer() {
     app.listen(PORT, () => {
-        logger.info(`🌐 Website running on http://localhost:${PORT}`);
+        logger.info(`🌐 Website running on http://localhost:${PORT} (Accessible via http://payement-guardian.myddns.me:${PORT})`);
     });
 }
 

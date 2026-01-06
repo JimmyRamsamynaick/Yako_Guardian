@@ -7,9 +7,8 @@ module.exports = {
     description: 'Obtenir le lien pour acheter une licence Premium',
     category: 'General',
     run: async (client, message, args) => {
-        // Récupérer l'URL depuis le .env ou mettre localhost par défaut
-        // Note: localhost ne fonctionnera que pour vous. Il faudra mettre votre IP publique ou nom de domaine plus tard.
-        const websiteUrl = process.env.WEBSITE_URL || 'http://localhost:3002';
+        // Récupérer l'URL depuis le .env ou mettre le domaine configuré par défaut
+        const websiteUrl = process.env.WEBSITE_URL || 'http://payement-guardian.myddns.me:3002';
         
         const title = await t('buy.title', message.guild.id);
         const desc = await t('buy.description', message.guild.id);
