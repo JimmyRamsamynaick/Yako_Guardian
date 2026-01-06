@@ -1,4 +1,11 @@
 {
+    "ping": {
+        "description": "Affiche la latence du bot",
+        "usage": "**Utilisation:** `+ping`",
+        "calculating": "🏓 Calcul de la latence...",
+        "title": "🏓 Pong !",
+        "result": "**Latence Bot:** `{{latency}}ms`\n**Latence API:** `{{apiLatency}}ms`"
+    },
     "settings": {
         "title": "⚙️ Configuration du Serveur - {{guild}}",
         "description": "Affiche le tableau de bord de configuration",

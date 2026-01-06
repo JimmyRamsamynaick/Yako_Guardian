@@ -2504,6 +2504,13 @@
         "description_reset": "✅ Embed description reset to default.",
         "description_set": "✅ Embed description configured: {{content}}"
     },
+    "ping": {
+        "description": "Shows bot latency",
+        "usage": "**Usage:** `+ping`",
+        "calculating": "🏓 Calculating latency...",
+        "title": "🏓 Pong !",
+        "result": "**Bot Latency:** `{{latency}}ms`\n**API Latency:** `{{apiLatency}}ms`"
+    },
     "settings": {
         "title": "⚙️ Server Configuration - {{guild}}",
         "description": "Displays the configuration dashboard",
