@@ -1714,10 +1714,16 @@
     "autobackup": {
         "permission": "❌ Permission `Administrateur` requise.",
         "status": "**AutoBackup Actif**\nFréquence: Tous les {{days}} jours.\nProchaine backup: <t:{{time}}:R>\n\nPour désactiver: `+autobackup 0`",
-        "usage": "**Utilisation:** `+autobackup <jours>` (ex: `+autobackup 1` pour tous les jours, `0` pour désactiver)",
+        "status_disabled": "🔴 **Désactivé**\nUtilisez `+autobackup <jours>` pour l'activer.",
+        "usage": "`+autobackup <jours>`",
         "disabled": "✅ AutoBackup désactivé.",
         "enabled": "✅ AutoBackup activé ! Une sauvegarde sera créée tous les **{{days}}** jours.\nProchaine sauvegarde: <t:{{time}}:R>",
-        "description": "Configurer les sauvegardes automatiques"
+        "title": "📦 Configuration AutoBackup",
+        "description": "Configurez la fréquence des sauvegardes automatiques.",
+        "field_usage": "Utilisation",
+        "field_example": "Exemples",
+        "field_status": "État actuel",
+        "examples": "`+autobackup 1` (Tous les jours)\n`+autobackup 7` (Toutes les semaines)\n`+autobackup 0` (Désactiver)"
     },
     "renew": {
         "permission": "❌ Permission `Gérer les salons` requise.",

@@ -1330,10 +1330,16 @@
     "autobackup": {
         "permission": "❌ `Administrator` permission required.",
         "status": "**AutoBackup Active**\nFrequency: Every {{days}} days.\nNext backup: <t:{{time}}:R>\n\nTo disable: `+autobackup 0`",
-        "usage": "**Usage:** `+autobackup <days>` (e.g. `+autobackup 1` for daily, `0` to disable)",
+        "status_disabled": "🔴 **Disabled**\nUse `+autobackup <days>` to enable.",
+        "usage": "`+autobackup <days>`",
         "disabled": "✅ AutoBackup disabled.",
         "enabled": "✅ AutoBackup enabled! A backup will be created every **{{days}}** days.\nNext backup: <t:{{time}}:R>",
-        "description": "Configure automatic backups"
+        "title": "📦 AutoBackup Configuration",
+        "description": "Configure automatic server backups.",
+        "field_usage": "Usage",
+        "field_example": "Examples",
+        "field_status": "Current Status",
+        "examples": "`+autobackup 1` (Daily)\n`+autobackup 7` (Weekly)\n`+autobackup 0` (Disable)"
     },
     "renew": {
         "permission": "❌ `Manage Channels` permission required.",

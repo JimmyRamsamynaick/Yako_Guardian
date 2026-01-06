@@ -19,21 +19,36 @@ module.exports = {
 
         if (isNaN(days)) {
             const current = await AutoBackup.findOne({ guild_id: message.guild.id });
+            
+            const embed = createEmbed(
+                await t('autobackup.title', message.guild.id),
+                await t('autobackup.description', message.guild.id),
+                'info'
+            );
+
+            embed.addFields([
+                { name: await t('autobackup.field_usage', message.guild.id), value: await t('autobackup.usage', message.guild.id), inline: false },
+                { name: await t('autobackup.field_example', message.guild.id), value: await t('autobackup.examples', message.guild.id), inline: false }
+            ]);
+
             if (current) {
-                return message.channel.send({ embeds: [createEmbed(
-                    await t('autobackup.status', message.guild.id, { 
+                embed.addFields([{
+                    name: await t('autobackup.field_status', message.guild.id),
+                    value: await t('autobackup.status', message.guild.id, { 
                         days: current.frequency_days,
                         time: Math.floor(current.next_backup.getTime()/1000)
                     }),
-                    '',
-                    'info'
-                )] });
+                    inline: false
+                }]);
+            } else {
+                embed.addFields([{
+                    name: await t('autobackup.field_status', message.guild.id),
+                    value: await t('autobackup.status_disabled', message.guild.id),
+                    inline: false
+                }]);
             }
-            return message.channel.send({ embeds: [createEmbed(
-                await t('autobackup.usage', message.guild.id),
-                '',
-                'info'
-            )] });
+
+            return message.channel.send({ embeds: [embed] });
         }
 
         if (days <= 0) {
