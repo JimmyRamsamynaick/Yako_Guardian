@@ -16,8 +16,9 @@ module.exports = {
         const price = await t('buy.price', message.guild.id);
         const includes = await t('buy.includes', message.guild.id);
         const footer = await t('buy.footer', message.guild.id);
+        const activationHelp = await t('buy.how_to_activate', message.guild.id);
 
-        const content = `${title}\n\n${desc}\n\n${price}\n\n${includes}\n\n${footer}`;
+        const content = `${title}\n\n${desc}\n\n${price}\n\n${includes}\n\n${activationHelp}\n\n${footer}`;
 
         const row = new ActionRowBuilder()
             .addComponents(

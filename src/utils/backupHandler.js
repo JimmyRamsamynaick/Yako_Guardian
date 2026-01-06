@@ -2,7 +2,56 @@ const { ChannelType, PermissionsBitField } = require('discord.js');
 const Backup = require('../database/models/Backup');
 const { t } = require('./i18n');
 
-async function createBackup(guild, name) {
+// Helper to serialize channel
+const serializeChannel = (c, guild) => {
+    try {
+        const perms = (c.permissionOverwrites && c.permissionOverwrites.cache) ? c.permissionOverwrites.cache.map(p => {
+            const role = guild.roles.cache.get(p.id);
+            const member = guild.members.cache.get(p.id);
+            return {
+                id: role ? role.name : (member ? member.id : p.id), // Store by name for roles to map later
+                type: p.type,
+                allow: p.allow.bitfield.toString(),
+                deny: p.deny.bitfield.toString()
+            };
+        }) : [];
+
+        return {
+            name: c.name,
+            type: c.type,
+            parent: c.parent ? c.parent.name : null,
+            permissionOverwrites: perms,
+            topic: c.topic,
+            nsfw: c.nsfw,
+            rateLimitPerUser: c.rateLimitPerUser,
+            bitrate: c.bitrate,
+            userLimit: c.userLimit
+        };
+    } catch (error) {
+        console.error(`Error serializing channel ${c.name} (${c.id}):`, error);
+        return null;
+    }
+};
+
+// Helper to map permissions during restore
+function mapPermissions(overwrites, roleMap, guild) {
+    if (!overwrites) return [];
+    return overwrites.map(o => {
+        let id;
+        if (o.type === 0) { // Role
+            id = roleMap.get(o.id) || guild.roles.everyone.id; // Fallback
+        } else { // Member
+            id = o.id; // Keep ID (might not exist)
+        }
+        return {
+            id: id,
+            allow: BigInt(o.allow),
+            deny: BigInt(o.deny)
+        };
+    });
+}
+
+async function getBackupData(guild) {
     const backupData = {
         name: guild.name,
         icon: guild.iconURL(),
@@ -21,12 +70,11 @@ async function createBackup(guild, name) {
                 hoist: role.hoist,
                 permissions: role.permissions.bitfield.toString(),
                 mentionable: role.mentionable,
-                position: role.position // We might need to recalculate positions
+                position: role.position
             });
         });
 
     // Channels
-    // We need to handle categories first, then children
     const categories = guild.channels.cache
         .filter(c => c.type === ChannelType.GuildCategory)
         .sort((a, b) => a.position - b.position);
@@ -35,54 +83,16 @@ async function createBackup(guild, name) {
         .filter(c => c.type !== ChannelType.GuildCategory)
         .sort((a, b) => a.position - b.position);
 
-    // Helper to serialize channel
-    const serializeChannel = (c) => ({
-        name: c.name,
-        type: c.type,
-        parent: c.parent ? c.parent.name : null,
-        permissionOverwrites: c.permissionOverwrites.cache.map(p => {
-            const role = guild.roles.cache.get(p.id);
-            const member = guild.members.cache.get(p.id);
-            return {
-                id: role ? role.name : (member ? member.id : p.id), // Store by name for roles to map later
-                type: p.type,
-                allow: p.allow.bitfield.toString(),
-                deny: p.deny.bitfield.toString()
-            };
-        }),
-        topic: c.topic,
-        nsfw: c.nsfw,
-        rateLimitPerUser: c.rateLimitPerUser,
-        bitrate: c.bitrate,
-        userLimit: c.userLimit
-    });
-
     [...categories.values(), ...others.values()].forEach(c => {
-        backupData.channels.push(serializeChannel(c));
+        const serialized = serializeChannel(c, guild);
+        if (serialized) backupData.channels.push(serialized);
     });
 
-    // Save to DB
-    await Backup.findOneAndUpdate(
-        { guild_id: guild.id, name: name },
-        { data: backupData, created_at: Date.now() },
-        { upsert: true, new: true }
-    );
-
-    return true;
+    return backupData;
 }
 
-async function loadBackup(guild, name) {
-    const backupDoc = await Backup.findOne({ guild_id: guild.id, name: name });
-    if (!backupDoc) throw new Error('Backup not found');
-
-    const data = backupDoc.data;
-
+async function applyBackupData(guild, data) {
     // 1. Clear Guild
-    // Delete roles (except everyone/managed/bot)
-    // Dangerous!
-    // For safety, let's just create new ones or try to match.
-    // Standard backup load usually wipes.
-    
     const botMember = guild.members.me;
     if (!botMember.permissions.has(PermissionsBitField.Flags.Administrator)) {
         throw new Error('Missing Administrator permission');
@@ -104,8 +114,6 @@ async function loadBackup(guild, name) {
     // Restore Roles
     const roleMap = new Map(); // Old Name -> New ID
     
-    // We reverse to create from bottom to top? Or top to bottom?
-    // Roles need to be created.
     for (const roleData of data.roles) {
         const newRole = await guild.roles.create({
             name: roleData.name,
@@ -120,7 +128,6 @@ async function loadBackup(guild, name) {
     }
 
     // Restore Channels
-    // First Categories
     const categories = data.channels.filter(c => c.type === ChannelType.GuildCategory);
     const others = data.channels.filter(c => c.type !== ChannelType.GuildCategory);
 
@@ -148,21 +155,23 @@ async function loadBackup(guild, name) {
     }
 }
 
-function mapPermissions(overwrites, roleMap, guild) {
-    if (!overwrites) return [];
-    return overwrites.map(o => {
-        let id;
-        if (o.type === 0) { // Role
-            id = roleMap.get(o.id) || guild.roles.everyone.id; // Fallback
-        } else { // Member
-            id = o.id; // Keep ID (might not exist)
-        }
-        return {
-            id: id,
-            allow: BigInt(o.allow),
-            deny: BigInt(o.deny)
-        };
-    });
+async function createBackup(guild, name) {
+    const backupData = await getBackupData(guild);
+    
+    // Save to DB
+    await Backup.findOneAndUpdate(
+        { guild_id: guild.id, name: name },
+        { data: backupData, created_at: Date.now() },
+        { upsert: true, new: true }
+    );
+
+    return true;
 }
 
-module.exports = { createBackup, loadBackup };
+async function loadBackup(guild, name) {
+    const backupDoc = await Backup.findOne({ guild_id: guild.id, name: name });
+    if (!backupDoc) throw new Error('Backup not found');
+    await applyBackupData(guild, backupDoc.data);
+}
+
+module.exports = { createBackup, loadBackup, getBackupData, applyBackupData };

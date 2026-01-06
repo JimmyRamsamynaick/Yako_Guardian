@@ -85,7 +85,7 @@ client.login(process.env.TOKEN).catch(err => {
 
 // Global error handling
 process.on('unhandledRejection', (reason, p) => {
-    logger.error('Unhandled Rejection at:', p, 'reason:', reason);
+    logger.error('Unhandled Rejection', { promise: p, reason: reason });
 });
 
 process.on('uncaughtException', (err) => {

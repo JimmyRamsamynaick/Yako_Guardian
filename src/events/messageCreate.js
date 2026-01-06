@@ -200,7 +200,7 @@ module.exports = {
         const { checkSubscription } = require('../utils/subscription');
         const { isBotOwner } = require('../utils/ownerUtils');
         const isOwner = await isBotOwner(message.author.id);
-        const freeCommands = ['activate', 'subscription', 'help', 'genkey'];
+        const freeCommands = ['help', 'buy', 'subscription'];
 
         // 1. Standard Command
         if (command) {

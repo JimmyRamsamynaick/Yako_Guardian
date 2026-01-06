@@ -29,6 +29,11 @@
         "limit_invalid": "❌ Nombre invalide."
     },
 
+    "clone": {
+        "description": "Copier/Coller un serveur (Propriétaire uniquement)",
+        "usage": "Usage: `+clone <copy/paste> <code>`"
+    },
+
     "logs": {
         "usage": "❌ Usage: `+log <status/test/ignore/export/config>`",
         "status_title": "📊 Statut des Logs",
@@ -1234,14 +1239,16 @@
         "price": "**💸 Prix:** `5.00€ / mois`",
         "includes": "**🚀 Inclus:**\n• Anti-Raid Complet\n• Anti-Token & Mass Mention\n• Protection des Salons & Rôles\n• Support Prioritaire",
         "footer": "_Cliquez sur le bouton ci-dessous pour accéder à la boutique_",
+        "how_to_activate": "🔑 **Activation :** Une fois la clé reçue, faites `+subscription activate <clé>` pour l'activer ou prolonger votre abonnement.",
         "button": "Accéder à la Boutique",
         "usage": "**Utilisation:** `+buy`"
     },
     "subscription": {
         "none": "❌ **Aucun abonnement actif.**\nCe serveur n'est pas protégé par Yako Guardian Premium.\nVeuillez acheter une clé de licence pour activer la protection.",
         "active": "✅ **Abonnement Actif**\nExpire le : **{{date}}**\nJours restants : **{{days}}**",
-        "description": "Vérifie l'état de l'abonnement Premium du serveur",
-        "usage": "**Utilisation:** `+subscription`"
+        "help_activate": "💡 **Astuce :** Pour activer ou prolonger votre abonnement, utilisez :\n`+subscription activate <Clé-Yako>`",
+        "description": "Vérifie l'état de l'abonnement ou active une clé",
+        "usage": "**Utilisation:** `+subscription` ou `+subscription activate <clé>`"
     },
     "configuration": {
         "dashboard_title": "⚙️ Configuration - {{guild}}",

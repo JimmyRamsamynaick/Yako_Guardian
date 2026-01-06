@@ -205,6 +205,11 @@
         "limit_success": "✅ Deletion limit set to **{{count}}** messages.",
         "limit_invalid": "❌ Invalid number."
     },
+
+    "clone": {
+        "description": "Copy/Paste a server (Owner only)",
+        "usage": "Usage: `+clone <copy/paste> <code>`"
+    },
     "warn": {
         "description": "Warn one or more members (Adds a strike)",
         "usage": "**Usage:** `+warn <user> [reason]` or `+warn list [user]`"
@@ -1001,14 +1006,16 @@
         "price": "**💸 Price:** `5.00€ / month`",
         "includes": "**🚀 Includes:**\n• Complete Anti-Raid\n• Anti-Token & Mass Mention\n• Channel & Role Protection\n• Priority Support",
         "footer": "_Click the button below to access the store_",
+        "how_to_activate": "🔑 **Activation:** Once you receive your key, use `+subscription activate <key>` to activate or extend your subscription.",
         "button": "Access Store",
         "usage": "**Usage:** `+buy`"
     },
     "subscription": {
         "none": "❌ **No active subscription.**\nThis server is not protected by Yako Guardian Premium.\nPlease purchase a license key to activate protection.",
         "active": "✅ **Active Subscription**\nExpires on: **{{date}}**\nDays left: **{{days}}**",
-        "description": "Check Premium subscription status",
-        "usage": "**Usage:** `+subscription`"
+        "help_activate": "💡 **Tip:** To activate or extend your subscription, use:\n`+subscription activate <Yako-Key>`",
+        "description": "Check subscription status or activate a key",
+        "usage": "**Usage:** `+subscription` or `+subscription activate <key>`"
     },
 
     "help": {
