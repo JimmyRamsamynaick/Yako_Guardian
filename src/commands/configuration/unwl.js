@@ -5,6 +5,7 @@ const { createEmbed } = require('../../utils/design');
 module.exports = {
     name: 'unwl',
     aliases: ['unwhitelist'],
+    category: 'Configuration',
     run: async (client, message, args) => {
         if (message.author.id !== message.guild.ownerId) return message.channel.send({ embeds: [createEmbed('Permission Manquante', await t('unwl.owner_only', message.guild.id), 'error')] });
 

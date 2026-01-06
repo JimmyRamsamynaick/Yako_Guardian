@@ -8,7 +8,7 @@ module.exports = {
     name: 'del',
     aliases: ['remove'],
     description: 'Supprime un membre d\'un ticket OU une sanction',
-    category: 'General',
+    category: 'Tickets',
     usage: 'del <membre> | del sanction <id>',
     async run(client, message, args) {
         

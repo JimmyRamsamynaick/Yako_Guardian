@@ -273,7 +273,7 @@ async function handleEmbedInteraction(client, interaction) {
 module.exports = {
     name: 'embed',
     description: 'Générateur d\'embed interactif',
-    category: 'Utilitaire',
+    category: 'Utils',
     async run(client, message, args) {
         await message.delete().catch(() => {});
         const row = new ActionRowBuilder().addComponents(

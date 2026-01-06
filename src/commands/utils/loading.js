@@ -11,7 +11,7 @@ function parseDuration(str) {
 module.exports = {
     name: 'loading',
     description: 'Afficher une barre de chargement animée',
-    category: 'Utilitaire',
+    category: 'Utils',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageMessages') && message.author.id !== message.guild.ownerId) {
             return message.channel.send({ embeds: [createEmbed(await t('loading.permission', message.guild.id), '', 'error')] });

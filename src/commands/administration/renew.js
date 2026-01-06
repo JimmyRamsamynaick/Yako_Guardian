@@ -53,11 +53,14 @@ module.exports = {
                     const newChannel = await channel.clone();
                     await channel.delete();
                     await newChannel.setPosition(position);
-                    await newChannel.send({ embeds: [createEmbed(
-                        await t('renew.success', message.guild.id, { user: message.author.toString() }),
-                        '',
-                        'success'
-                    )] });
+                    await newChannel.send({ 
+                        content: message.author.toString(),
+                        embeds: [createEmbed(
+                            await t('renew.success_title', message.guild.id),
+                            await t('renew.success_desc', message.guild.id, { user: message.author.toString() }),
+                            'success'
+                        )] 
+                    });
                 } catch (e) {
                     console.error(e);
                     try {

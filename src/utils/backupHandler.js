@@ -1,5 +1,6 @@
 const { ChannelType, PermissionsBitField } = require('discord.js');
 const Backup = require('../database/models/Backup');
+const { t } = require('./i18n');
 
 async function createBackup(guild, name) {
     const backupData = {

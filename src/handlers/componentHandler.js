@@ -302,10 +302,9 @@ async function handleBackup(client, interaction) {
         }
 
         try {
-            await interaction.reply({ embeds: [createEmbed(await t('handlers.backup_loading', interaction.guild.id), '', 'info')], ephemeral: true });
+            await interaction.update({ embeds: [createEmbed(await t('handlers.backup_loading', interaction.guild.id), '', 'loading')], components: [] });
             await loadBackup(interaction.guild, name);
             await interaction.editReply({ embeds: [createEmbed(await t('handlers.backup_loaded', interaction.guild.id, { name }), '', 'success')] });
-            await interaction.message.delete().catch(() => {});
         } catch (error) {
             console.error(error);
             await interaction.editReply({ embeds: [createEmbed(await t('handlers.backup_load_error', interaction.guild.id, { error: error.message }), '', 'error')] });
@@ -323,12 +322,11 @@ async function handleBackup(client, interaction) {
         }
 
         try {
+            await interaction.update({ embeds: [createEmbed(await t('handlers.backup_deleted', interaction.guild.id, { name }), '', 'success')], components: [] });
             await Backup.deleteOne({ guild_id: interaction.guild.id, name: name });
-            await interaction.reply({ embeds: [createEmbed(await t('handlers.backup_deleted', interaction.guild.id, { name }), '', 'success')], ephemeral: true });
-            await interaction.message.delete().catch(() => {});
         } catch (error) {
             console.error(error);
-            await interaction.reply({ embeds: [createEmbed(await t('handlers.backup_delete_error', interaction.guild.id, { error: error.message }), '', 'error')], ephemeral: true });
+            await interaction.editReply({ embeds: [createEmbed(await t('handlers.backup_delete_error', interaction.guild.id, { error: error.message }), '', 'error')] });
         }
         return;
     }

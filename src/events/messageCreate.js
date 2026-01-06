@@ -3,6 +3,7 @@ const { ChannelType, PermissionsBitField } = require('discord.js');
 const logger = require('../utils/logger');
 const { db } = require('../database');
 const AutoReact = require('../database/models/AutoReact');
+const AFK = require('../database/models/AFK');
 const { getGuildConfig } = require('../utils/mongoUtils');
 const CustomCommand = require('../database/models/CustomCommand');
 const { createEmbed } = require('../utils/design');
@@ -31,6 +32,39 @@ module.exports = {
         } catch (e) {
             // Ignore errors (deleted emoji etc)
         }
+
+        // --- AFK SYSTEM ---
+        try {
+             // 1. Remove AFK
+             const afkData = await AFK.findOne({ guildId: message.guild.id, userId: message.author.id });
+             if (afkData) {
+                 const currentConfig = await getGuildConfig(message.guild.id);
+                 const currentPrefix = currentConfig.prefix || client.config.prefix;
+                 
+                 if (!message.content.startsWith(currentPrefix + 'afk')) {
+                     await AFK.deleteOne({ guildId: message.guild.id, userId: message.author.id });
+                     const ms = require('ms');
+                     const timeAgo = ms(Date.now() - afkData.timestamp, { long: true });
+                     message.channel.send({ embeds: [createEmbed(await t('afk.removed', message.guild.id, { user: message.author.username, time: timeAgo }), '', 'success')] });
+                 }
+             }
+
+             // 2. Notify AFK
+             if (message.mentions.users.size > 0) {
+                 for (const [id, user] of message.mentions.users) {
+                     if (user.bot || id === message.author.id) continue;
+                     const targetAfk = await AFK.findOne({ guildId: message.guild.id, userId: id });
+                     if (targetAfk) {
+                         const ms = require('ms');
+                         const timeAgo = ms(Date.now() - targetAfk.timestamp, { long: true });
+                         message.channel.send({ embeds: [createEmbed(await t('afk.notify', message.guild.id, { user: user.username, reason: targetAfk.reason, time: timeAgo }), '', 'info')] });
+                     }
+                 }
+             }
+        } catch (e) {
+            console.error("AFK Error:", e);
+        }
+        // --- END AFK SYSTEM ---
 
         // --- Anti-Everyone / Anti-Link Check ---
         const { checkAntiraid } = require('../utils/antiraid');
@@ -71,30 +105,34 @@ module.exports = {
                 userLevel = new Level({ guildId: message.guild.id, userId: message.author.id });
             }
 
-            const now = Date.now();
-            if (now - userLevel.lastMessageTimestamp > 60000) { // 1 min cooldown
-                const xpGain = Math.floor(Math.random() * 10) + 15; // 15-25 XP
-                userLevel.xp += xpGain;
-                userLevel.lastMessageTimestamp = now;
+            // Increment message count regardless of XP cooldown
+            userLevel.messageCount = (userLevel.messageCount || 0) + 1;
 
-                const nextLevelXp = 5 * (userLevel.level ** 2) + 50 * userLevel.level + 100;
-                if (userLevel.xp >= nextLevelXp) {
-                    userLevel.level++;
-                    userLevel.xp -= nextLevelXp; // Optional: Keep overflow or reset? Usually accumulate. 
-                    // Let's use accumulated XP for rank, but here we just check threshold.
-                    // Simplified formula: XP needed for next level = 5*lvl^2 + 50*lvl + 100.
-                    // Better: Calculate total XP for level N. 
-                    // Let's keep it simple: if current XP > threshold -> Level Up.
-                    
-                    if (config.community.levels.channelId) {
-                        const channel = message.guild.channels.cache.get(config.community.levels.channelId) || message.channel;
-                        const msg = config.community.levels.message || await t('level.levelup_default', message.guild.id);
-                        const content = msg.replace(/{user}/g, message.author.toString()).replace(/{level}/g, userLevel.level);
-                        channel.send(content).catch(() => {});
-                    }
+            const now = Date.now();
+            // Cooldown removed as requested
+            // const lastMsg = userLevel.lastMessageTimestamp || 0;
+            // if (now - lastMsg > 60000) { 
+            
+            const xpGain = Math.floor(Math.random() * 10) + 15; // 15-25 XP
+            userLevel.xp += xpGain;
+            userLevel.lastMessageTimestamp = now;
+
+            const nextLevelXp = 5 * (userLevel.level ** 2) + 50 * userLevel.level + 100;
+            if (userLevel.xp >= nextLevelXp) {
+                userLevel.level++;
+                userLevel.xp -= nextLevelXp; 
+                
+                // Send Level Up Message
+                const channelId = config.community.levels.channelId;
+                const channel = channelId ? message.guild.channels.cache.get(channelId) : message.channel;
+
+                if (channel) {
+                    const msg = config.community.levels.message || await t('level.levelup_default', message.guild.id);
+                    const content = msg.replace(/{user}/g, message.author.toString()).replace(/{level}/g, userLevel.level);
+                    channel.send(content).catch(() => {});
                 }
-                await userLevel.save();
             }
+            await userLevel.save();
         }
         // --- END LEVEL SYSTEM ---
 
@@ -151,6 +189,7 @@ module.exports = {
         }
 
         if (!message.content.startsWith(prefix)) return;
+        if (message.content.startsWith(prefix + ' ')) return;
 
         const args = message.content.slice(prefix.length).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();

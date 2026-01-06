@@ -4,6 +4,7 @@ const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'raidping',
+    category: 'Configuration',
     run: async (client, message, args) => {
         if (!args[0]) return message.channel.send({ embeds: [createEmbed('Usage', await t('raidping.usage', message.guild.id), 'info')] });
         

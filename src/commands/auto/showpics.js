@@ -6,9 +6,19 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'show',
     description: 'Commandes d\'affichage automatique',
+    category: 'Automation',
     async execute(client, message, args) {
         if (!args[0]) {
-            return message.channel.send({ embeds: [createEmbed(await t('showpics.usage', message.guild.id), '', 'info')] });
+            const embed = createEmbed(
+                await t('showpics.help_title', message.guild.id),
+                await t('showpics.help_description', message.guild.id),
+                'info'
+            );
+            embed.addFields({ 
+                name: 'Commandes', 
+                value: await t('showpics.help_cmd_pics', message.guild.id) 
+            });
+            return message.channel.send({ embeds: [embed] });
         }
         if (args[0] === 'pics') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {

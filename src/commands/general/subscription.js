@@ -5,6 +5,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'subscription',
     aliases: ['sub', 'abo'],
+    category: 'General',
     run: async (client, message, args) => {
         const sub = getSubscription(message.guild.id);
         

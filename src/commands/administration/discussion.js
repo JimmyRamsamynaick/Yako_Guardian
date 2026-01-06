@@ -1,6 +1,7 @@
 const { createEmbed } = require('../../utils/design');
 const { ChannelType } = require('discord.js');
 const { t } = require('../../utils/i18n');
+const activeDiscussions = require('../../utils/activeDiscussions');
 
 module.exports = {
     name: 'discussion',
@@ -17,6 +18,9 @@ module.exports = {
 
         try {
             const user = await client.users.fetch(targetId);
+            
+            // Add user to active discussions
+            activeDiscussions.add(user.id);
             
             await message.channel.send({ embeds: [createEmbed(
                 await t('discussion.started', message.guild.id, { user: user.tag }),
@@ -60,6 +64,7 @@ module.exports = {
 
             collector.on('end', async () => {
                 client.removeListener('messageCreate', dmListener);
+                activeDiscussions.delete(user.id);
                 message.channel.send({ embeds: [createEmbed(
                     await t('discussion.stopped', message.guild.id),
                     '',

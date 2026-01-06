@@ -7,6 +7,7 @@ module.exports = {
     name: 'custom',
     description: 'Crée, modifie, supprime ou transfère une commande personnalisée',
     aliases: ['cc'],
+    category: 'Custom',
     async execute(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.channel.send({ embeds: [createEmbed(await t('custom.permission', message.guild.id), '', 'error')] });

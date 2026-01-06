@@ -7,6 +7,7 @@ module.exports = {
     name: 'customlist',
     description: 'Liste les commandes personnalisées',
     aliases: ['cclist'],
+    category: 'Custom',
     async execute(client, message, args) {
         const commands = await CustomCommand.find({ guildId: message.guild.id }).sort({ trigger: 1 });
 

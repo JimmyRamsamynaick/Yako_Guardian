@@ -7,7 +7,7 @@ const ms = require('ms');
 module.exports = {
     name: 'giveaway',
     description: 'Gérer les giveaways (lancements, fin, reroll)',
-    category: 'giveaway',
+    category: 'Giveaway',
     usage: 'giveaway <start/end/reroll/list> [args]',
     permLevel: 2, // Moderator
     async run(client, message, args) {

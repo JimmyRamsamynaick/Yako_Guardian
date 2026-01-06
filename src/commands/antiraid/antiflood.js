@@ -18,6 +18,10 @@ module.exports = {
         }
 
         const sub = args[0]?.toLowerCase();
+        const config = await getGuildConfig(message.guild.id);
+        if (!config.security) config.security = {};
+        if (!config.security.antiflood) config.security.antiflood = {};
+
         // User asked for +antiflood join <on/off>
         if (sub === 'join') {
             const state = args[1]?.toLowerCase();
@@ -29,10 +33,6 @@ module.exports = {
                 )] });
             }
 
-            const config = await getGuildConfig(message.guild.id);
-            if (!config.security) config.security = {};
-            if (!config.security.antiflood) config.security.antiflood = {};
-
             config.security.antiflood.enabled = (state === 'on');
             await config.save();
 
@@ -43,9 +43,13 @@ module.exports = {
             )] });
         }
 
+        // Display menu if no valid subcommand
+        const status = config.security.antiflood.enabled ? '✅ ON' : '❌ OFF';
+        const description = (await t('antiflood.menu_description', message.guild.id)).replace('{status}', status);
+
         return message.channel.send({ embeds: [createEmbed(
-            await t('antiflood.usage', message.guild.id),
-            '',
+            await t('antiflood.menu_title', message.guild.id),
+            description,
             'info'
         )] });
     }

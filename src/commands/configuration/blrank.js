@@ -4,6 +4,7 @@ const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'blrank',
+    category: 'Configuration',
     run: async (client, message, args) => {
         if (!args[0]) {
             const settings = db.prepare('SELECT blrank_state FROM guild_settings WHERE guild_id = ?').get(message.guild.id);

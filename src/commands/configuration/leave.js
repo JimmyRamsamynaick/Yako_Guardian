@@ -3,6 +3,7 @@ const { getGuildConfig } = require('../../utils/mongoUtils');
 const { isBotOwner } = require('../../utils/ownerUtils');
 const { t } = require('../../utils/i18n');
 const { createEmbed, THEME } = require('../../utils/design');
+const { showLeaveMenu } = require('../../handlers/notificationHandler');
 
 module.exports = {
     name: 'leave',
@@ -12,9 +13,9 @@ module.exports = {
     async run(client, message, args) {
         const sub = args[0]?.toLowerCase();
         
-        // OWNER LOGIC: +leave <ID> or +leave (current)
-        // If arg is a number (ID) or empty, and user is owner, treat as server leave
-        if ((!sub || /^\d+$/.test(sub)) && await isBotOwner(message.author.id)) {
+        // OWNER LOGIC: +leave <ID>
+        // If arg is a number (ID) and user is owner, treat as server leave
+        if ((/^\d+$/.test(sub)) && await isBotOwner(message.author.id)) {
             const guildId = sub || message.guild.id;
             const guild = client.guilds.cache.get(guildId);
             

@@ -5,7 +5,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'button',
     description: 'Ajouter un bouton URL à un message',
-    category: 'Personnalisation',
+    category: 'Custom',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageMessages') && message.author.id !== message.guild.ownerId) {
             return message.channel.send({ embeds: [createEmbed(await t('button.permission', message.guild.id), '', 'error')] });

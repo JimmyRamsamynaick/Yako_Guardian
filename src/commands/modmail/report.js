@@ -6,6 +6,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'report',
     description: 'Configure le système de Report',
+    category: 'Modmail',
     async execute(client, message, args) { // Added client parameter
         if (args[0] === 'settings') {
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {

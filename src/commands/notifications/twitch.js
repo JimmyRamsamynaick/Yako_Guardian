@@ -7,6 +7,7 @@ const { createEmbed } = require('../../utils/design');
 module.exports = {
     name: 'twitch',
     description: 'Configure les alertes Twitch',
+    category: 'Notifications',
     async execute(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.channel.send({ embeds: [createEmbed(await t('twitch.permission', message.guild.id), '', 'error')] });

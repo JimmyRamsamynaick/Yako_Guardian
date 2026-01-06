@@ -18,11 +18,29 @@ module.exports = {
 
         const color = args[0];
         if (!color) {
-            return message.channel.send({ embeds: [createEmbed(
-                await t('theme.usage', message.guild.id),
-                '',
-                'info'
-            )] });
+            const embed = createEmbed(
+                await t('theme.help_title', message.guild.id),
+                await t('theme.help_description', message.guild.id),
+                'info',
+                { guildId: message.guild.id }
+            ).addFields([
+                {
+                    name: await t('theme.field_usage', message.guild.id),
+                    value: await t('theme.usage', message.guild.id),
+                    inline: false
+                },
+                {
+                    name: await t('theme.field_color', message.guild.id),
+                    value: await t('theme.color_desc', message.guild.id),
+                    inline: false
+                },
+                {
+                    name: await t('theme.field_examples', message.guild.id),
+                    value: await t('theme.examples_desc', message.guild.id),
+                    inline: false
+                }
+            ]);
+            return message.channel.send({ embeds: [embed] });
         }
 
         const hexRegex = /^#([0-9A-F]{3}){1,2}$/i;

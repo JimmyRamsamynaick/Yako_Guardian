@@ -22,8 +22,8 @@ module.exports = {
 
         if (!sub) {
             return message.channel.send({ embeds: [createEmbed(
-                await t('backup.usage', message.guild.id),
-                '',
+                await t('backup.menu_title', message.guild.id),
+                await t('backup.menu_description', message.guild.id),
                 'info'
             )] });
         }
@@ -63,7 +63,7 @@ module.exports = {
 
                 const list = backups.map(b => `• **${b.name}** (${new Date(b.created_at).toLocaleDateString()})`).join('\n');
                 return message.channel.send({ embeds: [createEmbed(
-                    await t('backup.list_title', message.guild.id, { list: list }),
+                    await t('backup.list_title', message.guild.id),
                     list,
                     'info'
                 )] });
@@ -102,37 +102,6 @@ module.exports = {
                     )],
                     components: [row]
                 });
-
-                // Collector
-                const collector = msg.createMessageComponentCollector({ time: 15000 });
-
-                collector.on('collect', async i => {
-                    if (i.user.id !== message.author.id) {
-                        return i.reply({ content: await t('common.not_allowed', message.guild.id), ephemeral: true });
-                    }
-
-                    if (i.customId === `backup_confirm_load_${name}`) {
-                        await i.update({
-                            embeds: [createEmbed(await t('backup.loading', message.guild.id), '', 'loading')],
-                            components: []
-                        });
-                        try {
-                            await loadBackup(message.guild, name);
-                            await i.editReply({
-                                embeds: [createEmbed(await t('backup.loaded', message.guild.id, { name: name }), '', 'success')]
-                            });
-                        } catch (e) {
-                            await i.editReply({
-                                embeds: [createEmbed(await t('backup.load_error', message.guild.id, { error: e.message }), '', 'error')]
-                            });
-                        }
-                    } else if (i.customId === 'backup_cancel') {
-                        await i.update({
-                            embeds: [createEmbed(await t('common.cancelled', message.guild.id), '', 'error')],
-                            components: []
-                        });
-                    }
-                });
                 return;
             }
 
@@ -168,37 +137,6 @@ module.exports = {
                         'warning'
                     )],
                     components: [row]
-                });
-
-                // Collector
-                const collector = msg.createMessageComponentCollector({ time: 15000 });
-
-                collector.on('collect', async i => {
-                    if (i.user.id !== message.author.id) {
-                        return i.reply({ content: await t('common.not_allowed', message.guild.id), ephemeral: true });
-                    }
-
-                    if (i.customId === `backup_confirm_delete_${name}`) {
-                        await i.update({
-                            embeds: [createEmbed(await t('common.processing', message.guild.id), '', 'loading')],
-                            components: []
-                        });
-                        try {
-                            await Backup.deleteOne({ guild_id: message.guild.id, name: name });
-                            await i.editReply({
-                                embeds: [createEmbed(await t('backup.deleted', message.guild.id, { name: name }), '', 'success')]
-                            });
-                        } catch (e) {
-                            await i.editReply({
-                                embeds: [createEmbed(await t('backup.delete_error', message.guild.id, { error: e.message }), '', 'error')]
-                            });
-                        }
-                    } else if (i.customId === 'backup_cancel') {
-                        await i.update({
-                            embeds: [createEmbed(await t('common.cancelled', message.guild.id), '', 'error')],
-                            components: []
-                        });
-                    }
                 });
                 return;
             }

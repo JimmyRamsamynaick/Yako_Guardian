@@ -5,7 +5,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'autoreact',
     description: 'Gérer les réactions automatiques',
-    category: 'Personnalisation',
+    category: 'Custom',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageChannels') && message.author.id !== message.guild.ownerId) {
             return message.channel.send({ embeds: [createEmbed(await t('autoreact.permission', message.guild.id), '', 'error')] });

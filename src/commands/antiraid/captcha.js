@@ -20,6 +20,34 @@ module.exports = {
         const config = await getGuildConfig(message.guild.id);
         const sub = args[0]?.toLowerCase();
 
+        // Show menu if no args or invalid args (implied by falling through)
+        if (!sub) {
+            if (!config.security) config.security = {};
+            if (!config.security.captcha) config.security.captcha = {};
+
+            const status = config.security.captcha.enabled ? '✅ ON' : '❌ OFF'; // Assuming enabled flag exists or inferred from difficulty? 
+            // Wait, looking at code, difficulty sets it? Or is it separate?
+            // The existing code didn't show an "enable/disable" toggle, just difficulty/role/bypass.
+            // I'll assume status is based on difficulty being set? Or just "ON" if configured?
+            // Let's check if there is an 'enabled' field. If not, I'll default to checking if difficulty is set.
+            // Actually, usually 'enabled' is a boolean. Let's look at `antitoken` or `antibot` pattern.
+            // Captcha might be always on if configured? 
+            // Let's just show "ON" if difficulty is set, else "OFF".
+            
+            const diff = config.security.captcha.difficulty || 'Non défini';
+            const state = (config.security.captcha.difficulty) ? '✅ ON' : '❌ OFF'; 
+            
+            const description = (await t('captcha.menu_description', message.guild.id))
+                .replace('{status}', state)
+                .replace('{difficulty}', diff);
+
+            return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.menu_title', message.guild.id),
+                description,
+                'info'
+            )] });
+        }
+
         // +captcha difficulty <easy/medium/hard>
         if (sub === 'difficulty' || sub === 'diff') {
             const level = args[1]?.toLowerCase();

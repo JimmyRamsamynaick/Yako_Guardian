@@ -4,7 +4,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'create',
     description: 'Ajouter un émoji au serveur',
-    category: 'Utilitaire',
+    category: 'Utils',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageEmojisAndStickers') && message.author.id !== message.guild.ownerId) {
             return message.channel.send({ embeds: [createEmbed(await t('create.permission', message.guild.id), '', 'error')] });

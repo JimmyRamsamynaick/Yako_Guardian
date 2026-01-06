@@ -4,7 +4,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'newsticker',
     description: 'Ajouter un sticker au serveur',
-    category: 'Utilitaire',
+    category: 'Utils',
     async run(client, message, args) {
         if (!message.member.permissions.has('ManageEmojisAndStickers') && message.author.id !== message.guild.ownerId) {
             return message.channel.send({ embeds: [createEmbed(await t('newsticker.permission', message.guild.id), '', 'error')] });

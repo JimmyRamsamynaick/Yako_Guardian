@@ -5,6 +5,7 @@ const { createEmbed } = require('../../utils/design');
 
 module.exports = {
     name: 'creation',
+    category: 'Configuration',
     run: async (client, message, args) => {
         const sub = args[0]?.toLowerCase();
 

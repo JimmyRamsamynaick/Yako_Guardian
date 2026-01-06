@@ -72,6 +72,8 @@ module.exports = {
             return message.channel.send({ embeds: [createEmbed('Usage', await t('lang.custom_usage', message.guild.id), 'info')] });
         }
 
-        return message.channel.send({ embeds: [createEmbed('Usage', await t('lang.usage', message.guild.id), 'info')] });
+        const title = await t('lang.help_embed.title', message.guild.id);
+        const description = await t('lang.help_embed.description', message.guild.id);
+        return message.channel.send({ embeds: [createEmbed(title, description, 'info')] });
     }
 };

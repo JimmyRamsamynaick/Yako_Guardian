@@ -5,7 +5,7 @@ const { createEmbed } = require('../../utils/design');
 module.exports = {
     name: 'untemprole',
     description: 'Retirer un rôle temporaire et annuler le timer',
-    category: 'Rôles',
+    category: 'Roles',
     async run(client, message, args) {
         // Permissions
         if (!message.member.permissions.has('ManageRoles') && message.author.id !== message.guild.ownerId) {

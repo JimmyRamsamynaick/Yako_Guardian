@@ -1,4 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
+const { db } = require('../database');
 
 const THEME = {
     colors: {
@@ -66,6 +67,18 @@ function createEmbed(title, description, type = 'default', options = {}) {
             color = THEME.colors.info;
             icon = THEME.icons.info;
             break;
+    }
+
+    // Custom Theme Override
+    if (options.guildId && (type === 'default' || type === 'info')) {
+        try {
+            const settings = db.prepare('SELECT theme_color FROM guild_settings WHERE guild_id = ?').get(options.guildId);
+            if (settings && settings.theme_color) {
+                color = settings.theme_color;
+            }
+        } catch (e) { 
+            // Silent fail
+        }
     }
 
     // Add icon to title if present

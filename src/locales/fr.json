@@ -373,6 +373,7 @@
         }
     },
     "common": {
+        "date_locale": "fr-FR",
         "yes": "Oui",
         "no": "Non",
         "none": "Aucun",
@@ -449,7 +450,7 @@
         "permission": "❌ Vous n'avez pas la permission."
     },
     "leave": {
-        "usage": "❌ Usage: `+leave <settings/message>`",
+        "usage": "❌ Usage: `+leave <menu/settings/message>` ou `+leave <salon> <message>`",
         "settings_title": "📤 Paramètres de Départ",
         "settings_channel": "**Salon:** {{channel}}",
         "settings_message": "**Message:**",
@@ -472,6 +473,8 @@
         "antiflood_status": "**État:** {{state}}\n**Limite:** {{limit}}/{{time}}s"
     },
     "captcha": {
+        "menu_title": "🧩 Configuration Captcha",
+        "menu_description": "Le système Captcha vérifie les nouveaux membres pour empêcher les bots automatisés.\n\n__**État actuel :**__ {status}\n__**Difficulté :**__ {difficulty}\n\n__**Configuration :**__\n`+captcha difficulty <easy/medium/hard>` • Définir la difficulté\n`+captcha role <@role>` • Définir le rôle de vérification\n`+captcha bypass <add/del> <@role>` • Gérer les rôles exemptés",
         "usage": "❌ Usage: `+captcha <difficulty/role/bypass>`",
         "diff_usage": "❌ Usage: `+captcha difficulty <easy/medium/hard>`",
         "diff_success": "✅ Difficulté Captcha définie sur **{{diff}}**.",
@@ -482,20 +485,38 @@
         "bypass_removed": "✅ Rôle **{{role}}** retiré du bypass Captcha."
     },
     "antibot": {
+        "menu_title": "🛡️ Protection Anti-Bot",
+        "menu_description": "Le système Anti-Bot protège votre serveur contre l'ajout de bots malveillants ou non vérifiés.\n\n__**État actuel :**__ {status}\n\n__**Configuration :**__\n`+antibot on` • Activer la protection\n`+antibot off` • Désactiver la protection",
         "usage": "❌ Usage: `+antibot <on/off>`",
         "success": "✅ Anti-Bot: **{{state}}**"
     },
     "antiflood": {
+        "menu_title": "🌊 Anti-Flood Join",
+        "menu_description": "L'Anti-Flood empêche les arrivées massives de comptes sur une courte période.\n\n__**État actuel :**__ {status}\n\n__**Configuration :**__\n`+antiflood join on` • Activer la protection\n`+antiflood join off` • Désactiver la protection",
         "usage": "❌ Usage: `+antiflood join <on/off>`",
         "success": "✅ Anti-Flood Join: **{{state}}**"
+    },
+    "antitoken": {
+        "menu_title": "🤖 Anti-Token",
+        "menu_description": "Protège le serveur contre les raids de tokens (faux comptes).\n\n__**État actuel :**__ {status}\n__**Limite :**__ {limit}\n\n__**Configuration :**__\n`+antitoken on` • Activer\n`+antitoken off` • Désactiver\n`+antitoken lock` • Verrouiller le serveur\n`+antitoken <nombre>/<temps>` • Configurer la limite (ex: 5/10s)",
+        "usage": "❌ Usage: `+antitoken <on/off>`",
+        "state_success": "✅ Anti-Token: **{{state}}**",
+        "invalid_format": "❌ Format invalide. Exemple: 5/10s",
+        "config_success": "✅ Configuration Anti-Token: **{{count}}** comptes en **{{duration}}**."
     },
     "rank": {
         "title": "Rang de {{user}}",
         "level": "Niveau",
         "xp": "XP",
         "rank": "Rang",
+        "reputation": "Réputation",
+        "progression": "Progression",
+        "xp_required": "XP Requis",
+        "messages": "Messages",
+        "current_role": "Rôle actuel",
+        "member_since": "Membre depuis le",
         "no_data": "Aucune donnée de niveau.",
-        "disabled": "❌ Le système de niveaux est désactivé."
+        "disabled": "❌ Le système de niveaux est désactivé. Utilisez `+set levels on` pour l'activer."
     },
     "leaderboard": {
         "title": "Classement - {{guild}}",
@@ -926,15 +947,6 @@
         "sanctions_loading": "Récupération de l'historique...",
         "sanctions_none_title": "Historique Vierge"
     },
-    "ticket_del": {
-        "not_ticket": "❌ Ce salon n'est pas un ticket.",
-        "usage": "❌ Usage: `+del <membre>`",
-        "success": "✅ **<@{{user}}>** retiré du ticket.",
-        "error": "❌ Erreur lors du retrait du membre.",
-        "sanction_usage": "❌ Usage: `+del sanction [membre] <ID_Sanction>`",
-        "sanction_success": "✅ Sanction **#{{caseId}}** supprimée.",
-        "sanction_not_found": "❌ Sanction **#{{caseId}}** introuvable."
-    },
     "help_utils": {
         "usage_incorrect": "**❌ Utilisation Incorrecte**",
         "command": "**Commande:**",
@@ -1120,17 +1132,19 @@
     },
 
     "set": {
+        "description": "Config (ex: `+set levels on` pour activer les niveaux)",
         "permission": "❌ Permission Administrateur requise.",
         "help_title": "🔧 Configuration du Bot",
         "help_description": "Voici les commandes disponibles pour configurer le bot :\n\n`+set perm <cmd> <cible>`\n> Gérer les permissions d'une commande.\n\n`+set muterole <role>`\n> Définir le rôle Mute manuellement.\n\n`+set vocal <on/off> [salon]`\n> Faire rejoindre le bot en vocal (24/7).\n\n`+set name <pseudo>`\n> Changer le pseudo du bot sur le serveur.\n\n`+set pic <url>`\n> Changer l'avatar du bot (via lien).\n\n`+set banner <url>`\n> Changer la bannière du bot (via lien).\n\n`+set profil`\n> Ouvrir le menu de modification de profil.\n\n`+set lang <fr/en>`\n> Changer la langue du bot.\n\n`+set boostembed <#salon>`\n> Définir le salon de logs des boosts.\n\n`+set levels <on/off>`\n> Activer ou désactiver le système de niveaux.",
         "usage": "**Utilisation:** `+set <type> <valeur>`",
+        "levels_usage": "❌ Usage: `+set levels <on/off>`",
+        "levels_success": "✅ Système de niveaux **{{state}}**.",
         "usage_perm": "❌ Utilisation: `+set perm <commande> <cible>`",
         "target_not_found": "❌ Utilisateur ou rôle cible introuvable.",
         "perm_added": "✅ Permission ajoutée pour la commande **{{command}}** à **{{target}}**.",
         "perm_error": "❌ Erreur lors de l'ajout de la permission.",
         "name_success": "✅ Surnom du bot changé pour : **{{name}}**",
         "name_error": "❌ Erreur lors du changement de surnom.",
-        "description": "Modifie le profil du bot ou les permissions",
         "vocal_off_success": "✅ Vocal désactivé.",
         "vocal_usage": "❌ Usage vocal.",
         "vocal_not_found": "❌ Salon vocal introuvable.",
@@ -1145,8 +1159,6 @@
         "boost_usage": "❌ Utilisation: `+set boostembed <#salon>`",
         "boost_success": "✅ Salon de boost défini sur {{channel}}.",
         "channel_invalid": "❌ Salon invalide.",
-        "levels_usage": "❌ Usage: `+set levels <on/off>`",
-        "levels_success": "✅ Système de niveaux : **{{state}}**",
         "lang_invalid": "❌ Langue invalide.",
         "lang_success": "✅ Langue mise à jour avec succès en Français 🇫🇷.",
         "invalid_option": "❌ Option invalide. Faites `+set` pour voir la liste."
@@ -1162,9 +1174,13 @@
         "custom_activated_file": "✅ Langue personnalisée activée depuis le fichier !",
         "no_custom_config": "❌ Aucune URL de langue personnalisée configurée.",
         "custom_activated": "✅ Langue personnalisée activée !",
-        "custom_usage": "❌ Utilisation: `+lang custom <on/off>` (Attachez un fichier JSON pour définir)",
-        "usage": "**Utilisation:** `+lang get`, `+lang custom`",
-        "description": "Gestion avancée des langues"
+        "custom_usage": "❌ Usage: `+lang custom <on/off>` (Joindre un fichier JSON pour définir)",
+        "usage": "**Usage:** `+lang get`, `+lang custom`",
+        "description": "Gestion avancée des langues",
+        "help_embed": {
+            "title": "Gestion des Langues",
+            "description": "Cette commande permet de gérer la langue du bot sur le serveur.\n\n**Commandes :**\n\n`+lang get`\n> Affiche la langue actuelle et l'URL du fichier de langue personnalisé (si actif).\n\n`+lang custom <on/off>`\n> Active ou désactive la langue personnalisée.\n> **Pour définir une langue :** Joignez un fichier `.json` valide à votre message en tapant `+lang custom on`."
+        }
     },
     "presence": {
         "handler": {
@@ -1177,6 +1193,13 @@
         "activity_success": "✅ Activité mise à jour."
     },
     "theme": {
+        "help_title": "Configuration du Thème",
+        "help_description": "Personnalisez la couleur principale des embeds du bot pour ce serveur.",
+        "field_usage": "Utilisation",
+        "field_color": "Couleur",
+        "color_desc": "Format Hexadécimal (ex: `#FF0000`)\nLa couleur s'appliquera à la plupart des messages du bot.",
+        "field_examples": "Exemples",
+        "examples_desc": "`+theme #5865F2` (Blurple)\n`+theme #FF5555` (Rouge)",
         "permission": "❌ Permission Administrateur requise.",
         "usage": "**Utilisation:** `+theme <#HexColor>`",
         "invalid_color": "❌ Couleur invalide (Format: #RRGGBB).",
@@ -1204,17 +1227,6 @@
         "description": "Supprimer des configurations ou retirer un membre d'un ticket",
         "usage": "**Utilisation:**\n`+remove <@membre>` (Ticket)\n`+remove perm <@role>` (Config)\n`+remove activity` (Owner)",
         "success": "✅ Opération réussie."
-    },
-    "helptype": {
-        "permission": "❌ Permission Administrateur requise.",
-        "usage": "**Utilisation:** `+helptype <button/select/hybrid>`",
-        "success": "✅ Type de menu d'aide défini sur: **{{type}}**",
-        "description": "Configure le style du menu d'aide (Button, Select, Hybrid)",
-        "help_title": "⚙️ Configuration du Menu d'Aide",
-        "current_type": "Type Actuel",
-        "help_button": "**BUTTON** : Navigation par boutons (Pages).",
-        "help_select": "**SELECT** : Menu déroulant pour les catégories.",
-        "help_hybrid": "**HYBRID** : Combine boutons et menu déroulant."
     },
     "buy": {
         "title": "**💎 Yako Guardian Premium**",
@@ -1428,6 +1440,8 @@
         "cat_owner_desc": "Commandes réservées au propriétaire",
         "cat_auto": "Automation",
         "cat_auto_desc": "Publication auto, Images auto",
+        "cat_automation": "Automation",
+        "cat_automation_desc": "Publication auto, Images auto",
         "cat_custom": "Cmd Perso",
         "cat_custom_desc": "Commandes perso, Réactions, Boutons",
         "cat_general": "Général",
@@ -1470,10 +1484,11 @@
         "display_mode": "Mode d'affichage: **{{mode}}**",
         "prefix": "Préfixe actuel: `{{prefix}}`",
         "category": {
+            "community": "__**👥 Communauté**__\n\n`{{prefix}}leaderboard` - *Classement (XP/Rep)*\n`{{prefix}}rep <user>` - *Donner réputation*\n`{{prefix}}afk [raison]` - *Statut AFK*",
             "administration": "__**⚖️ Administration**__\n\n`{{prefix}}backup <create/load/list/delete> [nom]` - *Système de sauvegarde*\n`{{prefix}}unbanall` - *Débannir tous les utilisateurs*\n`{{prefix}}autobackup <on/off>` - *Sauvegardes automatiques*\n`{{prefix}}renew` - *Renouvellement*\n`{{prefix}}sync` - *Synchronisation*\n`{{prefix}}discussion` - *Session interactive*",
             "antiraid": "__**🛡️ Anti-Raid**__\n\n`{{prefix}}secur <on/off>` - *Active/Désactive la sécurité*\n`{{prefix}}antitoken <on/off/lock>` - *Gestion anti-token*\n`{{prefix}}raidlog <on/off> [salon]` - *Active les logs de raid*\n`{{prefix}}raidping <@role>` - *Définit le rôle à ping*\n`{{prefix}}punition <antiraid/all> <derank/kick/ban>` - *Définit la sanction*",
             "auto": "__**🤖 Automatisation**__\n\n`{{prefix}}autopublish <on/off>` - *Publication automatique*\n`{{prefix}}showpics <on/off>` - *Affichage images*",
-            "configuration": "__**⚙️ Configuration**__\n\n`{{prefix}}config` - *Affiche la configuration actuelle*\n`{{prefix}}set <type> <valeur>` - *Modifie une option*\n`{{prefix}}remove <perm/activity>` - *Supprimer config*\n`{{prefix}}prefix <nouveau>` - *Change le préfixe*\n`{{prefix}}lang <fr/en/custom>` - *Change la langue*\n`{{prefix}}helptype <button/select/hybrid>` - *Style menu aide*\n`{{prefix}}perms <set/del/reset>` - *Permissions par niveau*\n`{{prefix}}wl <add/remove/list>` - *Whitelist*\n`{{prefix}}blrank <on/off>` - *Blacklist rank*\n`{{prefix}}theme <#HexColor>` - *Couleur embeds*\n`{{prefix}}creation limit <temps>` - *Limite création*\n`{{prefix}}alias <add/remove>` - *Gérer alias*\n`{{prefix}}clearperms` - *Reset permissions*\n`{{prefix}}change <cmd> <perm>` - *Gérer permissions commande*",
+            "configuration": "__**⚙️ Configuration**__\n\n`{{prefix}}config` - *Affiche la configuration actuelle*\n`{{prefix}}set <type> <valeur>` - *Modifie une option*\n`{{prefix}}set levels <on/off>` - *Activer/Désactiver niveaux*\n`{{prefix}}remove <perm/activity>` - *Supprimer config*\n`{{prefix}}prefix <nouveau>` - *Change le préfixe*\n`{{prefix}}lang <fr/en/custom>` - *Change la langue*\n`{{prefix}}helptype <button/select/hybrid>` - *Style menu aide*\n`{{prefix}}perms <set/del/reset>` - *Permissions par niveau*\n`{{prefix}}wl <add/remove/list>` - *Whitelist*\n`{{prefix}}blrank <on/off>` - *Blacklist rank*\n`{{prefix}}theme <#HexColor>` - *Couleur embeds*\n`{{prefix}}creation limit <temps>` - *Limite création*\n`{{prefix}}alias <add/remove>` - *Gérer alias*\n`{{prefix}}clearperms` - *Reset permissions*\n`{{prefix}}change <cmd> <perm>` - *Gérer permissions commande*",
             "custom": "__**🎨 Commandes Perso**__\n\n`{{prefix}}custom <nom> <réponse>` - *Créer commande*\n`{{prefix}}autoreact <add/remove> <emoji>` - *Auto réaction*\n`{{prefix}}button <texte>` - *Créer bouton*\n`{{prefix}}clearcustoms` - *Tout supprimer*\n`{{prefix}}customlist` - *Liste commandes*",
             "general": "__**📌 Général**__\n\n`{{prefix}}help` - *Menu d'aide*\n`{{prefix}}helpall` - *Toutes les commandes*\n`{{prefix}}buy` - *Acheter*\n`{{prefix}}subscription` - *Abonnement*",
             "moderation": "__**🔨 Modération**__\n\n`{{prefix}}clear <nb>` - *Supprimer messages*\n`{{prefix}}warn <user>` - *Avertir*\n`{{prefix}}mute <user>` - *Mute*\n`{{prefix}}unmute <user>` - *Unmute*\n`{{prefix}}tempmute <user>` - *Mute temp*\n`{{prefix}}kick <user>` - *Expulser*\n`{{prefix}}ban <user>` - *Bannir*\n`{{prefix}}unban <user>` - *Débannir*\n`{{prefix}}tempban <user>` - *Ban temp*\n`{{prefix}}cmute <user>` - *Mute salon*\n`{{prefix}}tempcmute <user>` - *Mute salon temp*\n`{{prefix}}uncmute <user>` - *Unmute salon*\n`{{prefix}}slowmode <temps>` - *Mode lent*\n`{{prefix}}autodelete <temps>` - *Auto suppression*",
@@ -1519,11 +1534,18 @@
 
 
     "punition": {
-        "usage": "**Utilisation:** `+punition <antiraid/all> <derank/kick/ban>`",
+        "help_title": "⚖️ Configuration des Punitions",
+        "help_description": "Définissez les sanctions automatiques pour les systèmes de sécurité.",
+        "usage": "**Utilisation:** `+punition <type> <sanction>`",
         "invalid_sanction": "❌ Sanction invalide (derank/kick/ban).",
         "success_antiraid": "✅ Punition Antiraid définie sur: **{{sanction}}**",
         "success_all": "✅ Punition Globale définie sur: **{{sanction}}**",
-        "description": "Définit la sanction automatique (Kick/Ban/Derank)"
+        "description": "Définit la sanction automatique (Kick/Ban/Derank)",
+        "field_type": "Type",
+        "field_sanction": "Sanction",
+        "type_antiraid": "`antiraid` : Pour les modules anti-raid (spam, mass join...)",
+        "type_all": "`all` : Pour tous les modules de sécurité",
+        "sanctions_list": "`derank` (Retire les rôles), `kick` (Expulse), `ban` (Bannit)"
     },
     "raidlog": {
         "usage": "**Utilisation:** `+raidlog <on/off>` (dans le salon désiré)",
@@ -1535,13 +1557,15 @@
         "description": "Définit le salon de logs pour les raids"
     },
     "wl": {
+        "title": "🛡️ Liste Blanche",
         "owner_only": "❌ Seul le propriétaire peut gérer la whitelist.",
-        "empty": "❌ Aucun utilisateur dans la whitelist.",
-        "list": "**Whitelist:**\n{{users}}",
+        "empty": "La whitelist est vide.",
+        "list_description": "Les utilisateurs ci-dessous disposent d'une immunité sur le serveur.",
+        "field_users": "Utilisateurs ({{count}})",
         "not_found": "❌ Utilisateur introuvable.",
         "added": "✅ **{{user}}** a été ajouté à la whitelist.",
         "description": "Gère la whitelist (utilisateurs immunisés)",
-        "usage": "**Utilisation:** `+wl`"
+        "usage": "**Utilisation:** `+wl [utilisateur]`"
     },
     "prefix": {
         "permission": "❌ Permission Administrateur requise.",
@@ -1550,13 +1574,7 @@
         "success": "✅ Préfixe défini sur: `{{prefix}}`",
         "description": "Change le préfixe du bot sur ce serveur"
     },
-    "antitoken": {
-        "usage": "**Utilisation:** `+antitoken <on/off/lock>` ou `+antitoken <nombre>/<temps>` (ex: 5/10s)",
-        "state_success": "✅ Anti-Token: **{{state}}**",
-        "invalid_format": "❌ Format invalide.",
-        "config_success": "✅ Config Anti-Token: **{{count}}** comptes en **{{duration}}**.",
-        "description": "Protège le serveur contre les raids de tokens (faux comptes)"
-    },
+
     "unwl": {
         "owner_only": "❌ Seul le propriétaire peut gérer la whitelist.",
         "not_found": "❌ Utilisateur introuvable.",
@@ -1673,12 +1691,14 @@
     },
     "backup": {
         "permission": "❌ **Permission Refusée**\nVous devez être Administrateur pour gérer les backups.",
+        "menu_title": "💾 Système de Backup",
+        "menu_description": "Gérez les sauvegardes complètes de votre serveur (Rôles, Salons, Permissions).\n\n🔹 **Créer une sauvegarde**\n`+backup create <nom>`\n> *Sauvegarde la configuration actuelle.*\n\n🔹 **Charger une sauvegarde**\n`+backup load <nom>`\n> *Restaure une ancienne configuration (⚠️ Destructif).*\n\n🔹 **Supprimer une sauvegarde**\n`+backup delete <nom>`\n> *Supprime définitivement une sauvegarde.*\n\n🔹 **Lister les sauvegardes**\n`+backup list`\n> *Affiche toutes les sauvegardes disponibles.*",
         "usage": "**💾 SYSTÈME DE BACKUP**\n\n`+backup create <nom>` : Créer une sauvegarde.\n`+backup load <nom>` : Charger une sauvegarde (Danger!).\n`+backup delete <nom>` : Supprimer une sauvegarde.\n`+backup list` : Voir vos sauvegardes.",
         "create_no_name": "❌ Précisez un nom pour la backup.",
         "creating": "⏳ Création de la sauvegarde en cours...",
         "create_success": "✅ **Sauvegarde créée avec succès**\nNom: `{{name}}`",
         "list_empty": "📂 Aucune sauvegarde trouvée.",
-        "list_title": "**📂 LISTE DES SAUVEGARDES**\n\n{{list}}",
+        "list_title": "**📂 LISTE DES SAUVEGARDES**",
         "load_no_name": "❌ Précisez le nom de la backup à charger.",
         "not_found": "❌ Aucune backup trouvée avec le nom `{{name}}`.",
         "btn_load": "CONFIRMER LE CHARGEMENT",
@@ -1688,7 +1708,8 @@
         "btn_delete": "Confirmer la suppression",
         "delete_warning": "🗑️ **Suppression de Backup**\n\nVoulez-vous vraiment supprimer la backup `{{name}}` ?",
         "error": "❌ Une erreur est survenue: {{error}}",
-        "description": "Système de sauvegarde du serveur"
+        "description": "Système de sauvegarde du serveur",
+        "reason_load": "Restauré depuis une sauvegarde"
     },
     "autobackup": {
         "permission": "❌ Permission `Administrateur` requise.",
@@ -1705,6 +1726,8 @@
         "warning": "⚠️ **ATTENTION** : Vous allez recréer le salon {{channel}}. Tous les messages seront perdus.\nConfirmez-vous ?",
         "not_allowed": "❌ Pas touche !",
         "progress": "♻️ Renouvellement en cours...",
+        "success_title": "♻️ Salon Recréé",
+        "success_desc": "Le salon a été recréé avec succès par {{user}}.\n\n> _Toutes les permissions ont été conservées._",
         "success": "✅ Salon recréé par {{user}}.",
         "error": "❌ Erreur lors du renew.",
         "cancelled": "❌ Action annulée.",
@@ -1815,7 +1838,10 @@
         "btn_enable": "Activer",
         "btn_disable": "Désactiver",
         "placeholder": "Choisir le salon",
-        "usage": "**Utilisation:** `+show pics <on/off>`"
+        "usage": "**Utilisation:** `+show pics <on/off>`",
+        "help_title": "🖼️ Aide Show Pics",
+        "help_description": "Module d'affichage automatique d'images.",
+        "help_cmd_pics": "> `+show pics <on/off>`\nConfigure l'envoi automatique de photos de profils aléatoires."
     },
     "activity": {
         "permission": "❌ Permission Administrateur requise.",
@@ -1873,7 +1899,11 @@
         "changeall_usage": "❌ Utilisation: `+changeall <ancienne_perm> <nouvelle_perm>`",
         "invalid_target_perm": "❌ Permission cible `{{perm}}` invalide.",
         "changeall_success": "✅ Mis à jour {{count}} commandes de **{{old}}** vers **{{new}}**.",
-        "description": "Modifie les permissions des commandes"
+        "description": "Modifie les permissions des commandes",
+        "help_embed": {
+            "title": "Gestion des Permissions",
+            "description": "Cette commande permet de modifier qui peut utiliser une commande spécifique sur **ce serveur**.\n\n**Syntaxe :**\n`+change <commande> <permission>`\n\n**Valeurs Spéciales :**\n• `0` : **Tout le monde** (Aucune permission requise)\n• `-1` : **Désactivé** (Personne ne peut l'utiliser)\n\n**Exemples :**\n• `+change ping Administrator` (Seuls les admins peuvent faire +ping)\n• `+change help 0` (Tout le monde peut faire +help)\n• `+change invite -1` (Commande désactivée)\n\n**Note :** Utilisez les noms exacts des permissions Discord en anglais (ex: `ManageMessages`, `BanMembers`, `KickMembers`)."
+        }
     },
     "clearperms": {
         "permission": "❌ Permission Administrateur requise.",
@@ -2050,7 +2080,12 @@
                 "btn_toggle_on": "Activer",
                 "btn_edit": "Modifier Message",
                 "select_placeholder": "Choisir le salon de bienvenue",
-                "config_title": "**👋 Configuration Bienvenue**\n\nStatut: {{status}}\nSalon: {{channel}}\nMessage: ```{{message}}```"
+                "config_title": "👋 Configuration Bienvenue",
+                "config_description": "Gérez ici les messages envoyés lorsqu'un membre rejoint le serveur.",
+                "status_field": "Statut",
+                "channel_field": "Salon",
+                "message_field": "Message",
+                "help_field": "Aide"
             },
             "leave": {
                 "modal_title": "Message d'Au revoir",
@@ -2061,7 +2096,12 @@
                 "btn_toggle_on": "Activer",
                 "btn_edit": "Modifier Message",
                 "select_placeholder": "Choisir le salon d'au revoir",
-                "config_title": "**👋 Configuration Au Revoir**\n\nStatut: {{status}}\nSalon: {{channel}}\nMessage: ```{{message}}```"
+                "config_title": "👋 Configuration Au Revoir",
+                "config_description": "Gérez ici les messages envoyés lorsqu'un membre quitte le serveur.",
+                "status_field": "Statut",
+                "channel_field": "Salon",
+                "message_field": "Message",
+                "help_field": "Aide"
             },
             "common": {
                 "undefined": "Non défini"

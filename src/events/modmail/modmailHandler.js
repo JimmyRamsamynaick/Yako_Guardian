@@ -5,6 +5,7 @@ const { createTicket } = require('../../utils/modmailUtils');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { createEmbed } = require('../../utils/design');
 const { t } = require('../../utils/i18n');
+const activeDiscussions = require('../../utils/activeDiscussions');
 
 module.exports = {
     name: 'messageCreate',
@@ -13,6 +14,9 @@ module.exports = {
 
         // --- DM HANDLING (User -> Bot) ---
         if (message.channel.type === ChannelType.DM) {
+            // Check if user is in an active discussion (Skip modmail/ticket)
+            if (activeDiscussions.has(message.author.id)) return;
+
             // Check for existing active ticket
             const activeTicket = await ActiveTicket.findOne({ userId: message.author.id, closed: false });
 

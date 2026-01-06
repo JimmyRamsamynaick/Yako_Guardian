@@ -5,7 +5,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'autobackup',
     description: 'Configurer les sauvegardes automatiques',
-    category: 'Backups',
+    category: 'Administration',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
             return message.channel.send({ embeds: [createEmbed(

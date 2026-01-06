@@ -18,7 +18,7 @@ function parseDuration(str) {
 module.exports = {
     name: 'temprole',
     description: 'Donner un rôle temporaire à un membre',
-    category: 'Rôles',
+    category: 'Roles',
     async run(client, message, args) {
         // Permissions
         if (!message.member.permissions.has('ManageRoles') && message.author.id !== message.guild.ownerId) {

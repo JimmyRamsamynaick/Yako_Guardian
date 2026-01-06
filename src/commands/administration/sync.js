@@ -33,9 +33,17 @@ module.exports = {
         }
 
         try {
+            // Fetch parent to ensure up-to-date permissions
+            const parent = await channel.guild.channels.fetch(channel.parentId);
+            
+            // 1. Remove all overwrites first to ensure clean state
+            await channel.permissionOverwrites.set([]);
+
+            // 2. Lock permissions to parent (Native Sync)
             await channel.lockPermissions();
+            
             return message.channel.send({ embeds: [createEmbed(
-                await t('sync.success', message.guild.id, { category: channel.parent.name }),
+                await t('sync.success', message.guild.id, { category: parent.name }),
                 '',
                 'success'
             )] });

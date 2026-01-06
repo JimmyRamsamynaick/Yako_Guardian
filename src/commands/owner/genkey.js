@@ -4,6 +4,7 @@ const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'genkey',
+    category: 'Owner',
     run: async (client, message, args) => {
         // Owner Check
         if (message.author.id !== process.env.OWNER_ID && message.author.id !== '1085186026939519067') return; // Adding my ID for testing if needed, or keeping env

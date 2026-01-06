@@ -17,17 +17,20 @@ module.exports = {
             )] });
         }
 
+        const config = await getGuildConfig(message.guild.id);
+        if (!config.security) config.security = {};
+
         const state = args[0]?.toLowerCase();
         if (!['on', 'off'].includes(state)) {
+            const status = config.security.antibot ? '✅ ON' : '❌ OFF';
+            const description = (await t('antibot.menu_description', message.guild.id)).replace('{status}', status);
+
             return message.channel.send({ embeds: [createEmbed(
-                await t('antibot.usage', message.guild.id),
-                '',
+                await t('antibot.menu_title', message.guild.id),
+                description,
                 'info'
             )] });
         }
-
-        const config = await getGuildConfig(message.guild.id);
-        if (!config.security) config.security = {};
         
         config.security.antibot = (state === 'on');
         await config.save();

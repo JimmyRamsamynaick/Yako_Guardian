@@ -6,6 +6,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'autopublish',
     description: 'Configure la publication automatique',
+    category: 'Automation',
     async execute(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.channel.send({ embeds: [createEmbed(await t('autopublish.permission', message.guild.id), '', 'error')] });
@@ -24,12 +25,12 @@ async function showAutoPublishMenu(client, interaction, config) {
     const status = enabled ? await t('autopublish.status_on', guildId) : await t('autopublish.status_off', guildId);
     const channelList = channels.length > 0 ? channels.map(c => `<#${c}>`).join(', ') : await t('autopublish.channels_none', guildId);
     
-    const description = (await t('autopublish.menu_title', guildId)) + `\n\n` +
-                    `${status}\n` +
+    const titleStr = await t('autopublish.menu_title', guildId);
+    const description = `${status}\n` +
                     `${channelList}\n\n` +
                     (await t('autopublish.description', guildId));
     
-    const embed = createEmbed(description, '', 'info');
+    const embed = createEmbed(titleStr, description, 'info');
                     
     const rowControls = new ActionRowBuilder()
         .addComponents(

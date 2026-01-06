@@ -8,7 +8,33 @@ module.exports = {
     description: 'Protège le serveur contre les raids de tokens (faux comptes)',
     category: 'Antiraid',
     run: async (client, message, args) => {
-        if (!args[0]) return message.channel.send({ embeds: [createEmbed(await t('antitoken.usage', message.guild.id), '', 'info')] });
+        const { getGuildConfig } = require('../../utils/mongoUtils'); // Need this to get config state
+        const config = await getGuildConfig(message.guild.id);
+        
+        if (!config.settings) config.settings = {}; // Assuming structure, checking db update below uses 'guild_settings' table direct update?
+        // Wait, the code uses db.prepare UPDATE guild_settings directly.
+        // I need to fetch current state to display it.
+        // Let's use the db object already imported.
+        
+        const settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(message.guild.id);
+        const currentLevel = settings?.antitoken_level || 'off';
+        const limit = settings?.antitoken_limit || 0;
+        const time = settings?.antitoken_time || 0;
+        
+        if (!args[0]) {
+            const status = currentLevel === 'off' ? '❌ OFF' : (currentLevel === 'lock' ? '🔒 LOCK' : '✅ ON');
+            const limitStr = (limit > 0 && time > 0) ? `${limit}/${ms(time)}` : 'Non défini';
+            
+            const description = (await t('antitoken.menu_description', message.guild.id))
+                .replace('{status}', status)
+                .replace('{limit}', limitStr);
+
+            return message.channel.send({ embeds: [createEmbed(
+                await t('antitoken.menu_title', message.guild.id),
+                description,
+                'info'
+            )] });
+        }
 
         const arg = args[0].toLowerCase();
 

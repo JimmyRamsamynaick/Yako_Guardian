@@ -27,7 +27,9 @@ module.exports = {
             }
 
             if (!cmd || !perm) {
-                return message.channel.send({ embeds: [createEmbed('Usage', await t('change.usage', message.guild.id), 'info')] });
+                const title = await t('change.help_embed.title', message.guild.id);
+                const description = await t('change.help_embed.description', message.guild.id);
+                return message.channel.send({ embeds: [createEmbed(title, description, 'info')] });
             }
 
             // Verify command exists

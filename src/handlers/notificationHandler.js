@@ -276,19 +276,28 @@ async function showJoinMenu(interaction, config) {
                 .setChannelTypes(ChannelType.GuildText)
         );
 
-    const content = await t('notifications.handler.join.config_title', guildId, { status, channel, message });
+    const content = await t('notifications.handler.join.config_title', guildId);
+    const description = await t('notifications.handler.join.config_description', guildId);
+
+    const embed = createEmbed(content, description, 'info', { guildId })
+        .addFields([
+            { name: await t('notifications.handler.join.status_field', guildId), value: status, inline: true },
+            { name: await t('notifications.handler.join.channel_field', guildId), value: channel, inline: true },
+            { name: await t('notifications.handler.join.message_field', guildId), value: `\`\`\`${message}\`\`\``, inline: false },
+            { name: await t('notifications.handler.join.help_field', guildId), value: 'Variables: `{user}`, `{server}`', inline: false }
+        ]);
 
     // Handle Message object (legacy command)
     if (!interaction.token) {
         const channel = interaction.channel || interaction.client.channels.cache.get(interaction.channelId);
-        await channel.send({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
+        await channel.send({ embeds: [embed], components: [rowControls, rowChannel] });
         return;
     }
 
     if (interaction.type === 5 || interaction.type === 3) {
-        if (!interaction.replied) await interaction.update({ content: null, embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
+        if (!interaction.replied) await interaction.update({ content: null, embeds: [embed], components: [rowControls, rowChannel] });
     } else {
-        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel], ephemeral: true });
+        await interaction.reply({ embeds: [embed], components: [rowControls, rowChannel], ephemeral: true });
     }
 }
 
@@ -366,19 +375,28 @@ async function showLeaveMenu(interaction, config) {
                 .setChannelTypes(ChannelType.GuildText)
         );
 
-    const content = await t('notifications.handler.leave.config_title', guildId, { status, channel, message });
+    const content = await t('notifications.handler.leave.config_title', guildId);
+    const description = await t('notifications.handler.leave.config_description', guildId);
+
+    const embed = createEmbed(content, description, 'info', { guildId })
+        .addFields([
+            { name: await t('notifications.handler.leave.status_field', guildId), value: status, inline: true },
+            { name: await t('notifications.handler.leave.channel_field', guildId), value: channel, inline: true },
+            { name: await t('notifications.handler.leave.message_field', guildId), value: `\`\`\`${message}\`\`\``, inline: false },
+            { name: await t('notifications.handler.leave.help_field', guildId), value: 'Variables: `{user}`, `{server}`', inline: false }
+        ]);
 
     // Handle Message object (legacy command)
     if (!interaction.token) {
         const channel = interaction.channel || interaction.client.channels.cache.get(interaction.channelId);
-        await channel.send({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
+        await channel.send({ embeds: [embed], components: [rowControls, rowChannel] });
         return;
     }
 
     if (interaction.type === 5 || interaction.type === 3) {
-        if (!interaction.replied) await interaction.update({ content: null, embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel] });
+        if (!interaction.replied) await interaction.update({ content: null, embeds: [embed], components: [rowControls, rowChannel] });
     } else {
-        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [rowControls, rowChannel], ephemeral: true });
+        await interaction.reply({ embeds: [embed], components: [rowControls, rowChannel], ephemeral: true });
     }
 }
 

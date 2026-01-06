@@ -6,6 +6,7 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'reminder',
     aliases: ['remind', 'rm'],
+    category: 'Utils',
     description: 'Gérer les rappels',
     async execute(client, message, args) { // Added client
         const sub = args[0]?.toLowerCase();

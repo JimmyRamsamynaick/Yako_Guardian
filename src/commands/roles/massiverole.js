@@ -4,7 +4,7 @@ const { createEmbed } = require('../../utils/design');
 module.exports = {
     name: 'massiverole',
     description: 'Ajouter ou retirer un rôle à tous les membres',
-    category: 'Rôles',
+    category: 'Roles',
     async run(client, message, args) {
         if (!message.member.permissions.has('Administrator') && message.author.id !== message.guild.ownerId) {
             return message.channel.send({ embeds: [createEmbed(await t('roles.massiverole.permission_admin', message.guild.id), '', 'error')] });

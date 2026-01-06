@@ -4,6 +4,7 @@ const { t } = require('../../utils/i18n');
 
 module.exports = {
     name: 'activate',
+    category: 'Configuration',
     run: async (client, message, args) => {
         // Only owner or whitelist? Usually owner.
         if (message.author.id !== message.guild.ownerId) {
