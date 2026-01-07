@@ -12,6 +12,7 @@ module.exports = {
     async execute(client, message) {
         if (message.author.bot) return;
 
+        // Trigger git change
         // --- DM HANDLING (User -> Bot) ---
         if (message.channel.type === ChannelType.DM) {
             // Check if user is in an active discussion (Skip modmail/ticket)

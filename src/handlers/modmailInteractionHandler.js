@@ -44,9 +44,9 @@ async function handleModmailInteraction(client, interaction) {
         }
 
         try {
-            await createTicket(client, interaction.user, targetGuild, await t('modmail.handler.ticket_created_select', targetGuild.id));
+            const channel = await createTicket(client, interaction.user, targetGuild, await t('modmail.handler.ticket_created_select', targetGuild.id));
             // Update the menu to show success
-            await interaction.update({ embeds: [createEmbed(await t('modmail.ticket_created', targetGuild.id, { server: targetGuild.name }), '', 'success')], components: [] });
+            await interaction.update({ embeds: [createEmbed(await t('modmail.ticket_created', targetGuild.id, { server: targetGuild.name, channel: channel.toString() }), '', 'success')], components: [] });
         } catch (e) {
             await interaction.reply({ embeds: [createEmbed(await t('modmail.ticket_error', targetGuild.id, { error: e.message }), '', 'error')], ephemeral: true });
         }
