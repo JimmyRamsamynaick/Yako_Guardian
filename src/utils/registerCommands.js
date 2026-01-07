@@ -10,12 +10,12 @@ async function registerGlobalCommands(client) {
     ];
 
     try {
-        logger.info('Started refreshing application (/) commands.');
+        logger.info('Started refreshing application context menus.');
         
         // Register globally
         await client.application.commands.set(commands);
         
-        logger.info('Successfully reloaded application (/) commands.');
+        logger.info('Successfully reloaded application context menus.');
     } catch (error) {
         logger.error('Error refreshing application commands:', error);
     }

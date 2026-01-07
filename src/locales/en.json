@@ -2839,11 +2839,11 @@
         "btn_activate": "Activate",
         "btn_deactivate": "Deactivate",
         "placeholder": "Choose log channel",
-        "disabled": "❌ Report system is not enabled on this server.",
+        "disabled": "❌ Report system is not enabled.\nUse `+report settings` to configure it.",
         "modal_title": "Report Message",
         "modal_label": "Reason for report",
         "config_invalid": "❌ Invalid configuration.",
-        "channel_not_found": "❌ Report log channel not found."
+        "channel_not_found": "❌ Report log channel not found.\nPlease reconfigure with `+report settings`."
     },
     "openmodmail": {
         "permission": "❌ Permission denied.",

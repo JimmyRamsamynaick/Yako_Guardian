@@ -1422,11 +1422,11 @@
         "btn_activate": "Activer",
         "btn_deactivate": "Désactiver",
         "placeholder": "Choisir le salon de logs",
-        "disabled": "❌ Le système de signalement n'est pas activé sur ce serveur.",
+        "disabled": "❌ Le système de signalement n'est pas activé.\nUtilisez `+report settings` pour le configurer.",
         "modal_title": "Signaler un message",
         "modal_label": "Raison du signalement",
         "config_invalid": "❌ Configuration invalide.",
-        "channel_not_found": "❌ Le salon de logs report est introuvable."
+        "channel_not_found": "❌ Le salon de logs report est introuvable.\nVeuillez le reconfigurer avec `+report settings`."
     },
     "openmodmail": {
         "permission": "❌ Permission refusée.",
