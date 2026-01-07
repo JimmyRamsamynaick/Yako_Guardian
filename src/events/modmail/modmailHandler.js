@@ -47,15 +47,15 @@ module.exports = {
                 return;
             }
 
-            // No active ticket: Find mutual guilds with modmail ON
+            // No active ticket: Find mutual guilds
             const mutualGuilds = [];
             for (const [id, guild] of client.guilds.cache) {
                 const member = await guild.members.fetch(message.author.id).catch(() => null);
                 if (member) {
                     const config = await getGuildConfig(id);
-                    if (config && config.modmail && config.modmail.enabled) {
-                        mutualGuilds.push(guild);
-                    }
+                    // Check if modmail is fully configured (enabled + category set)
+                    const isEnabled = config && config.modmail && config.modmail.enabled && config.modmail.categoryId;
+                    mutualGuilds.push({ guild, isEnabled });
                 }
             }
 
@@ -64,20 +64,26 @@ module.exports = {
             }
 
             if (mutualGuilds.length === 1) {
+                const { guild, isEnabled } = mutualGuilds[0];
+                
+                if (!isEnabled) {
+                     return message.channel.send({ embeds: [createEmbed(await t('modmail.not_configured', 'dm'), '', 'error')] });
+                }
+
                 // Create ticket directly
                 try {
-                    await createTicket(client, message.author, mutualGuilds[0], message.content);
-                    message.channel.send({ embeds: [createEmbed(await t('modmail.handler.ticket_opened', 'dm', { server: mutualGuilds[0].name }), '', 'success')] });
+                    await createTicket(client, message.author, guild, message.content);
+                    message.channel.send({ embeds: [createEmbed(await t('modmail.handler.ticket_opened', 'dm', { server: guild.name }), '', 'success')] });
                 } catch (e) {
                     message.channel.send({ embeds: [createEmbed(await t('modmail.handler.ticket_create_error', 'dm', { error: e.message }), '', 'error')] });
                 }
             } else {
                 // Ask to choose
-                // We need to resolve descriptions before building the menu
-                const options = await Promise.all(mutualGuilds.map(async g => ({
-                    label: g.name,
-                    value: g.id,
-                    description: await t('modmail.handler.choose_server_desc', 'dm', { server: g.name })
+                const options = await Promise.all(mutualGuilds.map(async ({ guild, isEnabled }) => ({
+                    label: guild.name,
+                    value: guild.id,
+                    description: isEnabled ? await t('modmail.state_active', 'dm') : await t('modmail.state_inactive', 'dm'),
+                    emoji: isEnabled ? '✅' : '❌'
                 })));
 
                 const row = new ActionRowBuilder()

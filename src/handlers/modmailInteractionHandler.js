@@ -33,7 +33,15 @@ async function handleModmailInteraction(client, interaction) {
         const guildId = interaction.values[0];
         const targetGuild = client.guilds.cache.get(guildId);
         
-        if (!targetGuild) return interaction.reply({ embeds: [createEmbed(await t('modmail.handler.server_not_found', interaction.guild.id), '', 'error')], ephemeral: true });
+        if (!targetGuild) return interaction.reply({ embeds: [createEmbed(await t('modmail.handler.server_not_found', 'dm'), '', 'error')], ephemeral: true });
+
+        // Check config again to be sure
+        const config = await getGuildConfig(guildId);
+        const isEnabled = config && config.modmail && config.modmail.enabled && config.modmail.categoryId;
+
+        if (!isEnabled) {
+             return interaction.reply({ embeds: [createEmbed(await t('modmail.not_configured', 'dm'), '', 'error')], ephemeral: true });
+        }
 
         try {
             await createTicket(client, interaction.user, targetGuild, await t('modmail.handler.ticket_created_select', targetGuild.id));
