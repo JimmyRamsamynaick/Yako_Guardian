@@ -6,6 +6,7 @@ const { createEmbed } = require('../utils/design');
 
 // --- TICKET SETTINGS HANDLER ---
 async function handleTicketSettings(client, interaction) {
+    if (!interaction.guild) return;
     const { customId, guild } = interaction;
     const guildId = guild.id;
     const parts = customId.split('_');

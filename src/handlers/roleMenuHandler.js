@@ -13,6 +13,7 @@ const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 
 async function handleRoleMenuInteraction(client, interaction) {
+    if (!interaction.guild) return;
     const { customId, guild, member } = interaction;
     const guildId = guild.id;
 

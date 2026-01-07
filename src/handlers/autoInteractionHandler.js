@@ -3,6 +3,7 @@ const { showAutoPublishMenu } = require('../commands/auto/autopublish');
 const { getGuildConfig } = require('../utils/mongoUtils');
 
 async function handleAutoInteraction(client, interaction) {
+    if (!interaction.guild) return;
     const { customId, guild } = interaction;
     const config = await getGuildConfig(guild.id);
 

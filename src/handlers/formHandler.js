@@ -6,6 +6,7 @@ const { t } = require('../utils/i18n');
 module.exports = (client) => {
     client.on('interactionCreate', async (interaction) => {
         if (interaction.isButton()) {
+            if (!interaction.guild) return;
             const guildId = interaction.guild.id;
             // --- CONFIGURATION ---
             if (interaction.customId.startsWith('form_config_')) {
@@ -57,6 +58,7 @@ module.exports = (client) => {
         }
 
         if (interaction.isModalSubmit()) {
+            if (!interaction.guild) return;
             const guildId = interaction.guild.id;
             // --- SAVE CONFIGURATION ---
             if (interaction.customId.startsWith('form_create_submit_')) {

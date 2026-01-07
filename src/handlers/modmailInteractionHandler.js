@@ -9,6 +9,7 @@ async function handleModmailInteraction(client, interaction) {
 
     // Report Logic (Settings)
     if (customId.startsWith('report_')) {
+        if (!interaction.guild) return;
         // Modal Submit
         if (customId.startsWith('report_modal_')) {
             await handleReportModal(client, interaction);
@@ -106,6 +107,7 @@ async function handleModmailInteraction(client, interaction) {
     }
 
     // Admin Side (Guild Settings)
+    if (!interaction.guild) return;
     const config = await getGuildConfig(guild.id);
 
     if (customId === 'modmail_home') {

@@ -5,6 +5,7 @@ const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 
 async function handleSuggestionButton(client, interaction) {
+    if (!interaction.guild) return;
     const { customId, user, guild } = interaction;
     const guildId = guild.id;
 

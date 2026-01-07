@@ -5,6 +5,7 @@ const { createEmbed } = require('../utils/design');
 
 module.exports = {
     handleLogInteraction: async (client, interaction) => {
+        if (!interaction.guild) return;
         const { customId, values, guild } = interaction;
         const parts = customId.split('_');
         const action = parts[1]; // select, toggle, channel

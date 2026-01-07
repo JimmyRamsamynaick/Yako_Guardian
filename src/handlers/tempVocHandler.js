@@ -5,6 +5,7 @@ const { t } = require('../utils/i18n');
 
 async function handleTempVocInteraction(client, interaction) {
     try {
+        if (!interaction.guild) return;
         const { customId, member, guild, channel } = interaction;
         const guildId = guild.id;
         
