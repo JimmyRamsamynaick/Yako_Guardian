@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelSelectMenuBuilder, ChannelType } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelSelectMenuBuilder, ChannelType, RoleSelectMenuBuilder } = require('discord.js');
 const GuildConfig = require('../database/models/GuildConfig');
 const TwitchAlert = require('../database/models/TwitchAlert');
 const { getGuildConfig } = require('../utils/mongoUtils');
@@ -121,6 +121,18 @@ async function handleTwitchInteraction(client, interaction, config) {
         const alertId = interaction.values[0];
         await TwitchAlert.findByIdAndDelete(alertId);
         await showTwitchMenu(interaction, config);
+    } else if (customId === 'twitch_roles') {
+        await showTwitchRolesMenu(interaction, config);
+    } else if (customId === 'twitch_live_role_select') {
+        if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
+        config.twitch.liveRoleId = interaction.values[0];
+        await config.save();
+        await showTwitchRolesMenu(interaction, config);
+    } else if (customId === 'twitch_streamer_role_select') {
+        if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
+        config.twitch.streamerRoleId = interaction.values[0];
+        await config.save();
+        await showTwitchRolesMenu(interaction, config);
     } else if (customId === 'twitch_list') {
         const alerts = await TwitchAlert.find({ guildId: interaction.guildId });
         
@@ -171,6 +183,10 @@ async function showTwitchMenu(interaction, config) {
                 .setLabel(await t('notifications.handler.twitch.btn_del', guildId))
                 .setStyle(ButtonStyle.Danger),
             new ButtonBuilder()
+                .setCustomId('twitch_roles')
+                .setLabel(await t('notifications.handler.twitch.btn_roles', guildId))
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
                 .setCustomId('twitch_list')
                 .setLabel(await t('notifications.handler.twitch.btn_list', guildId))
                 .setStyle(ButtonStyle.Secondary)
@@ -185,12 +201,53 @@ async function showTwitchMenu(interaction, config) {
         return;
     }
 
-    if (interaction.type === 5 || interaction.type === 3) { // Modal Submit or Component
-         // If we replied ephemeral in modal submit, we can't update.
-         if (interaction.replied) return; 
+    if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({ content: null, embeds: [createEmbed(content, '', 'info')], components: [row] });
+    } else if (interaction.type === 5 || interaction.type === 3) { // Modal Submit or Component
          await interaction.update({ content: null, embeds: [createEmbed(content, '', 'info')], components: [row] });
     } else {
         await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [row], ephemeral: true });
+    }
+}
+
+async function showTwitchRolesMenu(interaction, config) {
+    const guildId = interaction.guildId || interaction.guild.id;
+    
+    const liveRole = config.twitch.liveRoleId ? `<@&${config.twitch.liveRoleId}>` : await t('notifications.handler.common.undefined', guildId);
+    const streamerRole = config.twitch.streamerRoleId ? `<@&${config.twitch.streamerRoleId}>` : await t('notifications.handler.common.undefined', guildId);
+
+    const embed = createEmbed(await t('notifications.handler.twitch.roles_menu_title', guildId), '', 'info')
+        .addFields(
+            { name: await t('notifications.handler.twitch.roles_live_role', guildId), value: liveRole, inline: true },
+            { name: await t('notifications.handler.twitch.roles_streamer_role', guildId), value: streamerRole, inline: true }
+        );
+
+    const rowLiveRole = new ActionRowBuilder()
+        .addComponents(
+            new RoleSelectMenuBuilder()
+                .setCustomId('twitch_live_role_select')
+                .setPlaceholder(await t('notifications.handler.twitch.roles_live_role_placeholder', guildId))
+        );
+
+    const rowStreamerRole = new ActionRowBuilder()
+        .addComponents(
+            new RoleSelectMenuBuilder()
+                .setCustomId('twitch_streamer_role_select')
+                .setPlaceholder(await t('notifications.handler.twitch.roles_streamer_role_placeholder', guildId))
+        );
+
+    const rowBack = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('twitch_home')
+                .setLabel(await t('notifications.handler.twitch.back_label', guildId))
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+    if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({ content: null, embeds: [embed], components: [rowLiveRole, rowStreamerRole, rowBack] });
+    } else {
+        await interaction.update({ content: null, embeds: [embed], components: [rowLiveRole, rowStreamerRole, rowBack] });
     }
 }
 
@@ -294,8 +351,10 @@ async function showJoinMenu(interaction, config) {
         return;
     }
 
-    if (interaction.type === 5 || interaction.type === 3) {
-        if (!interaction.replied) await interaction.update({ content: null, embeds: [embed], components: [rowControls, rowChannel] });
+    if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({ content: null, embeds: [embed], components: [rowControls, rowChannel] });
+    } else if (interaction.type === 5 || interaction.type === 3) {
+        await interaction.update({ content: null, embeds: [embed], components: [rowControls, rowChannel] });
     } else {
         await interaction.reply({ embeds: [embed], components: [rowControls, rowChannel], ephemeral: true });
     }
@@ -393,8 +452,10 @@ async function showLeaveMenu(interaction, config) {
         return;
     }
 
-    if (interaction.type === 5 || interaction.type === 3) {
-        if (!interaction.replied) await interaction.update({ content: null, embeds: [embed], components: [rowControls, rowChannel] });
+    if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({ content: null, embeds: [embed], components: [rowControls, rowChannel] });
+    } else if (interaction.type === 5 || interaction.type === 3) {
+        await interaction.update({ content: null, embeds: [embed], components: [rowControls, rowChannel] });
     } else {
         await interaction.reply({ embeds: [embed], components: [rowControls, rowChannel], ephemeral: true });
     }

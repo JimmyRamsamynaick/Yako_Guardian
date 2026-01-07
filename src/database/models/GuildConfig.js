@@ -18,7 +18,9 @@ const GuildConfigSchema = new mongoose.Schema({
     // Twitch
     twitch: {
         enabled: { type: Boolean, default: false },
-        notificationChannelId: String
+        notificationChannelId: String,
+        liveRoleId: String,
+        streamerRoleId: String
     },
 
     // Join/Leave
