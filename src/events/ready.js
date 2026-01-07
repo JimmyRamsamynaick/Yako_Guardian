@@ -8,7 +8,11 @@ module.exports = {
     once: true,
     execute(client) {
         logger.info(`Logged in as ${client.user.tag}`);
-        client.user.setActivity('Yako Guardian | +help');
+        const { ActivityType } = require('discord.js');
+        client.user.setActivity('sur les personnes malveillantes', { 
+            type: ActivityType.Streaming, 
+            url: 'https://www.twitch.tv/jimmy_9708' 
+        });
 
         // Giveaway Check Interval (every 30 seconds)
         setInterval(() => {
