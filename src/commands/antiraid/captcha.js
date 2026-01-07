@@ -222,11 +222,19 @@ module.exports = {
                     }
                 }
 
-                await processingMsg.edit({ embeds: [createEmbed(
-                    await t('captcha.isolation_success', message.guild.id, { role: unverifiedRole.toString(), count: updatedCount }),
-                    '',
+                const embed = createEmbed(
+                    await t('captcha.isolation_success_title', message.guild.id),
+                    await t('captcha.isolation_info_desc', message.guild.id),
                     'success'
-                )] });
+                ).addFields(
+                    { name: await t('captcha.isolation_role_label', message.guild.id), value: unverifiedRole.toString(), inline: true },
+                    { name: await t('captcha.isolation_cats_label', message.guild.id), value: `${updatedCount}`, inline: true }
+                );
+
+                await processingMsg.edit({ 
+                    content: unverifiedRole.toString(),
+                    embeds: [embed] 
+                });
 
             } catch (error) {
                 console.error(error);

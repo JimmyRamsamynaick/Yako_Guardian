@@ -495,7 +495,10 @@
         "channel_usage": "❌ Usage: `+captcha channel <#channel>`",
         "channel_success": "✅ Salon de vérification défini sur **{{channel}}**.",
         "isolation_processing": "🔄 Configuration de l'isolation en cours... Création du rôle et mise à jour des permissions...",
-        "isolation_success": "✅ Isolation configurée !\nRôle créé : {{role}}\nCatégories mises à jour : **{{count}}**.\nLes nouveaux membres ne verront aucun salon tant qu'ils n'auront pas validé le captcha.",
+        "isolation_success_title": "✅ Isolation Configurée",
+        "isolation_role_label": "👤 Rôle Créé",
+        "isolation_cats_label": "📂 Catégories",
+        "isolation_info_desc": "Les nouveaux arrivants seront isolés jusqu'à la validation du Captcha.",
         "bypass_usage": "❌ Usage: `+captcha bypass <add/del> <@role/ID>`",
         "bypass_added": "✅ Rôle **{{role}}** ajouté au bypass Captcha.",
         "bypass_removed": "✅ Rôle **{{role}}** retiré du bypass Captcha."

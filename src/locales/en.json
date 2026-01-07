@@ -2569,7 +2569,10 @@
         "channel_usage": "❌ Usage: `+captcha channel <#channel>`",
         "channel_success": "✅ Verification channel set to **{{channel}}**.",
         "isolation_processing": "🔄 Isolation setup in progress... Creating role and updating permissions...",
-        "isolation_success": "✅ Isolation configured!\nRole created: {{role}}\nCategories updated: **{{count}}**.\nNew members will not see any channels until they pass the captcha.",
+        "isolation_success_title": "✅ Isolation Configured",
+        "isolation_role_label": "👤 Role Created",
+        "isolation_cats_label": "📂 Categories",
+        "isolation_info_desc": "New members will be isolated until they pass the Captcha.",
         "bypass_usage": "❌ Usage: `+captcha bypass <add/del> <@role/ID>`",
         "bypass_added": "✅ Role **{{role}}** added to Captcha bypass.",
         "bypass_removed": "✅ Role **{{role}}** removed from Captcha bypass."
