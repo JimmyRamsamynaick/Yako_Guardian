@@ -233,17 +233,24 @@ module.exports = {
                         await config.save();
                     }
 
-                    // 2. Deny ViewChannel on all Categories
-                    const categories = message.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory);
+                    // 2. Deny ViewChannel on ALL Channels (Categories and Children)
+                    const allChannels = message.guild.channels.cache.filter(c => 
+                        c.type !== ChannelType.GuildDirectory && 
+                        !c.isThread()
+                    );
                     let updatedCount = 0;
 
-                    for (const [id, category] of categories) {
-                        await category.permissionOverwrites.edit(unverifiedRole, {
-                            ViewChannel: false,
-                            SendMessages: false,
-                            Connect: false
-                        }, { reason: 'Captcha Isolation Setup' });
-                        updatedCount++;
+                    for (const [id, channel] of allChannels) {
+                        try {
+                            await channel.permissionOverwrites.edit(unverifiedRole, {
+                                ViewChannel: false,
+                                SendMessages: false,
+                                Connect: false
+                            }, { reason: 'Captcha Isolation Setup' });
+                            updatedCount++;
+                        } catch (e) {
+                            console.warn(`Failed to update channel ${channel.name}: ${e.message}`);
+                        }
                     }
                     
                     // 3. Setup Captcha Channel Permit

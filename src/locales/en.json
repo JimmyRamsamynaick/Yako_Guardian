@@ -2571,7 +2571,7 @@
         "isolation_processing": "🔄 Isolation setup in progress... Creating role and updating permissions...",
         "isolation_success_title": "✅ Isolation Configured",
         "isolation_role_label": "👤 Role Created",
-        "isolation_cats_label": "📂 Categories",
+        "isolation_cats_label": "🛡️ Secured Channels",
         "isolation_info_desc": "New members will be isolated until they pass the Captcha.",
         "isolation_status_title": "🛡️ Captcha Isolation",
         "isolation_status_desc": "Current Status: **{{status}}**\n\nTo enable: `{{prefix}}captcha isolation on`\nTo disable: `{{prefix}}captcha isolation off`",

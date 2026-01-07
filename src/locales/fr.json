@@ -497,7 +497,7 @@
         "isolation_processing": "🔄 Configuration de l'isolation en cours... Création du rôle et mise à jour des permissions...",
         "isolation_success_title": "✅ Isolation Configurée",
         "isolation_role_label": "👤 Rôle Créé",
-        "isolation_cats_label": "📂 Catégories",
+        "isolation_cats_label": "🛡️ Salons Sécurisés",
         "isolation_info_desc": "Les nouveaux arrivants seront isolés jusqu'à la validation du Captcha.",
         "isolation_status_title": "🛡️ Isolation Captcha",
         "isolation_status_desc": "Statut actuel : **{{status}}**\n\nPour activer : `{{prefix}}captcha isolation on`\nPour désactiver : `{{prefix}}captcha isolation off`",
