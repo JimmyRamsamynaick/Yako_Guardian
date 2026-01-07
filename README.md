@@ -9,7 +9,7 @@
 
 **La solution ultime pour sécuriser, gérer et protéger votre communauté Discord.**
 
-[Inviter le Bot](https://discord.com/oauth2/authorize?client_id=1325966606622851172&permissions=8&integration_type=0&scope=bot+applications.commands) • [Support](https://discord.gg/sferTT73tZ) • [Site Web](http://payement-guardian.myddns.me:3002)
+[Inviter le Bot](https://discord.com/oauth2/authorize?client_id=1455618003067605207&permissions=8&scope=bot%20applications.commands) • [Support](https://discord.gg/sferTT73tZ) • [Site Web](http://payement-guardian.myddns.me:3002)
 
 </div>
 
