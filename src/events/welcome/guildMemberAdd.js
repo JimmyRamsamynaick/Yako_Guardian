@@ -77,6 +77,14 @@ module.exports = {
                 if (member.roles.cache.some(r => bypass.includes(r.id))) {
                     // Bypass Captcha -> Proceed to Welcome/Autorole
                 } else {
+                    // NEW: Isolation (Unverified Role)
+                    if (config.security.captcha.unverifiedRoleId) {
+                         const unverifiedRole = member.guild.roles.cache.get(config.security.captcha.unverifiedRoleId);
+                         if (unverifiedRole) {
+                             await member.roles.add(unverifiedRole).catch(e => console.log(`Failed to add unverified role: ${e.message}`));
+                         }
+                    }
+
                     const diff = config.security.captcha.difficulty || 'medium';
                     const channelId = config.security.captcha.channelId;
                     

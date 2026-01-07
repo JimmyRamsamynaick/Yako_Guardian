@@ -119,4 +119,12 @@ async function verifyMember(client, interaction, member, guild) {
            await member.send(message);
         } catch(e) {}
     }
+
+    // 6. Cleanup Unverified Role (Isolation Removal)
+    if (config.security?.captcha?.unverifiedRoleId) {
+        const unverifiedRole = guild.roles.cache.get(config.security.captcha.unverifiedRoleId);
+        if (unverifiedRole) {
+            await member.roles.remove(unverifiedRole).catch(() => {});
+        }
+    }
 }

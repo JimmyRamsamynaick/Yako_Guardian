@@ -1,4 +1,4 @@
-const { PermissionsBitField } = require('discord.js');
+const { PermissionsBitField, ChannelType } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
 const { createEmbed } = require('../../utils/design');
@@ -163,24 +163,80 @@ module.exports = {
             }
         }
         
-        // Toggle on/off if just +captcha? Or show usage?
-        // User asked for "+captcha" separately.
-        // I'll make +captcha toggle enabled state if no args, OR show status.
-        // Let's make it toggle to be quick.
-        if (!sub) {
-             if (!config.security) config.security = {};
-             if (!config.security.captcha) config.security.captcha = {};
-             
-             const newState = !config.security.captcha.enabled;
-             config.security.captcha.enabled = newState;
-             await config.save();
-             
-             const stateStr = newState ? await t('common.on', message.guild.id) : await t('common.off', message.guild.id);
-             return message.channel.send({ embeds: [createEmbed(
-                `✅ Captcha: **${stateStr}**`,
+        // +captcha isolation
+        if (sub === 'isolation') {
+            const processingMsg = await message.channel.send({ embeds: [createEmbed(
+                await t('captcha.isolation_processing', message.guild.id),
                 '',
-                newState ? 'success' : 'error'
-             )] });
+                'info'
+            )] });
+
+            try {
+                // 1. Create or find "Unverified" role
+                let unverifiedRole;
+                if (config.security?.captcha?.unverifiedRoleId) {
+                    unverifiedRole = message.guild.roles.cache.get(config.security.captcha.unverifiedRoleId);
+                }
+                
+                if (!unverifiedRole) {
+                    // Check if role exists by name to avoid dupes
+                    unverifiedRole = message.guild.roles.cache.find(r => r.name === 'Unverified');
+                    
+                    if (!unverifiedRole) {
+                         unverifiedRole = await message.guild.roles.create({
+                            name: 'Unverified',
+                            color: '#808080',
+                            reason: 'Captcha Isolation System',
+                            permissions: [] // No permissions
+                        });
+                    }
+                    
+                    if (!config.security) config.security = {};
+                    if (!config.security.captcha) config.security.captcha = {};
+                    config.security.captcha.unverifiedRoleId = unverifiedRole.id;
+                    await config.save();
+                }
+
+                // 2. Deny ViewChannel on all Categories
+                const categories = message.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory);
+                let updatedCount = 0;
+
+                for (const [id, category] of categories) {
+                    await category.permissionOverwrites.edit(unverifiedRole, {
+                        ViewChannel: false,
+                        SendMessages: false,
+                        Connect: false
+                    }, { reason: 'Captcha Isolation Setup' });
+                    updatedCount++;
+                }
+                
+                // 3. Setup Captcha Channel Permit
+                if (config.security?.captcha?.channelId) {
+                    const captchaChannel = message.guild.channels.cache.get(config.security.captcha.channelId);
+                    if (captchaChannel) {
+                        await captchaChannel.permissionOverwrites.edit(unverifiedRole, {
+                            ViewChannel: true,
+                            SendMessages: true,
+                            ReadMessageHistory: true
+                        }, { reason: 'Captcha Channel Access' });
+                    }
+                }
+
+                await processingMsg.edit({ embeds: [createEmbed(
+                    await t('captcha.isolation_success', message.guild.id, { role: unverifiedRole.toString(), count: updatedCount }),
+                    '',
+                    'success'
+                )] });
+
+            } catch (error) {
+                console.error(error);
+                await processingMsg.edit({ embeds: [createEmbed(
+                    await t('common.error', message.guild.id),
+                    error.message,
+                    'error'
+                )] });
+            }
+            return;
         }
 
         return message.channel.send({ embeds: [createEmbed(
