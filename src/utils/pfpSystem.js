@@ -1,5 +1,6 @@
 const GuildConfig = require('../database/models/GuildConfig');
 const logger = require('./logger');
+const lastPfpPosted = new Map();
 
 async function checkPfp(client) {
     try {
@@ -12,32 +13,22 @@ async function checkPfp(client) {
             const channel = guild.channels.cache.get(config.pfp.channelId);
             if (!channel || !channel.isTextBased()) continue;
 
-            // Fetch random member
-            // Fetching all members is expensive.
-            // We can fetch a random chunk or just use cache if populated.
-            // For large servers, this is tricky.
-            // Let's try fetching a random member by ID or using cache.
-            
-            // Simplified: Use cache + fetch limit
-            const members = guild.members.cache.filter(m => !m.user.bot && m.user.avatar);
+            await guild.members.fetch().catch(() => null);
+            let members = guild.members.cache.filter(m => !m.user.bot);
             if (members.size === 0) continue;
 
+            const lastId = lastPfpPosted.get(guild.id);
+            if (lastId && members.size > 1) {
+                members = members.filter(m => m.id !== lastId);
+            }
             const randomMember = members.random();
-            
-            // Check if we already posted this user recently? (Optional)
-            
-            // Send PFP
-            // "Type 17" implies no embeds?
-            // "Envoi automatique de photos de profils aléatoires"
-            // Usually just the image url works as an attachment or link.
-            // Or "User Name: [Link]"
+            lastPfpPosted.set(guild.id, randomMember.id);
             
             try {
                 await channel.send({ 
                     content: `**${randomMember.user.tag}**\n${randomMember.user.displayAvatarURL({ size: 1024, extension: 'png' })}` 
                 });
             } catch (e) {
-                // Channel deleted or no perms
             }
         }
     } catch (error) {
