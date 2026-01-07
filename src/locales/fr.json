@@ -486,7 +486,7 @@
     },
     "captcha": {
         "menu_title": "🧩 Configuration Captcha",
-        "menu_description": "Le système Captcha vérifie les nouveaux membres pour empêcher les bots automatisés.\n\n__**État actuel :**__ {status}\n__**Difficulté :**__ {difficulty}\n__**Salon :**__ {channel}\n\n__**Configuration :**__\n`+captcha difficulty <easy/medium/hard>` • Définir la difficulté\n`+captcha role <@role>` • Définir le rôle de vérification\n`+captcha channel <#channel>` • Définir le salon de vérification\n`+captcha bypass <add/del> <@role>` • Gérer les rôles exemptés",
+        "menu_description": "Le système Captcha vérifie les nouveaux membres pour empêcher les bots automatisés.\n\n__**État actuel :**__ {status}\n__**Difficulté :**__ {difficulty}\n__**Salon :**__ {channel}\n\n__**Configuration :**__\n`+captcha difficulty <easy/medium/hard>` • Définir la difficulté\n`+captcha role <@role>` • Définir le rôle de vérification\n`+captcha channel <#channel>` • Définir le salon de vérification\n`+captcha isolation` • Configurer l'isolation stricte (cache les salons)\n`+captcha bypass <add/del> <@role>` • Gérer les rôles exemptés",
         "usage": "❌ Usage: `+captcha <difficulty/role/bypass>`",
         "diff_usage": "❌ Usage: `+captcha difficulty <easy/medium/hard>`",
         "diff_success": "✅ Difficulté Captcha définie sur **{{diff}}**.",
