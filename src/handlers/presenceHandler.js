@@ -5,6 +5,7 @@ const { t } = require('../utils/i18n');
 module.exports = (client) => {
     // Rotation interval (every 15 seconds)
     setInterval(async () => {
+        if (!client.user) return;
         try {
             // Force the specific status requested by user
             client.user.setActivity('sur les personnes malveillantes', { 
