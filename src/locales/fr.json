@@ -499,6 +499,10 @@
         "isolation_role_label": "👤 Rôle Créé",
         "isolation_cats_label": "📂 Catégories",
         "isolation_info_desc": "Les nouveaux arrivants seront isolés jusqu'à la validation du Captcha.",
+        "isolation_status_title": "🛡️ Isolation Captcha",
+        "isolation_status_desc": "Statut actuel : **{{status}}**\n\nPour activer : `{{prefix}}captcha isolation on`\nPour désactiver : `{{prefix}}captcha isolation off`",
+        "isolation_disabled": "✅ Isolation désactivée avec succès.",
+        "isolation_enabled": "✅ Isolation activée avec succès.",
         "bypass_usage": "❌ Usage: `+captcha bypass <add/del> <@role/ID>`",
         "bypass_added": "✅ Rôle **{{role}}** ajouté au bypass Captcha.",
         "bypass_removed": "✅ Rôle **{{role}}** retiré du bypass Captcha."

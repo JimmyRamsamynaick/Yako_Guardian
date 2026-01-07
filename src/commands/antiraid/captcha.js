@@ -165,86 +165,123 @@ module.exports = {
         
         // +captcha isolation
         if (sub === 'isolation') {
-            const processingMsg = await message.channel.send({ embeds: [createEmbed(
-                await t('captcha.isolation_processing', message.guild.id),
-                '',
-                'info'
-            )] });
+            const action = args[1] ? args[1].toLowerCase() : null;
 
-            try {
-                // 1. Create or find "Unverified" role
-                let unverifiedRole;
-                if (config.security?.captcha?.unverifiedRoleId) {
-                    unverifiedRole = message.guild.roles.cache.get(config.security.captcha.unverifiedRoleId);
-                }
-                
-                if (!unverifiedRole) {
-                    // Check if role exists by name to avoid dupes
-                    unverifiedRole = message.guild.roles.cache.find(r => r.name === 'Unverified');
-                    
-                    if (!unverifiedRole) {
-                         unverifiedRole = await message.guild.roles.create({
-                            name: 'Unverified',
-                            color: '#808080',
-                            reason: 'Captcha Isolation System',
-                            permissions: [] // No permissions
-                        });
-                    }
-                    
-                    if (!config.security) config.security = {};
-                    if (!config.security.captcha) config.security.captcha = {};
-                    config.security.captcha.unverifiedRoleId = unverifiedRole.id;
-                    await config.save();
-                }
-
-                // 2. Deny ViewChannel on all Categories
-                const categories = message.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory);
-                let updatedCount = 0;
-
-                for (const [id, category] of categories) {
-                    await category.permissionOverwrites.edit(unverifiedRole, {
-                        ViewChannel: false,
-                        SendMessages: false,
-                        Connect: false
-                    }, { reason: 'Captcha Isolation Setup' });
-                    updatedCount++;
-                }
-                
-                // 3. Setup Captcha Channel Permit
-                if (config.security?.captcha?.channelId) {
-                    const captchaChannel = message.guild.channels.cache.get(config.security.captcha.channelId);
-                    if (captchaChannel) {
-                        await captchaChannel.permissionOverwrites.edit(unverifiedRole, {
-                            ViewChannel: true,
-                            SendMessages: true,
-                            ReadMessageHistory: true
-                        }, { reason: 'Captcha Channel Access' });
-                    }
-                }
-
-                const embed = createEmbed(
-                    await t('captcha.isolation_success_title', message.guild.id),
-                    await t('captcha.isolation_info_desc', message.guild.id),
-                    'success'
-                ).addFields(
-                    { name: await t('captcha.isolation_role_label', message.guild.id), value: unverifiedRole.toString(), inline: true },
-                    { name: await t('captcha.isolation_cats_label', message.guild.id), value: `${updatedCount}`, inline: true }
-                );
-
-                await processingMsg.edit({ 
-                    content: unverifiedRole.toString(),
-                    embeds: [embed] 
-                });
-
-            } catch (error) {
-                console.error(error);
-                await processingMsg.edit({ embeds: [createEmbed(
-                    await t('common.error', message.guild.id),
-                    error.message,
-                    'error'
+            // STATUS CHECK
+            if (!action) {
+                const isEnabled = config.security?.captcha?.isolationEnabled || false;
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('captcha.isolation_status_title', message.guild.id),
+                    await t('captcha.isolation_status_desc', message.guild.id, { 
+                        status: isEnabled ? '✅ ON' : '❌ OFF',
+                        prefix: config.prefix || '+'
+                    }),
+                    'info'
                 )] });
             }
-            return;
+
+            // DISABLE
+            if (action === 'off') {
+                 if (!config.security) config.security = {};
+                 if (!config.security.captcha) config.security.captcha = {};
+                 config.security.captcha.isolationEnabled = false;
+                 await config.save();
+                 return message.channel.send({ embeds: [createEmbed(
+                     await t('captcha.isolation_disabled', message.guild.id),
+                     '',
+                     'success'
+                 )] });
+            }
+
+            // ENABLE (AND SETUP)
+            if (action === 'on') {
+                const processingMsg = await message.channel.send({ embeds: [createEmbed(
+                    await t('captcha.isolation_processing', message.guild.id),
+                    '',
+                    'info'
+                )] });
+
+                try {
+                    // Set enabled = true
+                    if (!config.security) config.security = {};
+                    if (!config.security.captcha) config.security.captcha = {};
+                    config.security.captcha.isolationEnabled = true;
+                    // We save later after getting roleId
+                    
+                    // 1. Create or find "Unverified" role
+                    let unverifiedRole;
+                    if (config.security?.captcha?.unverifiedRoleId) {
+                        unverifiedRole = message.guild.roles.cache.get(config.security.captcha.unverifiedRoleId);
+                    }
+                    
+                    if (!unverifiedRole) {
+                        // Check if role exists by name to avoid dupes
+                        unverifiedRole = message.guild.roles.cache.find(r => r.name === 'Unverified');
+                        
+                        if (!unverifiedRole) {
+                             unverifiedRole = await message.guild.roles.create({
+                                name: 'Unverified',
+                                color: '#808080',
+                                reason: 'Captcha Isolation System',
+                                permissions: [] // No permissions
+                            });
+                        }
+                        
+                        config.security.captcha.unverifiedRoleId = unverifiedRole.id;
+                        await config.save();
+                    } else {
+                        await config.save();
+                    }
+
+                    // 2. Deny ViewChannel on all Categories
+                    const categories = message.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory);
+                    let updatedCount = 0;
+
+                    for (const [id, category] of categories) {
+                        await category.permissionOverwrites.edit(unverifiedRole, {
+                            ViewChannel: false,
+                            SendMessages: false,
+                            Connect: false
+                        }, { reason: 'Captcha Isolation Setup' });
+                        updatedCount++;
+                    }
+                    
+                    // 3. Setup Captcha Channel Permit
+                    if (config.security?.captcha?.channelId) {
+                        const captchaChannel = message.guild.channels.cache.get(config.security.captcha.channelId);
+                        if (captchaChannel) {
+                            await captchaChannel.permissionOverwrites.edit(unverifiedRole, {
+                                ViewChannel: true,
+                                SendMessages: true,
+                                ReadMessageHistory: true
+                            }, { reason: 'Captcha Channel Access' });
+                        }
+                    }
+
+                    const embed = createEmbed(
+                        await t('captcha.isolation_success_title', message.guild.id),
+                        await t('captcha.isolation_info_desc', message.guild.id),
+                        'success'
+                    ).addFields(
+                        { name: await t('captcha.isolation_role_label', message.guild.id), value: unverifiedRole.toString(), inline: true },
+                        { name: await t('captcha.isolation_cats_label', message.guild.id), value: `${updatedCount}`, inline: true }
+                    );
+
+                    await processingMsg.edit({ 
+                        content: unverifiedRole.toString(),
+                        embeds: [embed] 
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    await processingMsg.edit({ embeds: [createEmbed(
+                        await t('common.error', message.guild.id),
+                        error.message,
+                        'error'
+                    )] });
+                }
+                return;
+            }
         }
 
         return message.channel.send({ embeds: [createEmbed(

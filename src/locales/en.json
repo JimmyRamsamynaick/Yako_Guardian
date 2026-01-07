@@ -2573,6 +2573,10 @@
         "isolation_role_label": "👤 Role Created",
         "isolation_cats_label": "📂 Categories",
         "isolation_info_desc": "New members will be isolated until they pass the Captcha.",
+        "isolation_status_title": "🛡️ Captcha Isolation",
+        "isolation_status_desc": "Current Status: **{{status}}**\n\nTo enable: `{{prefix}}captcha isolation on`\nTo disable: `{{prefix}}captcha isolation off`",
+        "isolation_disabled": "✅ Isolation disabled successfully.",
+        "isolation_enabled": "✅ Isolation enabled successfully.",
         "bypass_usage": "❌ Usage: `+captcha bypass <add/del> <@role/ID>`",
         "bypass_added": "✅ Role **{{role}}** added to Captcha bypass.",
         "bypass_removed": "✅ Role **{{role}}** removed from Captcha bypass."

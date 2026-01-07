@@ -44,6 +44,8 @@ const GuildConfigSchema = new mongoose.Schema({
             enabled: { type: Boolean, default: false },
             difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
             roleId: String, // Role given AFTER captcha
+            unverifiedRoleId: String, // Role given BEFORE captcha (Isolation)
+            isolationEnabled: { type: Boolean, default: false },
             bypassRoles: [String]
         },
         antibot: { type: Boolean, default: false },
