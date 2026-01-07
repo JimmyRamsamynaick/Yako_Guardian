@@ -78,6 +78,8 @@ module.exports = {
                     // Bypass Captcha -> Proceed to Welcome/Autorole
                 } else {
                     const diff = config.security.captcha.difficulty || 'medium';
+                    const channelId = config.security.captcha.channelId;
+                    
                     try {
                         const row = new ActionRowBuilder().addComponents(
                             new ButtonBuilder()
@@ -87,13 +89,41 @@ module.exports = {
                                 .setEmoji('🛡️')
                         );
                         
+                        const embed = createEmbed(
+                            await t('captcha.menu_title', member.guild.id),
+                            `**${member.guild.name}**\nVeuillez compléter le captcha pour accéder au serveur.\nPlease complete the captcha to access the server.`,
+                            'warning'
+                        );
+
+                        // If Channel is Configured -> Send there (Isolation Logic)
+                        if (channelId) {
+                            const captchaChannel = member.guild.channels.cache.get(channelId);
+                            if (captchaChannel && captchaChannel.isTextBased()) {
+                                // 1. Grant Access to this user specifically (Isolation)
+                                // We assume @everyone has NO access, so we must ADD access for this user.
+                                await captchaChannel.permissionOverwrites.create(member, {
+                                    ViewChannel: true,
+                                    SendMessages: false, // They only need to click button
+                                    ReadMessageHistory: true
+                                });
+
+                                // 2. Send Message with Ping
+                                await captchaChannel.send({
+                                    content: `${member.toString()}`,
+                                    embeds: [embed],
+                                    components: [row]
+                                });
+                                return; // Stop
+                            }
+                        }
+
+                        // Fallback to DM if no channel or channel invalid
                         await member.send({
                             content: `**${member.guild.name}**: Veuillez compléter le captcha pour accéder au serveur.\nPlease complete the captcha to access the server.`,
                             components: [row]
                         });
                     } catch(e) {
-                        // If DM fails, maybe notify in welcome channel if configured?
-                        // For now, silent fail implies user cannot verify.
+                        // If DM fails and no channel, silent fail
                     }
                     return; // Stop here, do not give autorole or welcome yet
                 }
@@ -112,7 +142,7 @@ module.exports = {
                         .replace(/{count}/g, member.guild.memberCount.toString());
                     
                     await channel.send({ 
-                        content: member.toString(),
+                        content: `Bienvenue ${member.toString()} !`, // Explicit Ping
                         embeds: [createEmbed(await t('welcome.title', member.guild.id), message, 'default')] 
                     }).catch(() => {});
                 }

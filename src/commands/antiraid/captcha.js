@@ -25,21 +25,15 @@ module.exports = {
             if (!config.security) config.security = {};
             if (!config.security.captcha) config.security.captcha = {};
 
-            const status = config.security.captcha.enabled ? '✅ ON' : '❌ OFF'; // Assuming enabled flag exists or inferred from difficulty? 
-            // Wait, looking at code, difficulty sets it? Or is it separate?
-            // The existing code didn't show an "enable/disable" toggle, just difficulty/role/bypass.
-            // I'll assume status is based on difficulty being set? Or just "ON" if configured?
-            // Let's check if there is an 'enabled' field. If not, I'll default to checking if difficulty is set.
-            // Actually, usually 'enabled' is a boolean. Let's look at `antitoken` or `antibot` pattern.
-            // Captcha might be always on if configured? 
-            // Let's just show "ON" if difficulty is set, else "OFF".
-            
-            const diff = config.security.captcha.difficulty || 'Non défini';
-            const state = (config.security.captcha.difficulty) ? '✅ ON' : '❌ OFF'; 
+            const status = config.security.captcha.enabled ? '✅ ON' : '❌ OFF';
+            const diff = config.security.captcha.difficulty || 'medium';
+            const channelId = config.security.captcha.channelId;
+            const channel = channelId ? `<#${channelId}>` : 'Aucun (DM)';
             
             const description = (await t('captcha.menu_description', message.guild.id))
-                .replace('{status}', state)
-                .replace('{difficulty}', diff);
+                .replace('{status}', status)
+                .replace('{difficulty}', diff)
+                .replace('{channel}', channel);
 
             return message.channel.send({ embeds: [createEmbed(
                 await t('captcha.menu_title', message.guild.id),
@@ -95,6 +89,30 @@ module.exports = {
             await config.save();
             return message.channel.send({ embeds: [createEmbed(
                 await t('captcha.role_success', message.guild.id, { role: role.toString() }),
+                '',
+                'success'
+            )] });
+        }
+
+        // +captcha channel <channel>
+        if (sub === 'channel') {
+            const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[1]);
+            
+            if (!channel) {
+                return message.channel.send({ embeds: [createEmbed(
+                    await t('captcha.channel_usage', message.guild.id), // You might need to add this key
+                    '',
+                    'info'
+                )] });
+            }
+
+            if (!config.security) config.security = {};
+            if (!config.security.captcha) config.security.captcha = {};
+            config.security.captcha.channelId = channel.id;
+            await config.save();
+            
+            return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.channel_success', message.guild.id, { channel: channel.toString() }), // You might need to add this key
                 '',
                 'success'
             )] });

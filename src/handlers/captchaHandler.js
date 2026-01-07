@@ -86,17 +86,29 @@ async function verifyMember(client, interaction, member, guild) {
     if (config.welcome?.enabled && config.welcome.channelId) {
          const channel = guild.channels.cache.get(config.welcome.channelId);
          if (channel && channel.isTextBased()) {
-             let message = config.welcome.message || "Bienvenue {user} !";
+             let message = config.welcome.message || await t('welcome.default_message', guild.id);
              message = message
                  .replace(/{user}/g, member.toString())
                  .replace(/{server}/g, guild.name)
                  .replace(/{count}/g, guild.memberCount.toString());
              
-             await channel.send({ embeds: [createEmbed(message, '', 'success')] });
+             await channel.send({ 
+                 content: `Bienvenue ${member.toString()} !`,
+                 embeds: [createEmbed(await t('welcome.title', guild.id), message, 'default')] 
+             }).catch(() => {});
          }
     }
+
+    // 4. Cleanup Captcha Channel Access (Isolation Removal)
+    if (config.security?.captcha?.channelId) {
+        const captchaChannel = guild.channels.cache.get(config.security.captcha.channelId);
+        if (captchaChannel) {
+            // Remove the specific overwrite we added
+            await captchaChannel.permissionOverwrites.delete(member).catch(() => {});
+        }
+    }
     
-    // 4. Welcome DM (Delayed)
+    // 5. Welcome DM (Delayed)
     if (config.welcome?.dm) {
         try {
            let message = config.welcome.message || `Bienvenue sur ${guild.name} !`;
