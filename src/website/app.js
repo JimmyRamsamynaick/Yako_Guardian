@@ -9,7 +9,7 @@ const db = new Database(path.join(process.cwd(), 'data', 'database.sqlite'));
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 80;
 
 // Email Transporter Configuration
 const transporter = nodemailer.createTransport({
