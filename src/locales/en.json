@@ -13,6 +13,19 @@
         "logs_title": "Logs",
         "logs_value": "RaidLog: {{raidlog}}\\nModLog: {{modlog}}"
     },
+    "helpall": {
+        "title": "📜 Command List by Level",
+        "menu_description": "**Your Level:** {{level}}\n\nPlease select a permission level below to view available commands.",
+        "placeholder": "Select a permission level",
+        "level_title": "Commands - Level {{level}}",
+        "no_commands": "No commands available for this level.",
+        "desc_0": "Public commands available to everyone",
+        "desc_1": "Support commands (Helpers/Ticket Staff)",
+        "desc_2": "Moderation commands (Mods)",
+        "desc_3": "Administration commands (Admins)",
+        "desc_4": "Security commands (High Staff)",
+        "desc_5": "Owner commands (Server Owner)"
+    },
     "logs": {
         "usage": "❌ Usage: `+log <status/test/ignore/export/config>`",
         "status_title": "📊 Logs Status",
@@ -549,6 +562,7 @@
         "permission_denied_level": "❌ **Permission denied.**\nThis command requires **Level {{required}}** (Your level: {{user}}).\nUse `+perms` to see levels.",
         "reason_none": "No reason specified",
         "not_defined": "Not defined",
+        "no_description": "No description available.",
         "on": "On",
         "off": "Off",
         "enabled": "Enabled",
@@ -830,17 +844,7 @@
         "generation_title": "Generation",
         "generation_process": "Creating role and configuring channels..."
     },
-    "helpall": {
-        "title": "**📜 COMMAND LIST BY LEVEL**",
-        "level0": "**Level 0 (Public)**",
-        "level1": "**Level 1 (Support/Tickets)**",
-        "level2": "**Level 2 (Moderation)**",
-        "level3": "**Level 3 (Administration)**",
-        "level4": "**Level 4 (Security/Backup)**",
-        "level5": "**Level 5 (Server Owner)**",
-        "description": "Displays all commands by permission level",
-        "usage": "**Usage:** `+helpall`"
-    },
+
     "secur": {
         "panel_title": "**YAKO GUARDIAN - SECURITY PANEL**",
         "modules_title": "**🛡️ Antiraid Modules**",

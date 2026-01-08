@@ -86,10 +86,25 @@ module.exports = {
                     
                     try {
                         await applyBackupData(message.guild, cloneDoc.data);
-                        await message.channel.send({ embeds: [createEmbed('Succès', 'Le clone a été appliqué avec succès !', 'success')] });
+                        
+                        // Le salon d'origine n'existe plus, on essaie d'envoyer un MP ou de trouver un nouveau salon
+                        try {
+                            await message.author.send({ embeds: [createEmbed('Succès', 'Le clone a été appliqué avec succès sur le serveur !', 'success')] });
+                        } catch (dmError) {
+                            // Si MP échoue, on cherche le premier salon textuel disponible
+                            const firstChannel = message.guild.channels.cache.find(c => c.type === 0 && c.permissionsFor(message.guild.members.me).has('SendMessages'));
+                            if (firstChannel) {
+                                await firstChannel.send({ embeds: [createEmbed('Succès', 'Le clone a été appliqué avec succès !', 'success')] }).catch(() => {});
+                            }
+                        }
                     } catch (e) {
                         console.error(e);
-                        await message.channel.send({ embeds: [createEmbed('Erreur Fatal', `Une erreur est survenue pendant le chargement: ${e.message}`, 'error')] });
+                        // On essaie d'envoyer l'erreur en MP car le salon n'existe peut-être plus
+                        try {
+                            await message.author.send({ embeds: [createEmbed('Erreur Fatal', `Une erreur est survenue pendant le chargement: ${e.message}`, 'error')] });
+                        } catch (dmError) {
+                            console.error("Impossible d'envoyer l'erreur à l'utilisateur :", dmError);
+                        }
                     }
                 }
             });

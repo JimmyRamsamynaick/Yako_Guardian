@@ -57,7 +57,7 @@ module.exports = (client) => {
         } else if (customId.startsWith('log_')) {
             const { handleLogInteraction } = require('./logHandler');
             await handleLogInteraction(client, interaction);
-        } else if (customId.startsWith('help_')) {
+        } else if (customId.startsWith('help_') || customId.startsWith('helpall_')) {
             await handleHelpMenu(client, interaction);
         } else if (customId.startsWith('rolemenu_') || customId.startsWith('rm_user_')) {
             await handleRoleMenuInteraction(client, interaction);

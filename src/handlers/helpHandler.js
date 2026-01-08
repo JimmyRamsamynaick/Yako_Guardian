@@ -23,6 +23,53 @@ async function handleHelpMenu(client, interaction) {
         return;
     }
 
+    // --- HELP ALL (By Level) HANDLER ---
+    if (customId === 'helpall_select_level') {
+        const levelValue = interaction.values[0].replace('helpall_', '');
+        const targetLevel = parseInt(levelValue);
+        
+        const config = await getGuildConfig(interaction.guildId);
+        const prefix = config.prefix || client.config.prefix;
+        
+        // Filter commands by exact level
+        const commands = client.commands.filter(c => getCommandLevel(c) === targetLevel);
+        const sortedCommands = [...commands.values()].sort((a, b) => a.name.localeCompare(b.name));
+
+        if (sortedCommands.length === 0) {
+            return interaction.update({
+                embeds: [createEmbed(await t('helpall.level_title', guildId, { level: targetLevel }), await t('helpall.no_commands', guildId), 'error')],
+                components: interaction.message.components
+            });
+        }
+
+        // Build Description
+        // Mobile Friendly: **cmd**\n> desc
+        let description = "";
+        for (const cmd of sortedCommands) {
+            let desc = await t(`${cmd.name}.description`, guildId);
+            if (desc === `${cmd.name}.description`) desc = cmd.description || await t('common.no_description', guildId);
+            
+            description += `**\`${prefix}${cmd.name}\`**\n> ${desc}\n\n`;
+        }
+
+        // Split into fields if too long (Discord limit 4096 chars for desc)
+        // But for "pleasant to read", paginating or keeping it simple is best.
+        // If > 4096, we might need to truncate. Assuming 20-30 cmds max per level, it should fit.
+        // 30 cmds * (15 chars name + 50 chars desc + overhead) ~= 2000 chars. Safe.
+
+        const embed = createEmbed(
+            await t('helpall.level_title', guildId, { level: targetLevel }),
+            description,
+            'default'
+        );
+
+        await interaction.update({
+            embeds: [embed],
+            components: interaction.message.components
+        });
+        return;
+    }
+
     const isSelect = interaction.isStringSelectMenu() && customId === 'help_select_category';
     const isButton = interaction.isButton() && customId.startsWith('help_btn_');
 

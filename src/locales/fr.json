@@ -27,6 +27,19 @@
         "field_secur": "**SecurInvite:** {{state}}",
         "footer": "Utilisez les boutons pour naviguer"
     },
+    "helpall": {
+        "title": "📜 Liste des Commandes par Niveau",
+        "menu_description": "**Votre Niveau :** {{level}}\n\nVeuillez sélectionner un niveau de permission ci-dessous pour voir les commandes disponibles.",
+        "placeholder": "Sélectionnez un niveau",
+        "level_title": "Commandes - Niveau {{level}}",
+        "no_commands": "Aucune commande disponible pour ce niveau.",
+        "desc_0": "Commandes publiques accessibles à tous",
+        "desc_1": "Commandes Support (Helpers/Ticket Staff)",
+        "desc_2": "Commandes de Modération",
+        "desc_3": "Commandes d'Administration",
+        "desc_4": "Commandes de Sécurité",
+        "desc_5": "Commandes Propriétaire (Serveur)"
+    },
 
     "clear": {
         "description": "Supprime des messages ou des sanctions",
@@ -414,6 +427,7 @@
         "owner_only": "❌ **Permission refusée.**\nCette commande est réservée au propriétaire du bot.",
         "permission_denied_level": "❌ **Permission refusée.**\nCette commande requiert le **Niveau {{required}}** (Votre niveau: {{user}}).\nUtilisez `+perms` pour voir les niveaux.",
         "not_defined": "Non défini",
+        "no_description": "Aucune description disponible.",
         "requested_by": "Demandé par {{user}}",
         "no_data": "Aucune donnée trouvée.",
         "page": "Page",
@@ -1045,17 +1059,7 @@
         "expired_tempmute": "Mute temporaire expiré",
         "expired_tempcmute": "Mute salon temporaire expiré"
     },
-    "helpall": {
-        "title": "**📜 LISTE DES COMMANDES PAR NIVEAU**",
-        "level0": "**Niveau 0 (Public)**",
-        "level1": "**Niveau 1 (Support/Tickets)**",
-        "level2": "**Niveau 2 (Modération)**",
-        "level3": "**Niveau 3 (Administration)**",
-        "level4": "**Niveau 4 (Sécurité/Backup)**",
-        "level5": "**Niveau 5 (Propriétaire Serveur)**",
-        "description": "Affiche toutes les commandes par niveau de permission",
-        "usage": "**Utilisation:** `+helpall`"
-    },
+
     "secur": {
         "panel_title": "**YAKO GUARDIAN - PANNEAU DE SÉCURITÉ**",
         "modules_title": "**🛡️ Modules Antiraid**",
