@@ -29,6 +29,33 @@ module.exports = {
             }
         }
 
+        // Format Title to replace raw mentions with display names
+        const formatTitle = (text) => {
+            if (!text) return text;
+            
+            // Roles
+            text = text.replace(/<@&(\d+)>/g, (match, id) => {
+                const role = message.guild.roles.cache.get(id);
+                return role ? `@${role.name}` : match;
+            });
+            
+            // Users
+            text = text.replace(/<@!?(\d+)>/g, (match, id) => {
+                const user = message.mentions.users.get(id) || message.guild.members.cache.get(id)?.user || client.users.cache.get(id);
+                return user ? `@${user.username}` : match;
+            });
+
+            // Channels
+            text = text.replace(/<#(\d+)>/g, (match, id) => {
+                const channel = message.guild.channels.cache.get(id);
+                return channel ? `#${channel.name}` : match;
+            });
+            
+            return text;
+        };
+
+        title = formatTitle(title);
+
         await message.channel.send({ embeds: [createEmbed(title, description, 'info')] });
     }
 };
