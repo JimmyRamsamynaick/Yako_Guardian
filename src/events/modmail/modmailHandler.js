@@ -106,6 +106,10 @@ module.exports = {
             const ticket = await ActiveTicket.findOne({ channelId: message.channel.id, closed: false });
             if (!ticket) return;
 
+            // Check if it is a regular ticket (ticketType is 'ticket' OR user is in channel overwrites)
+            // This prevents forwarding messages from panel tickets to DM
+            if (ticket.ticketType === 'ticket' || message.channel.permissionOverwrites.cache.has(ticket.userId)) return;
+
             // Ignore commands
             if (message.content.startsWith('+')) return; // Simple check, ideally check actual prefix
 

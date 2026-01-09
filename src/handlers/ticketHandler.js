@@ -1,4 +1,4 @@
-const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType } = require('discord.js');
+const { PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, AttachmentBuilder } = require('discord.js');
 const TicketConfig = require('../database/models/TicketConfig');
 const ActiveTicket = require('../database/models/ActiveTicket');
 const { t } = require('../utils/i18n');
@@ -332,7 +332,7 @@ async function handleTicketCreate(client, interaction) {
             guildId: guild.id,
             channelId: ticketChannel.id,
             userId: user.id,
-            type: categoryConfig ? categoryConfig.label : 'Default'
+            ticketType: 'ticket'
         });
 
         // Send Welcome Message
@@ -387,13 +387,51 @@ async function handleTicketClaim(client, interaction) {
 }
 
 async function handleTicketClose(client, interaction) {
-    const { guild, channel } = interaction;
+    const { guild, channel, user } = interaction;
     
     await interaction.reply({ embeds: [createEmbed(await t('tickets.handler.ticket_closing', guild.id), '', 'info')] });
     
+    const ticket = await ActiveTicket.findOne({ channelId: channel.id });
+    
     setTimeout(async () => {
-        // Generate Transcript (Basic text file for now)
-        // TODO: Advanced HTML Transcript
+        // Generate Transcript
+        try {
+            if (ticket) {
+                const config = await TicketConfig.findOne({ guildId: guild.id });
+                if (config && config.transcriptChannelId) {
+                    let transcript = (await t('ticket_close.transcript_title', guild.id)) + "\n";
+                    transcript += (await t('ticket_close.transcript_id', guild.id, { id: ticket.channelId })) + "\n";
+                    transcript += (await t('ticket_close.transcript_creator', guild.id, { user: ticket.userId })) + "\n";
+                    transcript += (await t('ticket_close.transcript_closed_by', guild.id, { user: user.tag })) + "\n";
+                    transcript += `-------------------------\n\n`;
+
+                    const messages = await channel.messages.fetch({ limit: 100 });
+                    messages.reverse().forEach(m => {
+                        transcript += `[${m.createdAt.toLocaleString()}] ${m.author.tag}: ${m.content}\n`;
+                        if (m.attachments.size > 0) {
+                            transcript += `[Attachment] ${m.attachments.first().url}\n`;
+                        }
+                    });
+
+                    const attachment = new AttachmentBuilder(Buffer.from(transcript, 'utf-8'), { name: `transcript-${ticket.channelId}.txt` });
+
+                    // Clean ID
+                    const transChannelId = config.transcriptChannelId.replace(/[<#>]/g, '');
+                    const transChannel = await guild.channels.fetch(transChannelId).catch(() => null);
+
+                    if (transChannel) {
+                        await transChannel.send({
+                            content: (await t('ticket_close.log_title', guild.id)) + `\n` +
+                                     (await t('ticket_close.log_ticket', guild.id, { name: channel.name })) + `\n` +
+                                     (await t('ticket_close.log_closed_by', guild.id, { user: `<@${user.id}>` })),
+                            files: [attachment]
+                        });
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Error generating transcript:", e);
+        }
         
         await channel.delete().catch(() => {});
         await ActiveTicket.deleteOne({ channelId: channel.id });

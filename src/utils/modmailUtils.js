@@ -43,7 +43,8 @@ async function createTicket(client, user, guild, initialContent) {
     await ActiveTicket.create({
         guildId: guild.id,
         channelId: channel.id,
-        userId: user.id
+        userId: user.id,
+        ticketType: 'modmail'
     });
 
     // Send Initial Message (No Embeds)
