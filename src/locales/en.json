@@ -2564,7 +2564,7 @@
     },
     "captcha": {
         "menu_title": "🧩 Captcha Configuration",
-        "menu_description": "The Captcha system verifies new members to prevent automated bots.\n\n__**Current Status:**__ {status}\n__**Difficulty:**__ {difficulty}\n__**Channel:**__ {channel}\n\n__**Configuration:**__\n`+captcha difficulty <easy/medium/hard>` • Set difficulty\n`+captcha role <@role>` • Set verification role\n`+captcha channel <#channel>` • Set verification channel\n`+captcha isolation` • Configure strict isolation (hides channels)\n`+captcha bypass <add/del> <@role>` • Manage exempted roles",
+        "menu_description": "The Captcha system verifies new members to prevent automated bots.\n\n__**Current Status:**__ {status}\n__**Difficulty:**__ {difficulty}\n__**Channel:**__ {channel}\n\n__**Configuration:**__\n`+captcha on` • Enable protection\n`+captcha off` • Disable protection\n`+captcha difficulty <easy/medium/hard>` • Set difficulty\n`+captcha role <@role>` • Set verification role\n`+captcha channel <#channel>` • Set verification channel\n`+captcha isolation` • Configure strict isolation (hides channels)\n`+captcha bypass <add/del> <@role>` • Manage exempted roles",
         "usage": "❌ Usage: `+captcha <difficulty/role/bypass>`",
         "diff_usage": "❌ Usage: `+captcha difficulty <easy/medium/hard>`",
         "diff_success": "✅ Captcha difficulty set to **{{diff}}**.",
@@ -2583,7 +2583,9 @@
         "isolation_enabled": "✅ Isolation enabled successfully.",
         "bypass_usage": "❌ Usage: `+captcha bypass <add/del> <@role/ID>`",
         "bypass_added": "✅ Role **{{role}}** added to Captcha bypass.",
-        "bypass_removed": "✅ Role **{{role}}** removed from Captcha bypass."
+        "bypass_removed": "✅ Role **{{role}}** removed from Captcha bypass.",
+        "enabled": "✅ Captcha system enabled.",
+        "disabled": "✅ Captcha system disabled."
     },
     "antibot": {
         "menu_title": "🛡️ Anti-Bot Protection",

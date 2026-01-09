@@ -42,6 +42,36 @@ module.exports = {
             )] });
         }
 
+        // +captcha on
+        if (sub === 'on' || sub === 'enable') {
+            if (!config.security) config.security = {};
+            if (!config.security.captcha) config.security.captcha = {};
+            
+            config.security.captcha.enabled = true;
+            await config.save();
+            
+            return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.enabled', message.guild.id),
+                '',
+                'success'
+            )] });
+        }
+
+        // +captcha off
+        if (sub === 'off' || sub === 'disable') {
+             if (!config.security) config.security = {};
+            if (!config.security.captcha) config.security.captcha = {};
+            
+            config.security.captcha.enabled = false;
+            await config.save();
+            
+            return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.disabled', message.guild.id),
+                '',
+                'success'
+            )] });
+        }
+
         // +captcha difficulty <easy/medium/hard>
         if (sub === 'difficulty' || sub === 'diff') {
             const level = args[1]?.toLowerCase();
@@ -206,6 +236,7 @@ module.exports = {
                     if (!config.security) config.security = {};
                     if (!config.security.captcha) config.security.captcha = {};
                     config.security.captcha.isolationEnabled = true;
+                    config.security.captcha.enabled = true; // Force Enable Captcha System
                     // We save later after getting roleId
                     
                     // 1. Create or find "Unverified" role
