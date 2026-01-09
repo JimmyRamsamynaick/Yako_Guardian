@@ -51,8 +51,8 @@ module.exports = {
             await config.save();
             
             return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.menu_title', message.guild.id),
                 await t('captcha.enabled', message.guild.id),
-                '',
                 'success'
             )] });
         }
@@ -66,8 +66,8 @@ module.exports = {
             await config.save();
             
             return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.menu_title', message.guild.id),
                 await t('captcha.disabled', message.guild.id),
-                '',
                 'success'
             )] });
         }
@@ -87,12 +87,12 @@ module.exports = {
             if (!config.security.captcha) config.security.captcha = {};
             config.security.captcha.difficulty = level;
             // Auto-enable if setting diff? Maybe not, keep explicit enable separate or implied? 
-            // Usually setting a config implies enabling or at least prepping. 
+            // usually setting a config implies enabling or at least prepping. 
             // But let's stick to just config.
             await config.save();
             return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.menu_title', message.guild.id),
                 await t('captcha.diff_success', message.guild.id, { diff: level }),
-                '',
                 'success'
             )] });
         }
@@ -118,8 +118,8 @@ module.exports = {
             config.security.captcha.roleId = role.id;
             await config.save();
             return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.menu_title', message.guild.id),
                 await t('captcha.role_success', message.guild.id, { role: role.toString() }),
-                '',
                 'success'
             )] });
         }
@@ -142,8 +142,8 @@ module.exports = {
             await config.save();
             
             return message.channel.send({ embeds: [createEmbed(
+                await t('captcha.menu_title', message.guild.id),
                 await t('captcha.channel_success', message.guild.id, { channel: channel.toString() }), // You might need to add this key
-                '',
                 'success'
             )] });
         }
@@ -178,16 +178,16 @@ module.exports = {
                     await config.save();
                 }
                 return message.channel.send({ embeds: [createEmbed(
+                    await t('captcha.menu_title', message.guild.id),
                     await t('captcha.bypass_added', message.guild.id, { role: role.toString() }),
-                    '',
                     'success'
                 )] });
             } else {
                 config.security.captcha.bypassRoles = config.security.captcha.bypassRoles.filter(id => id !== role.id);
                 await config.save();
                 return message.channel.send({ embeds: [createEmbed(
+                    await t('captcha.menu_title', message.guild.id),
                     await t('captcha.bypass_removed', message.guild.id, { role: role.toString() }),
-                    '',
                     'success'
                 )] });
             }
