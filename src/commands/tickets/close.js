@@ -34,15 +34,22 @@ module.exports = {
         // Send to transcript channel
         const config = await TicketConfig.findOne({ guildId: message.guild.id });
         if (config && config.transcriptChannelId) {
-            const transChannel = message.guild.channels.cache.get(config.transcriptChannelId);
-            if (transChannel) {
-                await transChannel.send({
-                    content: (await t('ticket_close.log_title', message.guild.id)) + `\n` +
-                             (await t('ticket_close.log_ticket', message.guild.id, { name: message.channel.name })) + `\n` +
-                             (await t('ticket_close.log_closed_by', message.guild.id, { user: `<@${message.author.id}>` })) + `\n` +
-                             (await t('ticket_close.log_reason', message.guild.id, { reason: reason })),
-                    files: [attachment]
-                });
+            try {
+                // Clean ID just in case it was stored with <#>
+                const transChannelId = config.transcriptChannelId.replace(/[<#>]/g, '');
+                const transChannel = await message.guild.channels.fetch(transChannelId).catch(() => null);
+                
+                if (transChannel) {
+                    await transChannel.send({
+                        content: (await t('ticket_close.log_title', message.guild.id)) + `\n` +
+                                 (await t('ticket_close.log_ticket', message.guild.id, { name: message.channel.name })) + `\n` +
+                                 (await t('ticket_close.log_closed_by', message.guild.id, { user: `<@${message.author.id}>` })) + `\n` +
+                                 (await t('ticket_close.log_reason', message.guild.id, { reason: reason })),
+                        files: [attachment]
+                    });
+                }
+            } catch (e) {
+                console.error("Error sending transcript:", e);
             }
         }
 

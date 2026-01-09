@@ -102,7 +102,7 @@ async function handleTicketModal(client, interaction) {
     if (!config) config = await TicketConfig.create({ guildId });
 
     if (sub === 'transcript') {
-        const channelId = fields.getTextInputValue('channel_id');
+        const channelId = fields.getTextInputValue('channel_id').replace(/[<#>]/g, '');
         config.transcriptChannelId = channelId;
         await config.save();
         await updateTicketDashboard(client, interaction, config);
