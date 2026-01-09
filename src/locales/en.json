@@ -1274,7 +1274,7 @@
         "joined": "**Joined:** {{date}}",
         "roles": "**Roles ({{count}}):** {{roles}}",
         "badges": "**Badges:** {{badges}}",
-        "mutual_servers": "**Mutual Servers ({{count}}):** {{guilds}}",
+        "mutual_servers": "**Mutual Servers:** {{count}}",
         "none": "None",
         "section_general": "__**General Info**__",
         "section_server": "__**Server Info**__"

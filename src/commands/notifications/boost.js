@@ -147,11 +147,22 @@ module.exports = {
             const description = config.boost.description || await t('boostembed.embed_desc', message.guild.id, { user: message.author.toString(), count: message.guild.premiumSubscriptionCount });
 
             // Replace placeholders in custom title/desc
-            const formatText = (text) => text
-                .replace(/{{user}}/g, message.author.toString())
-                .replace(/{{count}}/g, message.guild.premiumSubscriptionCount);
+            const formatText = (text, isTitle = false) => {
+                if (!text) return text;
+                let formatted = text
+                    .replace(/{{username}}/g, message.author.username)
+                    .replace(/{{tag}}/g, message.author.tag)
+                    .replace(/{{count}}/g, message.guild.premiumSubscriptionCount);
 
-            const embed = createEmbed(formatText(title), formatText(description), 'default')
+                if (isTitle) {
+                    formatted = formatted.replace(/{{user}}/g, message.author.username);
+                } else {
+                    formatted = formatted.replace(/{{user}}/g, message.author.toString());
+                }
+                return formatted;
+            };
+
+            const embed = createEmbed(formatText(title, true), formatText(description), 'default')
                 .setColor('#f47fff') // Boost Pink
                 .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({ dynamic: true }) })
                 .setTimestamp();

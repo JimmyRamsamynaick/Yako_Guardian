@@ -1676,7 +1676,7 @@
         "joined": "**Rejoint:** {{date}}",
         "roles": "**Rôles ({{count}}):** {{roles}}",
         "badges": "**Badges:** {{badges}}",
-        "mutual_servers": "**Serveurs en commun ({{count}}):** {{guilds}}",
+        "mutual_servers": "**Serveurs en commun:** {{count}}",
         "none": "Aucun",
         "section_general": "__**Informations Générales**__",
         "section_server": "__**Informations Serveur**__"

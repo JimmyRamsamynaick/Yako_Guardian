@@ -28,7 +28,6 @@ module.exports = {
             }
         }
         const mutualCount = mutualGuilds.length;
-        const mutualList = mutualGuilds.slice(0, 5).join(', ') + (mutualCount > 5 ? ` (+${mutualCount - 5})` : '');
 
         // Badges
         const flags = user.flags.toArray();
@@ -63,7 +62,7 @@ module.exports = {
             await t('userinfo.id', message.guild.id, { id: user.id }),
             await t('userinfo.created', message.guild.id, { date: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>` }),
             await t('userinfo.badges', message.guild.id, { badges: badges }),
-            await t('userinfo.mutual_servers', message.guild.id, { count: mutualCount, guilds: mutualList || await t('userinfo.none', message.guild.id) }),
+            await t('userinfo.mutual_servers', message.guild.id, { count: mutualCount }),
             await t('userinfo.bot', message.guild.id, { isBot: user.bot ? await t('userinfo.yes', message.guild.id) : await t('userinfo.no', message.guild.id) }),
             `\n🔗 ${links}`
         ].join('\n');

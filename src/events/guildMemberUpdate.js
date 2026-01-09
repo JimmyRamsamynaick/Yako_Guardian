@@ -1,5 +1,6 @@
 const { getGuildConfig } = require('../utils/mongoUtils');
 const { t } = require('../utils/i18n');
+const { createEmbed } = require('../utils/design');
 
 module.exports = {
     name: 'guildMemberUpdate',
