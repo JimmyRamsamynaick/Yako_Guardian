@@ -24,12 +24,17 @@ module.exports = {
                          let content = config.boost.message || await t('boostembed.message_content', newMember.guild.id, { user: newMember.toString() });
 
                          // Replace placeholders
-                         const formatText = (text) => text
-                            .replace(/{{user}}/g, newMember.toString())
-                            .replace(/{{count}}/g, newMember.guild.premiumSubscriptionCount);
+                         const formatText = (text, isTitle = false) => {
+                             if (!text) return text;
+                             return text
+                                .replace(/{{user}}/g, isTitle ? newMember.user.username : newMember.toString())
+                                .replace(/{{username}}/g, newMember.user.username)
+                                .replace(/{{tag}}/g, newMember.user.tag)
+                                .replace(/{{count}}/g, newMember.guild.premiumSubscriptionCount);
+                         };
 
                          // Build Boost Embed
-                         const embed = createEmbed(formatText(title), formatText(description), 'default')
+                         const embed = createEmbed(formatText(title, true), formatText(description), 'default')
                             .setColor('#f47fff') // Boost Pink
                             .setFooter({ text: newMember.guild.name, iconURL: newMember.guild.iconURL({ dynamic: true }) })
                             .setTimestamp();

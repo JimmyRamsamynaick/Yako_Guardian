@@ -170,8 +170,7 @@ module.exports = {
                 embed.setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
             }
 
-            let content = config.boost.message || await t('boostembed.message_content', message.guild.id, { user: message.author.toString() });
-            content = formatText(content);
+            const content = formatText(config.boost.message || await t('boostembed.message_content', message.guild.id, { user: message.author.toString() }));
 
             try {
                 await channel.send({ content, embeds: [embed] });
