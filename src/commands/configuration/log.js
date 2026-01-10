@@ -38,7 +38,9 @@ module.exports = {
                     { name: 'VoiceLog', value: await formatStatus('voice'), inline: true },
                     { name: 'BoostLog', value: await formatStatus('boost'), inline: true },
                     { name: 'RoleLog', value: await formatStatus('role'), inline: true },
-                    { name: 'RaidLog', value: await formatStatus('raid'), inline: true }
+                    { name: 'RaidLog', value: await formatStatus('raid'), inline: true },
+                    { name: 'ServerLog', value: await formatStatus('server'), inline: true },
+                    { name: 'MemberLog', value: await formatStatus('member'), inline: true }
                 )
                 .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL() });
 
@@ -48,7 +50,7 @@ module.exports = {
         // --- TEST ---
         if (sub === 'test') {
             const type = args[1]?.toLowerCase();
-            const validTypes = ['mod', 'message', 'voice', 'boost', 'role', 'raid'];
+            const validTypes = ['mod', 'message', 'voice', 'boost', 'role', 'raid', 'server', 'member'];
             
             if (!validTypes.includes(type)) {
                 return message.channel.send({ embeds: [createEmbed(
@@ -181,7 +183,9 @@ module.exports = {
                     { label: 'Vocal', value: 'voice', description: 'Logs vocaux (join, leave, move)', emoji: '🎤' },
                     { label: 'Boost', value: 'boost', description: 'Logs de boost', emoji: '🚀' },
                     { label: 'Rôles', value: 'role', description: 'Logs de rôles (add, remove)', emoji: '🛡️' },
-                    { label: 'Raid', value: 'raid', description: 'Logs anti-raid', emoji: '🚨' }
+                    { label: 'Raid', value: 'raid', description: 'Logs anti-raid', emoji: '🚨' },
+                    { label: 'Serveur', value: 'server', description: 'Logs serveur (update, emoji)', emoji: '🏛️' },
+                    { label: 'Membres', value: 'member', description: 'Logs membres (join, leave)', emoji: '👤' }
                 ]);
 
             const row = new ActionRowBuilder().addComponents(menu);
