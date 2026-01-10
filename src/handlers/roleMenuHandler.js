@@ -209,19 +209,53 @@ async function handleRoleMenuInteraction(client, interaction) {
             await updateDashboard(client, interaction, menu);
         }
         else if (sub === 'image') {
-            menu.image = interaction.fields.getTextInputValue('image');
-            await menu.save();
-            await updateDashboard(client, interaction, menu);
+            try {
+                const url = interaction.fields.getTextInputValue('image');
+                if (url && !url.startsWith('http')) {
+                    return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_invalid_url', guildId), '', 'error')], ephemeral: true });
+                }
+                menu.image = url;
+                await menu.save();
+                await updateDashboard(client, interaction, menu);
+            } catch (e) {
+                console.error(e);
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_save', guildId, { error: e.message }), '', 'error')], ephemeral: true });
+                }
+            }
         }
         else if (sub === 'thumbnail') {
-            menu.thumbnail = interaction.fields.getTextInputValue('thumbnail');
-            await menu.save();
-            await updateDashboard(client, interaction, menu);
+            try {
+                const url = interaction.fields.getTextInputValue('thumbnail');
+                if (url && !url.startsWith('http')) {
+                    return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_invalid_url', guildId), '', 'error')], ephemeral: true });
+                }
+                menu.thumbnail = url;
+                await menu.save();
+                await updateDashboard(client, interaction, menu);
+            } catch (e) {
+                console.error(e);
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_save', guildId, { error: e.message }), '', 'error')], ephemeral: true });
+                }
+            }
         }
         else if (sub === 'color') {
-            menu.color = interaction.fields.getTextInputValue('color');
-            await menu.save();
-            await updateDashboard(client, interaction, menu);
+            try {
+                const color = interaction.fields.getTextInputValue('color');
+                const hexRegex = /^#([0-9A-F]{3}){1,2}$/i;
+                if (color && !hexRegex.test(color)) {
+                    return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_invalid_color', guildId), '', 'error')], ephemeral: true });
+                }
+                menu.color = color;
+                await menu.save();
+                await updateDashboard(client, interaction, menu);
+            } catch (e) {
+                console.error(e);
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_save', guildId, { error: e.message }), '', 'error')], ephemeral: true });
+                }
+            }
         }
         else if (sub === 'option') {
             try {

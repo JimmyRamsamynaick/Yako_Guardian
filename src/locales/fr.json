@@ -2827,7 +2827,10 @@
             "modal_thumbnail_title": "Modifier Miniature",
             "modal_thumbnail_label": "URL de la miniature",
             "modal_color_title": "Modifier Couleur",
-            "modal_color_label": "Couleur (Hex)"
+            "modal_color_label": "Couleur (Hex)",
+            "error_invalid_url": "❌ URL invalide. Doit commencer par http.",
+            "error_invalid_color": "❌ Couleur invalide. Doit être un code Hex (ex: #FF0000).",
+            "error_save": "❌ Erreur de sauvegarde: {{error}}"
         }
     },
     "utils": {

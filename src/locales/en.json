@@ -2448,7 +2448,10 @@
             "modal_thumbnail_title": "Edit Thumbnail",
             "modal_thumbnail_label": "Thumbnail URL",
             "modal_color_title": "Edit Color",
-            "modal_color_label": "Color (Hex)"
+            "modal_color_label": "Color (Hex)",
+            "error_invalid_url": "❌ Invalid URL. Must start with http.",
+            "error_invalid_color": "❌ Invalid Color. Must be a Hex code (e.g. #FF0000).",
+            "error_save": "❌ Error saving menu: {{error}}"
         }
     },
     "utils": {
