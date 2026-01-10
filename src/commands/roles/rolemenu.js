@@ -55,7 +55,11 @@ module.exports = {
             description: menu.description ? (menu.description.substring(0, 50) + '...') : await t('common.not_defined', message.guild.id),
             type: menu.type,
             options_count: menu.options.length,
-            options_list: menu.options.map((o, i) => `> ${i+1}. ${o.emoji ? o.emoji + ' ' : ''}${o.label} (<@&${o.roleId}>)`).join('\n')
+            options_list: menu.options.map((o, i) => {
+                const role = message.guild.roles.cache.get(o.roleId);
+                const roleDisplay = role ? role.toString() : `❌ Role Inconnu (${o.roleId})`;
+                return `> ${i+1}. ${o.emoji ? o.emoji + ' ' : ''}${o.label} ${roleDisplay}`;
+            }).join('\n')
         });
 
         const row1 = new ActionRowBuilder().addComponents(

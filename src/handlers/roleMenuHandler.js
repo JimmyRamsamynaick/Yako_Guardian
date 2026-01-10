@@ -172,19 +172,26 @@ async function handleRoleMenuInteraction(client, interaction) {
             await updateDashboard(client, interaction, menu);
         }
         else if (sub === 'option') {
-            const label = interaction.fields.getTextInputValue('label');
-            const emoji = interaction.fields.getTextInputValue('emoji');
-            const roleId = interaction.fields.getTextInputValue('role');
-            const desc = interaction.fields.getTextInputValue('desc');
+            try {
+                const label = interaction.fields.getTextInputValue('label');
+                const emoji = interaction.fields.getTextInputValue('emoji');
+                const roleId = interaction.fields.getTextInputValue('role').trim();
+                const desc = interaction.fields.getTextInputValue('desc');
 
-            // Verify role
-            if (!guild.roles.cache.has(roleId)) {
-                return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_role_invalid', guildId), '', 'error')], ephemeral: true });
+                // Verify role
+                if (!guild.roles.cache.has(roleId)) {
+                    return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_role_invalid', guildId), '', 'error')], ephemeral: true });
+                }
+
+                menu.options.push({ label, emoji, roleId, description: desc });
+                await menu.save();
+                await updateDashboard(client, interaction, menu);
+            } catch (e) {
+                console.error(e);
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_send', guildId, { error: e.message }), '', 'error')], ephemeral: true });
+                }
             }
-
-            menu.options.push({ label, emoji, roleId, description: desc });
-            await menu.save();
-            await updateDashboard(client, interaction, menu);
         }
         else if (sub === 'send') {
             if (menu.options.length === 0) {
@@ -278,7 +285,11 @@ async function updateDashboard(client, interaction, menu) {
         `**${await t('roles.handler.btn_desc', guildId)}:** ${menu.description ? (menu.description.substring(0, 50) + '...') : await t('roles.handler.dashboard_desc_none', guildId)}\n` +
         `**${await t('roles.handler.btn_type', guildId)}:** ${menu.type}\n` +
         `**${await t('roles.handler.dashboard_options', guildId)} (${menu.options.length}):**\n` +
-        menu.options.map((o, i) => `> ${i+1}. ${o.emoji ? o.emoji + ' ' : ''}${o.label} (<@&${o.roleId}>)`).join('\n');
+        menu.options.map((o, i) => {
+            const role = interaction.guild.roles.cache.get(o.roleId);
+            const roleDisplay = role ? role.toString() : `❌ Role Inconnu (${o.roleId})`;
+            return `> ${i+1}. ${o.emoji ? o.emoji + ' ' : ''}${o.label} ${roleDisplay}`;
+        }).join('\n');
 
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`rolemenu_edit_title_${menu.id}`).setLabel(await t('roles.handler.btn_title', guildId)).setStyle(ButtonStyle.Primary),
