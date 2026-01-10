@@ -8,6 +8,9 @@ const RoleMenuSchema = new mongoose.Schema({
     
     title: String,
     description: String,
+    thumbnail: String,
+    image: String,
+    color: String,
     
     options: [{
         label: String,

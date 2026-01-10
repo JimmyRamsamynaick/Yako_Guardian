@@ -6,7 +6,8 @@ const {
     ModalBuilder, 
     TextInputBuilder, 
     TextInputStyle,
-    PermissionsBitField
+    PermissionsBitField,
+    EmbedBuilder
 } = require('discord.js');
 const RoleMenu = require('../database/models/RoleMenu');
 const { createEmbed } = require('../utils/design');
@@ -63,6 +64,42 @@ async function handleRoleMenuInteraction(client, interaction) {
                 .setLabel(await t('roles.handler.modal_desc_label', guildId))
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true);
+            modal.addComponents(new ActionRowBuilder().addComponents(input));
+            await interaction.showModal(modal);
+        }
+        else if (target === 'image') {
+            const modal = new ModalBuilder()
+                .setCustomId(`rolemenu_modal_image_${menuId}`)
+                .setTitle(await t('roles.handler.modal_image_title', guildId));
+            const input = new TextInputBuilder()
+                .setCustomId('image')
+                .setLabel(await t('roles.handler.modal_image_label', guildId))
+                .setStyle(TextInputStyle.Short)
+                .setRequired(false);
+            modal.addComponents(new ActionRowBuilder().addComponents(input));
+            await interaction.showModal(modal);
+        }
+        else if (target === 'thumbnail') {
+            const modal = new ModalBuilder()
+                .setCustomId(`rolemenu_modal_thumbnail_${menuId}`)
+                .setTitle(await t('roles.handler.modal_thumbnail_title', guildId));
+            const input = new TextInputBuilder()
+                .setCustomId('thumbnail')
+                .setLabel(await t('roles.handler.modal_thumbnail_label', guildId))
+                .setStyle(TextInputStyle.Short)
+                .setRequired(false);
+            modal.addComponents(new ActionRowBuilder().addComponents(input));
+            await interaction.showModal(modal);
+        }
+        else if (target === 'color') {
+            const modal = new ModalBuilder()
+                .setCustomId(`rolemenu_modal_color_${menuId}`)
+                .setTitle(await t('roles.handler.modal_color_title', guildId));
+            const input = new TextInputBuilder()
+                .setCustomId('color')
+                .setLabel(await t('roles.handler.modal_color_label', guildId))
+                .setStyle(TextInputStyle.Short)
+                .setRequired(false);
             modal.addComponents(new ActionRowBuilder().addComponents(input));
             await interaction.showModal(modal);
         }
@@ -171,6 +208,21 @@ async function handleRoleMenuInteraction(client, interaction) {
             await menu.save();
             await updateDashboard(client, interaction, menu);
         }
+        else if (sub === 'image') {
+            menu.image = interaction.fields.getTextInputValue('image');
+            await menu.save();
+            await updateDashboard(client, interaction, menu);
+        }
+        else if (sub === 'thumbnail') {
+            menu.thumbnail = interaction.fields.getTextInputValue('thumbnail');
+            await menu.save();
+            await updateDashboard(client, interaction, menu);
+        }
+        else if (sub === 'color') {
+            menu.color = interaction.fields.getTextInputValue('color');
+            await menu.save();
+            await updateDashboard(client, interaction, menu);
+        }
         else if (sub === 'option') {
             try {
                 const label = interaction.fields.getTextInputValue('label');
@@ -204,8 +256,15 @@ async function handleRoleMenuInteraction(client, interaction) {
                 return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_channel_invalid', guildId), '', 'error')], ephemeral: true });
             }
 
-            // Construct Message
-            const content = `**${menu.title || await t('roles.rolemenu.default_title', guildId)}**\n\n${menu.description || ''}`;
+            // Construct Embed
+            const embed = new EmbedBuilder()
+                .setTitle(menu.title || await t('roles.rolemenu.default_title', guildId))
+                .setDescription(menu.description || null)
+                .setColor(menu.color || '#2b2d31');
+            
+            if (menu.image) embed.setImage(menu.image);
+            if (menu.thumbnail) embed.setThumbnail(menu.thumbnail);
+
             const components = [];
 
             if (menu.type === 'select') {
@@ -247,7 +306,7 @@ async function handleRoleMenuInteraction(client, interaction) {
             }
 
             try {
-                const msg = await channel.send({ content: content, components: components });
+                const msg = await channel.send({ embeds: [embed], components: components });
                 // V2 API returns the message object but properties might be slightly different.
                 // Assuming msg.id is available.
                 menu.channelId = channel.id;
@@ -284,6 +343,9 @@ async function updateDashboard(client, interaction, menu) {
         `**${await t('roles.handler.btn_title', guildId)}:** ${menu.title || await t('roles.handler.dashboard_desc_none', guildId)}\n` +
         `**${await t('roles.handler.btn_desc', guildId)}:** ${menu.description ? (menu.description.substring(0, 50) + '...') : await t('roles.handler.dashboard_desc_none', guildId)}\n` +
         `**${await t('roles.handler.btn_type', guildId)}:** ${menu.type}\n` +
+        `**Image:** ${menu.image ? '✅' : '❌'}\n` +
+        `**Thumbnail:** ${menu.thumbnail ? '✅' : '❌'}\n` +
+        `**Color:** ${menu.color || 'Default'}\n` +
         `**${await t('roles.handler.dashboard_options', guildId)} (${menu.options.length}):**\n` +
         menu.options.map((o, i) => {
             const role = interaction.guild.roles.cache.get(o.roleId);
@@ -298,20 +360,26 @@ async function updateDashboard(client, interaction, menu) {
     );
 
     const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`rolemenu_edit_image_${menu.id}`).setLabel('Image').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`rolemenu_edit_thumbnail_${menu.id}`).setLabel('Thumbnail').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`rolemenu_edit_color_${menu.id}`).setLabel('Color').setStyle(ButtonStyle.Secondary)
+    );
+
+    const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`rolemenu_add_option_${menu.id}`).setLabel(await t('roles.handler.btn_add_option', guildId)).setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`rolemenu_del_option_${menu.id}`).setLabel(await t('roles.handler.btn_del_option', guildId)).setStyle(ButtonStyle.Danger)
     );
 
-    const row3 = new ActionRowBuilder().addComponents(
+    const row4 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`rolemenu_send_${menu.id}`).setLabel(await t('roles.handler.btn_send', guildId)).setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`rolemenu_delete_${menu.id}`).setLabel(await t('roles.handler.btn_delete', guildId)).setStyle(ButtonStyle.Danger),
         new ButtonBuilder().setCustomId(`rolemenu_dashboard_${menu.id}`).setLabel(await t('roles.handler.btn_refresh', guildId)).setStyle(ButtonStyle.Secondary)
     );
 
     if (interaction.isMessageComponent && interaction.isMessageComponent() || interaction.isModalSubmit && interaction.isModalSubmit()) {
-        await interaction.update({ embeds: [createEmbed(content, '', 'info')], components: [row1, row2, row3] });
+        await interaction.update({ embeds: [createEmbed(content, '', 'info')], components: [row1, row2, row3, row4] });
     } else {
-        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [row1, row2, row3] });
+        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [row1, row2, row3, row4] });
     }
 }
 

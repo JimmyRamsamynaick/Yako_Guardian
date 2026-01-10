@@ -54,6 +54,9 @@ module.exports = {
             title: menu.title || await t('common.not_defined', message.guild.id),
             description: menu.description ? (menu.description.substring(0, 50) + '...') : await t('common.not_defined', message.guild.id),
             type: menu.type,
+            image: menu.image ? '✅' : '❌',
+            thumbnail: menu.thumbnail ? '✅' : '❌',
+            color: menu.color || 'Default',
             options_count: menu.options.length,
             options_list: menu.options.map((o, i) => {
                 const role = message.guild.roles.cache.get(o.roleId);
@@ -69,16 +72,22 @@ module.exports = {
         );
 
         const row2 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`rolemenu_edit_image_${menu.id}`).setLabel('Image').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`rolemenu_edit_thumbnail_${menu.id}`).setLabel('Thumbnail').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`rolemenu_edit_color_${menu.id}`).setLabel('Color').setStyle(ButtonStyle.Secondary)
+        );
+
+        const row3 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`rolemenu_add_option_${menu.id}`).setLabel(await t('roles.rolemenu.btn_add_option', message.guild.id)).setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId(`rolemenu_del_option_${menu.id}`).setLabel(await t('roles.rolemenu.btn_del_option', message.guild.id)).setStyle(ButtonStyle.Danger)
         );
 
-        const row3 = new ActionRowBuilder().addComponents(
+        const row4 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`rolemenu_send_${menu.id}`).setLabel(await t('roles.rolemenu.btn_send', message.guild.id)).setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId(`rolemenu_delete_${menu.id}`).setLabel(await t('roles.rolemenu.btn_delete', message.guild.id)).setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId(`rolemenu_dashboard_${menu.id}`).setLabel(await t('roles.rolemenu.btn_refresh', message.guild.id)).setStyle(ButtonStyle.Secondary)
         );
 
-        return message.channel.send({ embeds: [createEmbed(await t('roles.rolemenu.dashboard_title', message.guild.id), content, 'info')], components: [row1, row2, row3] });
+        return message.channel.send({ embeds: [createEmbed(await t('roles.rolemenu.dashboard_title', message.guild.id), content, 'info')], components: [row1, row2, row3, row4] });
     }
 };
