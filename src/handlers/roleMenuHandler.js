@@ -373,7 +373,8 @@ async function handleRoleMenuInteraction(client, interaction) {
 
 async function updateDashboard(client, interaction, menu) {
     const guildId = interaction.guildId;
-    const content = `**${await t('roles.handler.dashboard_title', guildId, { name: menu.name })}**\n` +
+    const title = await t('roles.handler.dashboard_title', guildId, { name: menu.name });
+    const content = 
         `**${await t('roles.handler.btn_title', guildId)}:** ${menu.title || await t('roles.handler.dashboard_desc_none', guildId)}\n` +
         `**${await t('roles.handler.btn_desc', guildId)}:** ${menu.description ? (menu.description.substring(0, 50) + '...') : await t('roles.handler.dashboard_desc_none', guildId)}\n` +
         `**${await t('roles.handler.btn_type', guildId)}:** ${menu.type}\n` +
@@ -411,9 +412,9 @@ async function updateDashboard(client, interaction, menu) {
     );
 
     if (interaction.isMessageComponent && interaction.isMessageComponent() || interaction.isModalSubmit && interaction.isModalSubmit()) {
-        await interaction.update({ embeds: [createEmbed(content, '', 'info')], components: [row1, row2, row3, row4] });
+        await interaction.update({ embeds: [createEmbed(title, content, 'info')], components: [row1, row2, row3, row4] });
     } else {
-        await interaction.reply({ embeds: [createEmbed(content, '', 'info')], components: [row1, row2, row3, row4] });
+        await interaction.reply({ embeds: [createEmbed(title, content, 'info')], components: [row1, row2, row3, row4] });
     }
 }
 
