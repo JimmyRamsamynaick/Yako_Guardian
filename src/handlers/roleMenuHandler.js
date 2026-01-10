@@ -214,9 +214,10 @@ async function handleRoleMenuInteraction(client, interaction) {
                 if (url && !url.startsWith('http')) {
                     return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_invalid_url', guildId), '', 'error')], ephemeral: true });
                 }
+                await interaction.deferUpdate();
                 menu.image = url;
                 await menu.save();
-                await updateDashboard(client, interaction, menu);
+                await updateDashboard(client, interaction, menu, true);
             } catch (e) {
                 console.error(e);
                 if (!interaction.replied && !interaction.deferred) {
@@ -230,9 +231,10 @@ async function handleRoleMenuInteraction(client, interaction) {
                 if (url && !url.startsWith('http')) {
                     return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_invalid_url', guildId), '', 'error')], ephemeral: true });
                 }
+                await interaction.deferUpdate();
                 menu.thumbnail = url;
                 await menu.save();
-                await updateDashboard(client, interaction, menu);
+                await updateDashboard(client, interaction, menu, true);
             } catch (e) {
                 console.error(e);
                 if (!interaction.replied && !interaction.deferred) {
@@ -247,9 +249,10 @@ async function handleRoleMenuInteraction(client, interaction) {
                 if (color && !hexRegex.test(color)) {
                     return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_invalid_color', guildId), '', 'error')], ephemeral: true });
                 }
+                await interaction.deferUpdate();
                 menu.color = color;
                 await menu.save();
-                await updateDashboard(client, interaction, menu);
+                await updateDashboard(client, interaction, menu, true);
             } catch (e) {
                 console.error(e);
                 if (!interaction.replied && !interaction.deferred) {
@@ -371,7 +374,7 @@ async function handleRoleMenuInteraction(client, interaction) {
     }
 }
 
-async function updateDashboard(client, interaction, menu) {
+async function updateDashboard(client, interaction, menu, isDeferred = false) {
     const guildId = interaction.guildId;
     const title = await t('roles.handler.dashboard_title', guildId, { name: menu.name });
     const content = 
@@ -411,7 +414,9 @@ async function updateDashboard(client, interaction, menu) {
         new ButtonBuilder().setCustomId(`rolemenu_dashboard_${menu.id}`).setLabel(await t('roles.handler.btn_refresh', guildId)).setStyle(ButtonStyle.Secondary)
     );
 
-    if (interaction.isMessageComponent && interaction.isMessageComponent() || interaction.isModalSubmit && interaction.isModalSubmit()) {
+    if (isDeferred) {
+        await interaction.editReply({ embeds: [createEmbed(title, content, 'info')], components: [row1, row2, row3, row4] });
+    } else if (interaction.isMessageComponent && interaction.isMessageComponent() || interaction.isModalSubmit && interaction.isModalSubmit()) {
         await interaction.update({ embeds: [createEmbed(title, content, 'info')], components: [row1, row2, row3, row4] });
     } else {
         await interaction.reply({ embeds: [createEmbed(title, content, 'info')], components: [row1, row2, row3, row4] });
