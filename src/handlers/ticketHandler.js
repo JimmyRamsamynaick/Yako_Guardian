@@ -380,7 +380,42 @@ async function handleTicketClaim(client, interaction) {
     ticket.claimedBy = user.id;
     await ticket.save();
 
-    await channel.permissionOverwrites.edit(user.id, { ViewChannel: true, SendMessages: true });
+    // Isolation Logic: Hide from everyone (including staff) except Opener, Claimer, and Bot
+    const overwrites = [
+        {
+            id: guild.id,
+            deny: [PermissionsBitField.Flags.ViewChannel]
+        },
+        {
+            id: ticket.userId,
+            allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles]
+        },
+        {
+            id: client.user.id,
+            allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageChannels]
+        },
+        {
+            id: user.id,
+            allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles]
+        }
+    ];
+
+    // Deny all configured staff roles
+    const allStaffRoles = new Set(config.staffRoles || []);
+    if (config.categories) {
+        config.categories.forEach(cat => {
+            if (cat.staffRoles) cat.staffRoles.forEach(r => allStaffRoles.add(r));
+        });
+    }
+
+    allStaffRoles.forEach(roleId => {
+        overwrites.push({
+            id: roleId,
+            deny: [PermissionsBitField.Flags.ViewChannel]
+        });
+    });
+
+    await channel.permissionOverwrites.set(overwrites);
     
     // Notify
     await interaction.reply({ embeds: [createEmbed('', await t('tickets.handler.ticket_claimed', guild.id, { user: user.toString() }), 'success')] });
