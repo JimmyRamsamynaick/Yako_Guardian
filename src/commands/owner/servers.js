@@ -65,7 +65,7 @@ module.exports = {
             for (let i = 0; i < chunks.length; i++) {
                 // Sending as Embed
                 const title = await t('servers.server_list_title', message.guild.id, { count: client.guilds.cache.size, current: i+1, total: chunks.length });
-                await message.channel.send({ embeds: [createEmbed(chunks[i], title, 'default')] });
+                await message.channel.send({ embeds: [createEmbed(title, chunks[i], 'default')] });
             }
             return;
         }
