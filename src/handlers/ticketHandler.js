@@ -301,6 +301,8 @@ async function handleTicketCreate(client, interaction) {
     config.ticketCount += 1;
     await config.save();
 
+    await interaction.deferReply({ ephemeral: true });
+
     const ticketName = config.namingScheme.replace('{username}', user.username).replace('{count}', config.ticketCount);
 
     try {
@@ -337,12 +339,20 @@ async function handleTicketCreate(client, interaction) {
         });
 
         // Send Welcome Message
+        const welcomeDescription = categoryConfig?.welcomeMessage || await t('tickets.handler.ticket_welcome', guildId, { user: user.toString() });
+        
         const embed = createEmbed(
-            await t('tickets.panel.title', guildId),
-            categoryConfig?.welcomeMessage || await t('tickets.handler.ticket_welcome', guildId, { user: user.toString() }),
+            await t('tickets.panel.title', guildId), 
+            welcomeDescription,
             'default'
         )
-            .setColor(client.config.color || '#2b2d31');
+            .setColor(client.config.color || '#2b2d31')
+            .setThumbnail(user.displayAvatarURL({ dynamic: true }))
+            .addFields(
+                { name: '👤 ' + (await t('tickets.handler.created_by', guildId) || 'Créé par'), value: user.toString(), inline: true },
+                { name: '🏷️ ' + (await t('tickets.handler.category', guildId) || 'Catégorie'), value: categoryConfig?.label || 'Défaut', inline: true },
+                { name: '📅 ' + (await t('tickets.handler.date', guildId) || 'Date'), value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true }
+            );
         
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('ticket_close_confirm').setLabel(await t('tickets.handler.btn_close', guildId)).setStyle(ButtonStyle.Danger).setEmoji('🔒'),
@@ -351,11 +361,11 @@ async function handleTicketCreate(client, interaction) {
 
         await ticketChannel.send({ content: `${user.toString()} ${staffRoles.map(r => `<@&${r}>`).join(' ')}`, embeds: [embed], components: [row] });
 
-        await interaction.reply({ embeds: [createEmbed(await t('tickets.panel.created', guildId, { channel: ticketChannel.toString() }), '', 'success')], ephemeral: true });
+        await interaction.editReply({ embeds: [createEmbed(await t('tickets.panel.created', guildId, { channel: ticketChannel.toString() }), '', 'success')] });
 
     } catch (error) {
         console.error(error);
-        await interaction.reply({ embeds: [createEmbed(await t('tickets.panel.error_create', guildId), '', 'error')], ephemeral: true });
+        await interaction.editReply({ embeds: [createEmbed(await t('tickets.panel.error_create', guildId), '', 'error')] });
     }
 }
 
@@ -435,40 +445,19 @@ async function handleTicketClose(client, interaction) {
             if (ticket) {
                 const config = await TicketConfig.findOne({ guildId: guild.id });
                 if (config && config.transcriptChannelId) {
-                    // Fetch All messages
-                    let messages = [];
-                    let lastId;
+                    // Generate Filename: User-DDMMYYYY.html
+                    const openerUser = await client.users.fetch(ticket.userId).catch(() => null);
+                    const now = new Date();
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const year = now.getFullYear();
+                    const dateStr = `${day}${month}${year}`;
                     
-                    while (true) {
-                        const options = { limit: 100 };
-                        if (lastId) options.before = lastId;
+                    const safeUsername = (openerUser ? openerUser.username : `user-${ticket.userId}`).replace(/[^a-zA-Z0-9-_]/g, '');
+                    const fileName = `${safeUsername}-${dateStr}.html`;
 
-                        const fetched = await channel.messages.fetch(options);
-                        if (fetched.size === 0) break;
-
-                        messages.push(...Array.from(fetched.values()));
-                        lastId = fetched.last().id;
-
-                        if (fetched.size !== 100) break;
-                    }
-                    
-                    messages = messages.reverse(); // Oldest first
-
-                    // Prepare Metadata
-                    const ticketInfo = {
-                        guildName: guild.name,
-                        channelName: channel.name,
-                        ticketId: ticket.channelId,
-                        openerId: ticket.userId,
-                        closerTag: user.tag,
-                        date: new Date().toLocaleString('fr-FR'),
-                        guildIconUrl: guild.iconURL({ extension: 'png' })
-                    };
-
-                    // Generate HTML
-                    const htmlContent = generateTranscript(messages, ticketInfo);
-                    
-                    const attachment = new AttachmentBuilder(Buffer.from(htmlContent, 'utf-8'), { name: `transcript-${ticket.channelId}.html` });
+                    // Generate Transcript
+                    const attachment = await generateTranscript(channel, fileName);
 
                     // Clean ID
                     const transChannelId = config.transcriptChannelId.replace(/[<#>]/g, '');
