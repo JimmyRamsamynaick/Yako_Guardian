@@ -3,6 +3,7 @@ const TicketConfig = require('../database/models/TicketConfig');
 const ActiveTicket = require('../database/models/ActiveTicket');
 const { t } = require('../utils/i18n');
 const { createEmbed } = require('../utils/design');
+const { generateTranscript } = require('../utils/transcriptGenerator');
 
 // --- TICKET SETTINGS HANDLER ---
 async function handleTicketSettings(client, interaction) {
@@ -434,21 +435,39 @@ async function handleTicketClose(client, interaction) {
             if (ticket) {
                 const config = await TicketConfig.findOne({ guildId: guild.id });
                 if (config && config.transcriptChannelId) {
-                    let transcript = (await t('ticket_close.transcript_title', guild.id)) + "\n";
-                    transcript += (await t('ticket_close.transcript_id', guild.id, { id: ticket.channelId })) + "\n";
-                    transcript += (await t('ticket_close.transcript_creator', guild.id, { user: ticket.userId })) + "\n";
-                    transcript += (await t('ticket_close.transcript_closed_by', guild.id, { user: user.tag })) + "\n";
-                    transcript += `-------------------------\n\n`;
+                    // Fetch All messages
+                    let messages = [];
+                    let lastId;
+                    
+                    while (true) {
+                        const options = { limit: 100 };
+                        if (lastId) options.before = lastId;
 
-                    const messages = await channel.messages.fetch({ limit: 100 });
-                    messages.reverse().forEach(m => {
-                        transcript += `[${m.createdAt.toLocaleString()}] ${m.author.tag}: ${m.content}\n`;
-                        if (m.attachments.size > 0) {
-                            transcript += `[Attachment] ${m.attachments.first().url}\n`;
-                        }
-                    });
+                        const fetched = await channel.messages.fetch(options);
+                        if (fetched.size === 0) break;
 
-                    const attachment = new AttachmentBuilder(Buffer.from(transcript, 'utf-8'), { name: `transcript-${ticket.channelId}.txt` });
+                        messages.push(...Array.from(fetched.values()));
+                        lastId = fetched.last().id;
+
+                        if (fetched.size !== 100) break;
+                    }
+                    
+                    messages = messages.reverse(); // Oldest first
+
+                    // Prepare Metadata
+                    const ticketInfo = {
+                        guildName: guild.name,
+                        channelName: channel.name,
+                        ticketId: ticket.channelId,
+                        openerId: ticket.userId,
+                        closerTag: user.tag,
+                        date: new Date().toLocaleString('fr-FR')
+                    };
+
+                    // Generate HTML
+                    const htmlContent = generateTranscript(messages, ticketInfo);
+                    
+                    const attachment = new AttachmentBuilder(Buffer.from(htmlContent, 'utf-8'), { name: `transcript-${ticket.channelId}.html` });
 
                     // Clean ID
                     const transChannelId = config.transcriptChannelId.replace(/[<#>]/g, '');

@@ -3,6 +3,7 @@ const TicketConfig = require('../../database/models/TicketConfig');
 const { AttachmentBuilder } = require('discord.js');
 const { t } = require('../../utils/i18n');
 const { createEmbed } = require('../../utils/design');
+const { generateTranscript } = require('../../utils/transcriptGenerator');
 
 module.exports = {
     name: 'close',
@@ -16,20 +17,39 @@ module.exports = {
 
         const reason = args.join(' ') || await t('ticket_close.default_reason', message.guild.id);
 
-        // Transcript generation
-        let transcript = (await t('ticket_close.transcript_title', message.guild.id)) + "\n";
-        transcript += (await t('ticket_close.transcript_id', message.guild.id, { id: ticket.channelId })) + "\n";
-        transcript += (await t('ticket_close.transcript_creator', message.guild.id, { user: ticket.userId })) + "\n";
-        transcript += (await t('ticket_close.transcript_closed_by', message.guild.id, { user: message.author.tag })) + "\n";
-        transcript += (await t('ticket_close.transcript_reason', message.guild.id, { reason: reason })) + "\n";
-        transcript += `-------------------------\n\n`;
+        // Fetch All messages
+        let messages = [];
+        let lastId;
+        
+        while (true) {
+            const options = { limit: 100 };
+            if (lastId) options.before = lastId;
 
-        const messages = await message.channel.messages.fetch({ limit: 100 }); // Simple limit
-        messages.reverse().forEach(m => {
-            transcript += `[${m.createdAt.toLocaleString()}] ${m.author.tag}: ${m.content}\n`;
-        });
+            const fetched = await message.channel.messages.fetch(options);
+            if (fetched.size === 0) break;
 
-        const attachment = new AttachmentBuilder(Buffer.from(transcript, 'utf-8'), { name: `transcript-${ticket.channelId}.txt` });
+            messages.push(...Array.from(fetched.values()));
+            lastId = fetched.last().id;
+
+            if (fetched.size !== 100) break;
+        }
+        
+        messages = messages.reverse(); // Oldest first
+
+        // Prepare Metadata
+        const ticketInfo = {
+            guildName: message.guild.name,
+            channelName: message.channel.name,
+            ticketId: ticket.channelId,
+            openerId: ticket.userId,
+            closerTag: message.author.tag,
+            date: new Date().toLocaleString('fr-FR')
+        };
+
+        // Generate HTML
+        const htmlContent = generateTranscript(messages, ticketInfo);
+        
+        const attachment = new AttachmentBuilder(Buffer.from(htmlContent, 'utf-8'), { name: `transcript-${ticket.channelId}.html` });
 
         // Send to transcript channel
         const config = await TicketConfig.findOne({ guildId: message.guild.id });
