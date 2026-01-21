@@ -461,7 +461,8 @@ async function handleTicketClose(client, interaction) {
                         ticketId: ticket.channelId,
                         openerId: ticket.userId,
                         closerTag: user.tag,
-                        date: new Date().toLocaleString('fr-FR')
+                        date: new Date().toLocaleString('fr-FR'),
+                        guildIconUrl: guild.iconURL({ extension: 'png' })
                     };
 
                     // Generate HTML

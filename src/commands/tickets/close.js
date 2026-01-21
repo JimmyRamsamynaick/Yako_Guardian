@@ -43,7 +43,8 @@ module.exports = {
             ticketId: ticket.channelId,
             openerId: ticket.userId,
             closerTag: message.author.tag,
-            date: new Date().toLocaleString('fr-FR')
+            date: new Date().toLocaleString('fr-FR'),
+            guildIconUrl: message.guild.iconURL({ extension: 'png' })
         };
 
         // Generate HTML
