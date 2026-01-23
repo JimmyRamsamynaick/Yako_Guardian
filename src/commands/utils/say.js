@@ -10,52 +10,67 @@ module.exports = {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
 
         const content = args.join(' ');
-        if (!content) return message.channel.send({ embeds: [createEmbed(await t('say.usage', message.guild.id), '', 'info')] });
+        const attachments = message.attachments.size > 0 ? message.attachments.map(a => a) : [];
+
+        if (!content && attachments.length === 0) return message.channel.send({ embeds: [createEmbed(await t('say.usage', message.guild.id), '', 'info')] });
 
         message.delete().catch(() => {});
         
-        let title = content;
-        let description = '';
+        const payload = { files: attachments };
 
-        // Discord Limit: Title max 256 chars
-        if (content.length > 256) {
-            const firstNewline = content.indexOf('\n');
-            if (firstNewline > -1 && firstNewline <= 256) {
-                title = content.substring(0, firstNewline);
-                description = content.substring(firstNewline + 1);
-            } else {
-                title = ' '; // Use space to keep the icon
-                description = content;
+        if (content) {
+            let title = content;
+            let description = '';
+
+            // Discord Limit: Title max 256 chars
+            if (content.length > 256) {
+                const firstNewline = content.indexOf('\n');
+                if (firstNewline > -1 && firstNewline <= 256) {
+                    title = content.substring(0, firstNewline);
+                    description = content.substring(firstNewline + 1);
+                } else {
+                    title = ' '; // Use space to keep the icon
+                    description = content;
+                }
             }
+
+            // Format Title to replace raw mentions with display names
+            const formatTitle = (text) => {
+                if (!text) return text;
+                
+                // Roles
+                text = text.replace(/<@&(\d+)>/g, (match, id) => {
+                    const role = message.guild.roles.cache.get(id);
+                    return role ? `@${role.name}` : match;
+                });
+                
+                // Users
+                text = text.replace(/<@!?(\d+)>/g, (match, id) => {
+                    const user = message.mentions.users.get(id) || message.guild.members.cache.get(id)?.user || client.users.cache.get(id);
+                    return user ? `@${user.username}` : match;
+                });
+
+                // Channels
+                text = text.replace(/<#(\d+)>/g, (match, id) => {
+                    const channel = message.guild.channels.cache.get(id);
+                    return channel ? `#${channel.name}` : match;
+                });
+                
+                return text;
+            };
+
+            title = formatTitle(title);
+
+            const embedOptions = {};
+            // Check for image attachment to display inside embed
+            const imageAttachment = attachments.find(a => a.contentType && a.contentType.startsWith('image/'));
+            if (imageAttachment) {
+                embedOptions.image = `attachment://${imageAttachment.name}`;
+            }
+
+            payload.embeds = [createEmbed(title, description, 'info', embedOptions)];
         }
 
-        // Format Title to replace raw mentions with display names
-        const formatTitle = (text) => {
-            if (!text) return text;
-            
-            // Roles
-            text = text.replace(/<@&(\d+)>/g, (match, id) => {
-                const role = message.guild.roles.cache.get(id);
-                return role ? `@${role.name}` : match;
-            });
-            
-            // Users
-            text = text.replace(/<@!?(\d+)>/g, (match, id) => {
-                const user = message.mentions.users.get(id) || message.guild.members.cache.get(id)?.user || client.users.cache.get(id);
-                return user ? `@${user.username}` : match;
-            });
-
-            // Channels
-            text = text.replace(/<#(\d+)>/g, (match, id) => {
-                const channel = message.guild.channels.cache.get(id);
-                return channel ? `#${channel.name}` : match;
-            });
-            
-            return text;
-        };
-
-        title = formatTitle(title);
-
-        await message.channel.send({ embeds: [createEmbed(title, description, 'info')] });
+        await message.channel.send(payload);
     }
 };
