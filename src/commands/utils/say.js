@@ -10,13 +10,43 @@ module.exports = {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
 
         const content = args.join(' ');
-        const attachments = message.attachments.size > 0 ? message.attachments.map(a => a) : [];
+        
+        // Determine upload limit based on guild tier
+        // Tier 2: 50MB, Tier 3: 100MB, Others: 25MB
+        let MAX_SIZE = 25 * 1024 * 1024;
+        if (message.guild.premiumTier >= 3) MAX_SIZE = 100 * 1024 * 1024;
+        else if (message.guild.premiumTier >= 2) MAX_SIZE = 50 * 1024 * 1024;
 
-        if (!content && attachments.length === 0) return message.channel.send({ embeds: [createEmbed(await t('say.usage', message.guild.id), '', 'info')] });
+        // Safety margin (1MB)
+        MAX_SIZE -= 1024 * 1024;
+
+        let currentTotalSize = 0;
+        const validAttachments = [];
+        const ignoredAttachments = [];
+
+        if (message.attachments.size > 0) {
+            message.attachments.forEach(a => {
+                if (currentTotalSize + a.size <= MAX_SIZE) {
+                    validAttachments.push(a);
+                    currentTotalSize += a.size;
+                } else {
+                    ignoredAttachments.push(a.name);
+                }
+            });
+        }
+
+        if (!content && validAttachments.length === 0) {
+            if (ignoredAttachments.length > 0) {
+                return message.channel.send({ 
+                    embeds: [createEmbed('Erreur', `Les fichiers suivants sont trop volumineux pour être envoyés (Limite serveur : ~${Math.round(MAX_SIZE / 1024 / 1024)}MB) : ${ignoredAttachments.join(', ')}`, 'error')] 
+                });
+            }
+            return message.channel.send({ embeds: [createEmbed(await t('say.usage', message.guild.id), '', 'info')] });
+        }
 
         message.delete().catch(() => {});
         
-        const payload = { files: attachments };
+        const payload = { files: validAttachments };
 
         if (content) {
             let title = content;
@@ -63,7 +93,7 @@ module.exports = {
 
             const embedOptions = {};
             // Check for image attachment to display inside embed
-            const imageAttachment = attachments.find(a => a.contentType && a.contentType.startsWith('image/'));
+            const imageAttachment = validAttachments.find(a => a.contentType && a.contentType.startsWith('image/'));
             if (imageAttachment) {
                 embedOptions.image = `attachment://${imageAttachment.name}`;
             }
