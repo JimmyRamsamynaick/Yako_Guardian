@@ -20,11 +20,12 @@ module.exports = {
             if (!await isBotOwner(message.author.id)) return;
             
             const guilds = client.guilds.cache.map(g => `• ${g.name} | ${g.memberCount} membres | ID: ${g.id}`).join('\n');
+            const title = await t('server.list_title', message.guild.id, { count: client.guilds.cache.size });
             
-            if (guilds.length > 1900) {
-                 return message.channel.send({ embeds: [createEmbed((await t('server.list_title', message.guild.id, { count: client.guilds.cache.size })) + `\n${guilds.slice(0, 1900)}...`, '', 'info')] });
+            if (guilds.length > 4000) {
+                 return message.channel.send({ embeds: [createEmbed(title, `${guilds.slice(0, 4000)}...`, 'info')] });
             }
-            return message.channel.send({ embeds: [createEmbed((await t('server.list_title', message.guild.id, { count: client.guilds.cache.size })) + `\n${guilds}`, '', 'info')] });
+            return message.channel.send({ embeds: [createEmbed(title, guilds, 'info')] });
         }
 
         if (sub === 'pic' || sub === 'icon') {
