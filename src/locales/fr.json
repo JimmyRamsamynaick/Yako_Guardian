@@ -332,15 +332,6 @@
         "already_claimed": "❌ Ce ticket est déjà pris en charge par <@{{user}}>.",
         "success": "Ticket pris en charge par <@{{user}}>."
     },
-    "ticket_close": {
-        "not_ticket": "❌ Ce salon n'est pas un ticket actif.",
-        "default_reason": "Aucune raison spécifiée",
-        "closing": "🔒 Fermeture du ticket...",
-        "log_title": "Ticket Fermé",
-        "log_ticket": "Ticket",
-        "log_closed_by": "Fermé par",
-        "log_reason": "Raison"
-    },
     "ticket_rename": {
         "not_ticket": "❌ Ce salon n'est pas un ticket actif.",
         "usage": "**Usage:** `+rename <nouveau-nom>`",

@@ -464,13 +464,30 @@ async function handleTicketClose(client, interaction) {
                     const transChannel = await guild.channels.fetch(transChannelId).catch(() => null);
 
                     if (transChannel) {
+                        const { EmbedBuilder } = require('discord.js');
+                        const logEmbed = new EmbedBuilder()
+                            .setTitle(await t('ticket_close.log_title', guild.id) || 'Ticket Fermé')
+                            .setColor('#f04747')
+                            .addFields(
+                                { name: '🎫 Ticket', value: channel.name, inline: true },
+                                { name: '👤 Ouvert par', value: `<@${ticket.userId}>`, inline: true },
+                                { name: '🔒 Fermé par', value: `<@${user.id}>`, inline: true },
+                                { name: '📝 Raison', value: await t('ticket_close.default_reason', guild.id), inline: false }
+                            )
+                            .setTimestamp()
+                            .setFooter({ text: guild.name, iconURL: guild.iconURL() });
+
                         await transChannel.send({
-                            content: (await t('ticket_close.log_title', guild.id)) + `\n` +
-                                     (await t('ticket_close.log_ticket', guild.id, { name: channel.name })) + `\n` +
-                                     (await t('ticket_close.log_closed_by', guild.id, { user: `<@${user.id}>` })),
+                            embeds: [logEmbed],
                             files: [attachment]
                         });
                     }
+                }
+                
+                // Send DM to user
+                const openerUser = await client.users.fetch(ticket.userId).catch(() => null);
+                if (openerUser) {
+                    openerUser.send(await t('modmail.ticket_closed_dm', guild.id, { server: guild.name })).catch(() => {});
                 }
             }
         } catch (e) {
