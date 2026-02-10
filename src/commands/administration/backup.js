@@ -42,7 +42,7 @@ module.exports = {
                     'loading'
                 )] });
                 
-                await createBackup(message.guild, name);
+                await createBackup(message.guild, name, message.author.id);
                 
                 return loadingMsg.edit({ embeds: [createEmbed(
                     await t('backup.create_success', message.guild.id, { name: name }),
@@ -52,7 +52,13 @@ module.exports = {
             }
 
             if (sub === 'list') {
-                const backups = await Backup.find({ guild_id: message.guild.id });
+                const backups = await Backup.find({ 
+                    $or: [
+                        { guild_id: message.guild.id },
+                        { owner_id: message.author.id }
+                    ]
+                });
+                
                 if (backups.length === 0) {
                     return message.channel.send({ embeds: [createEmbed(
                         await t('backup.list_empty', message.guild.id),
@@ -61,7 +67,12 @@ module.exports = {
                     )] });
                 }
 
-                const list = backups.map(b => `• **${b.name}** (${new Date(b.created_at).toLocaleDateString()})`).join('\n');
+                const list = backups.map(b => {
+                    const isLocal = b.guild_id === message.guild.id;
+                    const sourceIcon = isLocal ? '🏠' : '🌍';
+                    return `• ${sourceIcon} **${b.name}** (${new Date(b.created_at).toLocaleDateString()})`;
+                }).join('\n');
+
                 return message.channel.send({ embeds: [createEmbed(
                     await t('backup.list_title', message.guild.id),
                     list,
@@ -76,7 +87,11 @@ module.exports = {
                     'error'
                 )] });
                 
-                const backup = await Backup.findOne({ guild_id: message.guild.id, name: name });
+                let backup = await Backup.findOne({ guild_id: message.guild.id, name: name });
+                if (!backup) {
+                    backup = await Backup.findOne({ owner_id: message.author.id, name: name });
+                }
+
                 if (!backup) return message.channel.send({ embeds: [createEmbed(
                     await t('backup.not_found', message.guild.id, { name: name }),
                     '',
@@ -112,7 +127,11 @@ module.exports = {
                     'error'
                 )] });
 
-                const backup = await Backup.findOne({ guild_id: message.guild.id, name: name });
+                let backup = await Backup.findOne({ guild_id: message.guild.id, name: name });
+                if (!backup) {
+                    backup = await Backup.findOne({ owner_id: message.author.id, name: name });
+                }
+
                 if (!backup) return message.channel.send({ embeds: [createEmbed(
                     await t('backup.not_found', message.guild.id, { name: name }),
                     '',

@@ -303,7 +303,7 @@ async function handleBackup(client, interaction) {
 
         try {
             await interaction.update({ embeds: [createEmbed(await t('handlers.backup_loading', interaction.guild.id), '', 'loading')], components: [] });
-            await loadBackup(interaction.guild, name);
+            await loadBackup(interaction.guild, name, interaction.user.id);
             await interaction.editReply({ embeds: [createEmbed(await t('handlers.backup_loaded', interaction.guild.id, { name }), '', 'success')] });
         } catch (error) {
             console.error(error);
@@ -323,7 +323,13 @@ async function handleBackup(client, interaction) {
 
         try {
             await interaction.update({ embeds: [createEmbed(await t('handlers.backup_deleted', interaction.guild.id, { name }), '', 'success')], components: [] });
-            await Backup.deleteOne({ guild_id: interaction.guild.id, name: name });
+            
+            // Try delete local first
+            const res = await Backup.deleteOne({ guild_id: interaction.guild.id, name: name });
+            // If not found locally, try delete global
+            if (res.deletedCount === 0) {
+                await Backup.deleteOne({ owner_id: interaction.user.id, name: name });
+            }
         } catch (error) {
             console.error(error);
             await interaction.editReply({ embeds: [createEmbed(await t('handlers.backup_delete_error', interaction.guild.id, { error: error.message }), '', 'error')] });

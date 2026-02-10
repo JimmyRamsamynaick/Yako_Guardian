@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const BackupSchema = new mongoose.Schema({
     guild_id: { type: String, required: true },
+    owner_id: { type: String, required: false }, // User ID of the creator
     name: { type: String, required: true },
     created_at: { type: Date, default: Date.now },
     data: {

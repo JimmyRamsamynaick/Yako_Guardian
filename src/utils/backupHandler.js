@@ -155,21 +155,32 @@ async function applyBackupData(guild, data) {
     }
 }
 
-async function createBackup(guild, name) {
+async function createBackup(guild, name, userId) {
     const backupData = await getBackupData(guild);
     
     // Save to DB
     await Backup.findOneAndUpdate(
         { guild_id: guild.id, name: name },
-        { data: backupData, created_at: Date.now() },
+        { 
+            data: backupData, 
+            created_at: Date.now(),
+            owner_id: userId // Save owner ID
+        },
         { upsert: true, new: true }
     );
 
     return true;
 }
 
-async function loadBackup(guild, name) {
-    const backupDoc = await Backup.findOne({ guild_id: guild.id, name: name });
+async function loadBackup(guild, name, userId) {
+    // Try to find in current guild first
+    let backupDoc = await Backup.findOne({ guild_id: guild.id, name: name });
+    
+    // If not found, try to find in user's global backups
+    if (!backupDoc && userId) {
+        backupDoc = await Backup.findOne({ owner_id: userId, name: name });
+    }
+
     if (!backupDoc) throw new Error('Backup not found');
     await applyBackupData(guild, backupDoc.data);
 }
