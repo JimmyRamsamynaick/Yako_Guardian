@@ -1097,7 +1097,7 @@
             "configuration": "__**⚙️ Configuration**__\n\n`{{prefix}}config` - *Show current configuration*\n`{{prefix}}set <type> <value>` - *Modify an option*\n`{{prefix}}remove <perm/activity>` - *Remove config*\n`{{prefix}}prefix <new>` - *Change bot prefix*\n`{{prefix}}lang <fr/en/custom>` - *Change bot language*\n`{{prefix}}helptype <button/select/hybrid>` - *Change help menu style*\n`{{prefix}}perms <set/del/reset>` - *Manage permission levels*\n`{{prefix}}wl <add/remove/list>` - *Manage whitelist*\n`{{prefix}}blrank <on/off>` - *Manage blacklist rank*\n`{{prefix}}theme <#HexColor>` - *Change embed color*\n`{{prefix}}creation limit <time>` - *Limit account creation*\n`{{prefix}}alias <add/remove>` - *Manage aliases*\n`{{prefix}}clearperms` - *Reset permissions*\n`{{prefix}}change <cmd> <perm>` - *Manage command permissions*",
             "custom": "__**🎨 Custom Commands**__\n\n`{{prefix}}custom <name> <response>` - *Create command*\n`{{prefix}}autoreact <add/remove> <emoji>` - *Auto reaction*\n`{{prefix}}button <text>` - *Create button*\n`{{prefix}}clearcustoms` - *Clear all*\n`{{prefix}}customlist` - *List commands*",
             "general": "__**📌 General**__\n\n`{{prefix}}help` - *Help menu*\n`{{prefix}}helpall` - *All commands*\n`{{prefix}}buy` - *Buy*\n`{{prefix}}subscription` - *Subscription*",
-            "moderation": "__**🔨 Moderation**__\n\n`{{prefix}}slowmode <time>` - *Slowmode*\n`{{prefix}}autodelete <time>` - *Auto delete*",
+            "moderation": "__**🔨 Moderation**__\n\n`{{prefix}}clear <nb>` - *Delete messages*\n`{{prefix}}warn <user>` - *Warn member*\n`{{prefix}}mute <user>` - *Mute*\n`{{prefix}}unmute <user>` - *Unmute*\n`{{prefix}}tempmute <user>` - *Temp mute*\n`{{prefix}}kick <user>` - *Kick*\n`{{prefix}}ban <user>` - *Ban*\n`{{prefix}}unban <user>` - *Unban*\n`{{prefix}}banlist` - *Banned members list*\n`{{prefix}}tempban <user>` - *Temp ban*\n`{{prefix}}cmute <user>` - *Channel mute*\n`{{prefix}}tempcmute <user>` - *Temp channel mute*\n`{{prefix}}uncmute <user>` - *Unmute channel*\n`{{prefix}}slowmode <time>` - *Slowmode*\n`{{prefix}}autodelete <time>` - *Auto delete*",
             "modmail": "__**📨 Modmail**__\n\n`{{prefix}}modmail <open/close>` - *Manage modmail*\n`{{prefix}}report <member> <reason>` - *Report member*\n`{{prefix}}formulaire` - *Configure form*\n`{{prefix}}openmodmail` - *Open ticket*",
             "notifications": "__**🔔 Notifications**__\n\n`{{prefix}}join <channel> <message>` - *Welcome message*\n`{{prefix}}leave <channel> <message>` - *Leave message*\n`{{prefix}}twitch <channel> <streamer>` - *Twitch alert*",
             "owner": "__**👑 Owner**__\n\n`{{prefix}}owner <add/remove> <user>` - *Manage owners*\n`{{prefix}}genkey <duration>` - *Generate key*\n`{{prefix}}servers` - *Server list*\n`{{prefix}}leave` - *Leave server*\n`{{prefix}}mp <user> <message>` - *DM member*\n`{{prefix}}bl <user>` - *Global blacklist*\n`{{prefix}}invite` - *Invite bot*\n`{{prefix}}reset` - *Reset server*\n`{{prefix}}update` - *Update*\n`{{prefix}}globalset <opt> <val>` - *Global config*\n`{{prefix}}activity <type> <txt>` - *Activity*\n`{{prefix}}stream <txt>` - *Change bot activity (Streaming...)*\n`{{prefix}}compet <text>` - *Activity Competing*\n`{{prefix}}dnd` - *Status DND*\n`{{prefix}}idle` - *Status Idle*\n`{{prefix}}invisible` - *Status Invisible*\n`{{prefix}}online` - *Status Online*\n`{{prefix}}listen <text>` - *Activity Listening*\n`{{prefix}}playto <text>` - *Activity Playing*\n`{{prefix}}watch <text>` - *Activity Watching*",
@@ -1154,6 +1154,14 @@
     "ban": {
         "description": "Bans a member",
         "usage": "**Usage:** `+ban <user> [reason]`"
+    },
+    "banlist": {
+        "description": "Shows the list of banned members on the server",
+        "usage": "**Usage:** `+banlist`",
+        "title": "Banned Members",
+        "total": "Total: {{count}} bans",
+        "empty": "There are no banned members on this server.",
+        "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Reason:** {{reason}}\n**Date:** {{date}}\n"
     },
 
     "punition": {

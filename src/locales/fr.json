@@ -1530,7 +1530,7 @@
             "configuration": "__**⚙️ Configuration**__\n\n`{{prefix}}config` - *Affiche la configuration actuelle*\n`{{prefix}}set <type> <valeur>` - *Modifie une option*\n`{{prefix}}set levels <on/off>` - *Activer/Désactiver niveaux*\n`{{prefix}}remove <perm/activity>` - *Supprimer config*\n`{{prefix}}prefix <nouveau>` - *Change le préfixe*\n`{{prefix}}lang <fr/en/custom>` - *Change la langue*\n`{{prefix}}helptype <button/select/hybrid>` - *Style menu aide*\n`{{prefix}}perms <set/del/reset>` - *Permissions par niveau*\n`{{prefix}}wl <add/remove/list>` - *Whitelist*\n`{{prefix}}blrank <on/off>` - *Blacklist rank*\n`{{prefix}}theme <#HexColor>` - *Couleur embeds*\n`{{prefix}}creation limit <temps>` - *Limite création*\n`{{prefix}}alias <add/remove>` - *Gérer alias*\n`{{prefix}}clearperms` - *Reset permissions*\n`{{prefix}}change <cmd> <perm>` - *Gérer permissions commande*",
             "custom": "__**🎨 Commandes Perso**__\n\n`{{prefix}}custom <nom> <réponse>` - *Créer commande*\n`{{prefix}}autoreact <add/remove> <emoji>` - *Auto réaction*\n`{{prefix}}button <texte>` - *Créer bouton*\n`{{prefix}}clearcustoms` - *Tout supprimer*\n`{{prefix}}customlist` - *Liste commandes*",
             "general": "__**📌 Général**__\n\n`{{prefix}}help` - *Menu d'aide*\n`{{prefix}}helpall` - *Toutes les commandes*\n`{{prefix}}buy` - *Acheter*\n`{{prefix}}subscription` - *Abonnement*",
-            "moderation": "__**🔨 Modération**__\n\n`{{prefix}}clear <nb>` - *Supprimer messages*\n`{{prefix}}warn <user>` - *Avertir*\n`{{prefix}}mute <user>` - *Mute*\n`{{prefix}}unmute <user>` - *Unmute*\n`{{prefix}}tempmute <user>` - *Mute temp*\n`{{prefix}}kick <user>` - *Expulser*\n`{{prefix}}ban <user>` - *Bannir*\n`{{prefix}}unban <user>` - *Débannir*\n`{{prefix}}tempban <user>` - *Ban temp*\n`{{prefix}}cmute <user>` - *Mute salon*\n`{{prefix}}tempcmute <user>` - *Mute salon temp*\n`{{prefix}}uncmute <user>` - *Unmute salon*\n`{{prefix}}slowmode <temps>` - *Mode lent*\n`{{prefix}}autodelete <temps>` - *Auto suppression*",
+            "moderation": "__**🔨 Modération**__\n\n`{{prefix}}clear <nb>` - *Supprimer messages*\n`{{prefix}}warn <user>` - *Avertir*\n`{{prefix}}mute <user>` - *Mute*\n`{{prefix}}unmute <user>` - *Unmute*\n`{{prefix}}tempmute <user>` - *Mute temp*\n`{{prefix}}kick <user>` - *Expulser*\n`{{prefix}}ban <user>` - *Bannir*\n`{{prefix}}unban <user>` - *Débannir*\n`{{prefix}}banlist` - *Liste des bannis*\n`{{prefix}}tempban <user>` - *Ban temp*\n`{{prefix}}cmute <user>` - *Mute salon*\n`{{prefix}}tempcmute <user>` - *Mute salon temp*\n`{{prefix}}uncmute <user>` - *Unmute salon*\n`{{prefix}}slowmode <temps>` - *Mode lent*\n`{{prefix}}autodelete <temps>` - *Auto suppression*",
             "modmail": "__**📨 Modmail**__\n\n`{{prefix}}modmail <open/close>` - *Gérer modmail*\n`{{prefix}}report <membre> <raison>` - *Signaler membre*\n`{{prefix}}formulaire` - *Configurer formulaire*\n`{{prefix}}openmodmail` - *Ouvrir ticket*",
             "notifications": "__**🔔 Notifications**__\n\n`{{prefix}}join <salon> <message>` - *Message bienvenue*\n`{{prefix}}leave <salon> <message>` - *Message départ*\n`{{prefix}}twitch <salon> <streamer>` - *Alerte Twitch*",
             "owner": "__**👑 Owner**__\n\n`{{prefix}}owner <add/remove> <user>` - *Gérer owners*\n`{{prefix}}genkey <durée>` - *Générer clé*\n`{{prefix}}servers` - *Liste serveurs*\n`{{prefix}}leaveserver` - *Quitter serveur*\n`{{prefix}}mp <user> <message>` - *DM membre*\n`{{prefix}}bl <user>` - *Blacklist globale*\n`{{prefix}}invite` - *Inviter bot*\n`{{prefix}}reset` - *Reset serveur*\n`{{prefix}}update` - *Mise à jour*\n`{{prefix}}globalset <opt> <val>` - *Config globale*\n`{{prefix}}activity <type> <txt>` - *Activité*\n`{{prefix}}stream <txt>` - *Change l'activité du bot (Streame...)*\n`{{prefix}}compet <texte>` - *Activité Participe*\n`{{prefix}}dnd` - *Statut NPD*\n`{{prefix}}idle` - *Statut Inactif*\n`{{prefix}}invisible` - *Statut Invisible*\n`{{prefix}}online` - *Statut En ligne*\n`{{prefix}}listen <texte>` - *Activité Écoute*\n`{{prefix}}playto <texte>` - *Activité Joue*\n`{{prefix}}watch <texte>` - *Activité Regarde*",
@@ -1567,6 +1567,14 @@
     "ban": {
         "description": "Bannit un membre",
         "usage": "**Utilisation:** `+ban <user> [raison]`"
+    },
+    "banlist": {
+        "description": "Affiche la liste des membres bannis du serveur",
+        "usage": "**Utilisation:** `+banlist`",
+        "title": "Membres Bannis",
+        "total": "Total: {{count}} bannissements",
+        "empty": "Il n'y a aucun membre banni sur ce serveur.",
+        "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Raison:** {{reason}}\n**Date:** {{date}}\n"
     },
 
 
