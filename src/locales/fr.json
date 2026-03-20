@@ -744,8 +744,12 @@
         "usage": "**Utilisation:** `+strikes <user>`"
     },
     "banlist": {
-        "description": "Affiche la liste des membres bannis",
-        "usage": "**Utilisation:** `+banlist`"
+        "description": "Affiche la liste des membres bannis du serveur",
+        "usage": "**Utilisation:** `+banlist`",
+        "title": "Membres Bannis",
+        "total": "Total: {{count}} bannissements",
+        "empty": "Il n'y a aucun membre banni sur ce serveur.",
+        "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Raison:** {{reason}}\n**Date:** {{date}}\n"
     },
     "mutelist": {
         "description": "Affiche la liste des membres mutés",

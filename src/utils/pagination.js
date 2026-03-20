@@ -16,7 +16,14 @@ async function createPagination(client, message, items, itemsPerPage = 10, title
         const start = p * itemsPerPage;
         const end = start + itemsPerPage;
         const currentItems = items.slice(start, end);
-        const list = currentItems.map((item, i) => formatter(item, start + i + 1)).join('\n');
+        
+        const listItems = [];
+        for (let i = 0; i < currentItems.length; i++) {
+            const formatted = await formatter(currentItems[i], start + i + 1);
+            listItems.push(formatted);
+        }
+        
+        const list = listItems.join('\n');
         
         return createEmbed(
             `${title} (${await t('common.page', message.guild.id)} ${p + 1}/${maxPages})`,

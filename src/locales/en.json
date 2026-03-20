@@ -311,8 +311,12 @@
     },
 
     "banlist": {
-        "description": "Display the list of banned members",
-        "usage": "**Usage:** `+banlist`"
+        "description": "Shows the list of banned members on the server",
+        "usage": "**Usage:** `+banlist`",
+        "title": "Banned Members",
+        "total": "Total: {{count}} bans",
+        "empty": "There are no banned members on this server.",
+        "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Reason:** {{reason}}\n**Date:** {{date}}\n"
     },
     "mutelist": {
         "description": "Display the list of muted members",

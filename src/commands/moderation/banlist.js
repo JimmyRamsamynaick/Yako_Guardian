@@ -59,13 +59,14 @@ module.exports = {
                 5, 
                 await t('banlist.title', message.guild.id),
                 async (item, index) => {
-                    return await t('banlist.item', message.guild.id, {
+                    const line = await t('banlist.item', message.guild.id, {
                         index,
                         user: item.user,
                         id: item.id,
                         reason: item.reason,
                         date: item.date
                     });
+                    return line;
                 }
             );
 
