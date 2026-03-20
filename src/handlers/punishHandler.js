@@ -46,23 +46,23 @@ async function handlePunishInteraction(client, interaction) {
     else if (customId === 'punish_add_threshold') {
         const modal = new ModalBuilder()
             .setCustomId('punish_modal_add_threshold')
-            .setTitle(await t('moderation.punish_title', guildId));
+            .setTitle(await t('punish_panel.title', guildId));
 
         const countInput = new TextInputBuilder()
             .setCustomId('count')
-            .setLabel("Nombre de flags (ex: 5)")
+            .setLabel(await t('punish_panel.modal_count_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         const actionInput = new TextInputBuilder()
             .setCustomId('action')
-            .setLabel("Action (warn/mute/timeout/kick/ban)")
+            .setLabel(await t('punish_panel.modal_action_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         const durationInput = new TextInputBuilder()
             .setCustomId('duration')
-            .setLabel("Durée (ex: 1h, 1d) - Pour mute/timeout")
+            .setLabel(await t('punish_panel.modal_duration_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(false);
 
@@ -94,23 +94,23 @@ async function handlePunishInteraction(client, interaction) {
     else if (customId === 'punish_add_flag') {
         const modal = new ModalBuilder()
             .setCustomId('punish_modal_add_flag')
-            .setTitle(await t('flags.title', guildId));
+            .setTitle(await t('punish_panel.flags_title', guildId));
 
         const typeInput = new TextInputBuilder()
             .setCustomId('type')
-            .setLabel("Type (link/spam/everyone/mention/caps/...)")
+            .setLabel(await t('punish_panel.modal_type_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         const actionInput = new TextInputBuilder()
             .setCustomId('action')
-            .setLabel("Action (warn/mute/timeout/kick/ban)")
+            .setLabel(await t('punish_panel.modal_action_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         const valueInput = new TextInputBuilder()
             .setCustomId('value')
-            .setLabel("Valeur (Flags si warn, Durée si mute/timeout)")
+            .setLabel(await t('punish_panel.modal_value_label', guildId))
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
@@ -140,7 +140,7 @@ async function handlePunishInteraction(client, interaction) {
             const action = interaction.fields.getTextInputValue('action').toLowerCase();
             const durationStr = interaction.fields.getTextInputValue('duration');
 
-            if (isNaN(count)) return interaction.reply({ content: "Nombre invalide", ephemeral: true });
+            if (isNaN(count)) return interaction.reply({ content: await t('punish_panel.invalid_count', guildId), ephemeral: true });
             
             let duration = null;
             if (durationStr) {
@@ -186,35 +186,37 @@ async function handlePunishInteraction(client, interaction) {
 
 async function generatePunishEmbed(guildId, config) {
     return createEmbed(
-        "⚖️ Panel de Punitions & Flags",
-        "Bienvenue dans le gestionnaire de sanctions automatiques.\n\n" +
-        "• **Seuils (Thresholds)** : Définissez quelle sanction appliquer quand un membre atteint un certain nombre de flags.\n" +
-        "• **Flags** : Définissez combien de flags (ou quelle sanction) donner pour chaque type d'infraction.",
+        await t('punish_panel.title', guildId),
+        await t('punish_panel.main_desc', guildId),
         'primary'
     );
 }
 
 async function generatePunishComponents(guildId, config) {
     const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('punish_manage_thresholds').setLabel('Gérer les Seuils').setStyle(ButtonStyle.Primary).setEmoji('⚖️'),
-        new ButtonBuilder().setCustomId('punish_manage_flags').setLabel('Gérer les Flags').setStyle(ButtonStyle.Success).setEmoji('🚩')
+        new ButtonBuilder().setCustomId('punish_manage_thresholds').setLabel(await t('punish_panel.btn_thresholds', guildId)).setStyle(ButtonStyle.Primary).setEmoji('⚖️'),
+        new ButtonBuilder().setCustomId('punish_manage_flags').setLabel(await t('punish_panel.btn_flags', guildId)).setStyle(ButtonStyle.Success).setEmoji('🚩')
     );
     return [row];
 }
 
 async function generateThresholdsEmbed(guildId, config) {
     const list = (config.moderation?.strikes?.punishments || []).sort((a, b) => a.count - b.count);
-    let desc = "### ⚖️ Seuils de Sanctions Globaux\n\n";
+    let desc = await t('punish_panel.thresholds_desc', guildId);
     
-    if (list.length === 0) desc += "*Aucun seuil configuré.*";
+    if (list.length === 0) desc += await t('punish_panel.no_thresholds', guildId);
     else {
-        list.forEach(p => {
+        for (const p of list) {
             const dur = p.duration ? ` (${ms(p.duration)})` : "";
-            desc += `• **${p.count} flags** : \`${p.action.toUpperCase()}\`${dur}\n`;
-        });
+            desc += await t('punish_panel.threshold_item', guildId, {
+                count: p.count,
+                action: p.action.toUpperCase(),
+                duration: dur
+            }) + "\n";
+        }
     }
 
-    return createEmbed("Configuration des Seuils", desc, 'primary');
+    return createEmbed(await t('punish_panel.thresholds_title', guildId), desc, 'primary');
 }
 
 async function generateThresholdsComponents(guildId, config) {
@@ -222,15 +224,15 @@ async function generateThresholdsComponents(guildId, config) {
     const rows = [];
 
     const btnRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('punish_add_threshold').setLabel('Ajouter un Seuil').setStyle(ButtonStyle.Success).setEmoji('➕'),
-        new ButtonBuilder().setCustomId('punish_panel_main').setLabel('Retour').setStyle(ButtonStyle.Secondary).setEmoji('⬅️')
+        new ButtonBuilder().setCustomId('punish_add_threshold').setLabel(await t('punish_panel.btn_add_threshold', guildId)).setStyle(ButtonStyle.Success).setEmoji('➕'),
+        new ButtonBuilder().setCustomId('punish_panel_main').setLabel(await t('punish_panel.btn_back', guildId)).setStyle(ButtonStyle.Secondary).setEmoji('⬅️')
     );
     rows.push(btnRow);
 
     if (list.length > 0) {
         const select = new StringSelectMenuBuilder()
             .setCustomId('punish_select_del_threshold')
-            .setPlaceholder('Supprimer un seuil...')
+            .setPlaceholder(await t('punish_panel.select_del_threshold', guildId))
             .addOptions(list.map(p => ({
                 label: `${p.count} Flags -> ${p.action.toUpperCase()}`,
                 value: p.count.toString()
@@ -243,18 +245,23 @@ async function generateThresholdsComponents(guildId, config) {
 
 async function generateFlagsEmbed(guildId, config) {
     const list = (config.moderation?.flags || []);
-    let desc = "### 🚩 Configuration des Flags par Infraction\n\n";
+    let desc = await t('punish_panel.flags_desc', guildId);
     
-    if (list.length === 0) desc += "*Aucun flag configuré.*";
+    if (list.length === 0) desc += await t('punish_panel.no_flags', guildId);
     else {
-        list.forEach(f => {
+        for (const f of list) {
             const val = f.action === 'warn' ? `${f.amount} flags` : (f.duration ? ms(f.duration) : "-");
             const status = f.enabled ? "✅" : "❌";
-            desc += `${status} **${f.type.toUpperCase()}** : \`${f.action}\` (${val})\n`;
-        });
+            desc += await t('punish_panel.flag_item', guildId, {
+                status,
+                type: f.type.toUpperCase(),
+                action: f.action,
+                value: val
+            }) + "\n";
+        }
     }
 
-    return createEmbed("Configuration des Flags", desc, 'success');
+    return createEmbed(await t('punish_panel.flags_title', guildId), desc, 'success');
 }
 
 async function generateFlagsComponents(guildId, config) {
@@ -262,15 +269,15 @@ async function generateFlagsComponents(guildId, config) {
     const rows = [];
 
     const btnRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('punish_add_flag').setLabel('Ajouter/Modifier un Flag').setStyle(ButtonStyle.Success).setEmoji('➕'),
-        new ButtonBuilder().setCustomId('punish_panel_main').setLabel('Retour').setStyle(ButtonStyle.Secondary).setEmoji('⬅️')
+        new ButtonBuilder().setCustomId('punish_add_flag').setLabel(await t('punish_panel.btn_add_flag', guildId)).setStyle(ButtonStyle.Success).setEmoji('➕'),
+        new ButtonBuilder().setCustomId('punish_panel_main').setLabel(await t('punish_panel.btn_back', guildId)).setStyle(ButtonStyle.Secondary).setEmoji('⬅️')
     );
     rows.push(btnRow);
 
     if (list.length > 0) {
         const select = new StringSelectMenuBuilder()
             .setCustomId('punish_select_del_flag')
-            .setPlaceholder('Supprimer un flag...')
+            .setPlaceholder(await t('punish_panel.select_del_flag', guildId))
             .addOptions(list.map(f => ({
                 label: `${f.type.toUpperCase()} -> ${f.action.toUpperCase()}`,
                 value: f.type
