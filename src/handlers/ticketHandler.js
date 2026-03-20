@@ -108,6 +108,88 @@ async function handleTicketModal(client, interaction) {
         await config.save();
         await updateTicketDashboard(client, interaction, config);
     }
+    else if (sub.startsWith('create')) {
+        const reason = fields.getTextInputValue('reason');
+        const catIndexStr = customId.split('_').pop();
+        
+        let categoryConfig = null;
+        if (catIndexStr !== 'default') {
+            const index = parseInt(catIndexStr);
+            categoryConfig = config.categories[index];
+        }
+
+        const parentId = categoryConfig ? categoryConfig.categoryId : config.categoryId;
+        const staffRoles = (categoryConfig && categoryConfig.staffRoles && categoryConfig.staffRoles.length > 0) ? categoryConfig.staffRoles : (config.staffRoles || []);
+
+        config.ticketCount = (config.ticketCount || 0) + 1;
+        await config.save();
+
+        await interaction.deferReply({ ephemeral: true });
+
+        const ticketName = config.namingScheme.replace('{username}', interaction.user.username).replace('{count}', config.ticketCount);
+
+        try {
+            const ticketChannel = await guild.channels.create({
+                name: ticketName,
+                type: ChannelType.GuildText,
+                parent: parentId,
+                permissionOverwrites: [
+                    {
+                        id: guild.id,
+                        deny: [PermissionsBitField.Flags.ViewChannel]
+                    },
+                    {
+                        id: interaction.user.id,
+                        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles]
+                    },
+                    {
+                        id: client.user.id,
+                        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageChannels]
+                    },
+                    ...staffRoles.map(roleId => ({
+                        id: roleId,
+                        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
+                    }))
+                ]
+            });
+
+            await ActiveTicket.create({
+                guildId: guild.id,
+                channelId: ticketChannel.id,
+                userId: interaction.user.id,
+                ticketType: 'ticket'
+            });
+
+            const welcomeDescription = categoryConfig?.welcomeMessage || await t('tickets.handler.ticket_welcome', guildId, { user: interaction.user.toString() });
+            
+            const embed = createEmbed(
+                await t('tickets.panel.title', guildId), 
+                welcomeDescription,
+                'default'
+            )
+                .setColor(client.config.color || '#2b2d31')
+                .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+                .addFields(
+                    { name: '👤 ' + (await t('tickets.handler.created_by', guildId) || 'Créé par'), value: interaction.user.toString(), inline: true },
+                    { name: '🏷️ ' + (await t('tickets.handler.category', guildId) || 'Catégorie'), value: categoryConfig?.label || 'Défaut', inline: true },
+                    { name: '📅 ' + (await t('tickets.handler.date', guildId) || 'Date'), value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true },
+                    { name: await t('tickets.handler.ticket_desc_title', guildId), value: '```' + reason + '```', inline: false }
+                );
+            
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('ticket_close_confirm').setLabel(await t('tickets.handler.btn_close', guildId)).setStyle(ButtonStyle.Danger).setEmoji('🔒'),
+                new ButtonBuilder().setCustomId('ticket_claim').setLabel(await t('tickets.handler.btn_claim', guildId)).setStyle(ButtonStyle.Success).setEmoji('🙋‍♂️')
+            );
+
+            await ticketChannel.send({ content: `${interaction.user.toString()} ${staffRoles.map(r => `<@&${r}>`).join(' ')}`, embeds: [embed], components: [row] });
+
+            await interaction.editReply({ embeds: [createEmbed(await t('tickets.panel.created', guildId, { channel: ticketChannel.toString() }), '', 'success')] });
+
+        } catch (error) {
+            console.error(error);
+            await interaction.editReply({ embeds: [createEmbed(await t('tickets.panel.error_create', guildId), '', 'error')] });
+        }
+    }
     else if (sub === 'role') {
         const roles = fields.getTextInputValue('role_id').split(',').map(r => r.trim()).filter(r => r);
         config.staffRoles = roles;
@@ -276,97 +358,37 @@ async function handleTicketCreate(client, interaction) {
     if (!config) return interaction.reply({ embeds: [createEmbed(await t('tickets.handler.error_not_configured', guildId), '', 'error')], ephemeral: true });
 
     let categoryConfig = null;
+    let categoryIndex = 'default';
     
     // Determine Category
     if (customId === 'ticket_create_select') {
-        const index = parseInt(values[0].replace('cat_', ''));
-        categoryConfig = config.categories[index];
+        categoryIndex = values[0].replace('cat_', '');
+        if (categoryIndex !== 'default') {
+            categoryConfig = config.categories[parseInt(categoryIndex)];
+        }
     } else if (customId.startsWith('ticket_create_')) {
-        const suffix = customId.replace('ticket_create_', '');
-        if (suffix === 'default') {
-             // Fallback if no categories
-        } else {
-             const index = parseInt(suffix);
-             categoryConfig = config.categories[index];
+        categoryIndex = customId.replace('ticket_create_', '');
+        if (categoryIndex !== 'default') {
+             categoryConfig = config.categories[parseInt(categoryIndex)];
         }
     }
 
-    // Determine Parent Category (Discord Channel Category)
-    const parentId = categoryConfig ? categoryConfig.categoryId : config.categoryId;
-    
-    // Determine Staff Roles
-    const staffRoles = categoryConfig && categoryConfig.staffRoles.length > 0 ? categoryConfig.staffRoles : config.staffRoles;
+    // Show Modal instead of creating ticket immediately
+    const modal = new ModalBuilder()
+        .setCustomId(`ticket_modal_create_${categoryIndex}`)
+        .setTitle(await t('tickets.handler.modal_create_title', guildId));
 
-    // Increment count
-    config.ticketCount += 1;
-    await config.save();
+    const input = new TextInputBuilder()
+        .setCustomId('reason')
+        .setLabel(await t('tickets.handler.modal_create_label', guildId))
+        .setPlaceholder(await t('tickets.handler.modal_create_placeholder', guildId))
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setMinLength(10)
+        .setMaxLength(1000);
 
-    await interaction.deferReply({ ephemeral: true });
-
-    const ticketName = config.namingScheme.replace('{username}', user.username).replace('{count}', config.ticketCount);
-
-    try {
-        const ticketChannel = await guild.channels.create({
-            name: ticketName,
-            type: ChannelType.GuildText,
-            parent: parentId,
-            permissionOverwrites: [
-                {
-                    id: guild.id,
-                    deny: [PermissionsBitField.Flags.ViewChannel]
-                },
-                {
-                    id: user.id,
-                    allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles]
-                },
-                {
-                    id: client.user.id,
-                    allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageChannels]
-                },
-                ...staffRoles.map(roleId => ({
-                    id: roleId,
-                    allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
-                }))
-            ]
-        });
-
-        // Save to DB
-        await ActiveTicket.create({
-            guildId: guild.id,
-            channelId: ticketChannel.id,
-            userId: user.id,
-            ticketType: 'ticket'
-        });
-
-        // Send Welcome Message
-        const welcomeDescription = categoryConfig?.welcomeMessage || await t('tickets.handler.ticket_welcome', guildId, { user: user.toString() });
-        
-        const embed = createEmbed(
-            await t('tickets.panel.title', guildId), 
-            welcomeDescription,
-            'default'
-        )
-            .setColor(client.config.color || '#2b2d31')
-            .setThumbnail(user.displayAvatarURL({ dynamic: true }))
-            .addFields(
-                { name: '👤 ' + (await t('tickets.handler.created_by', guildId) || 'Créé par'), value: user.toString(), inline: true },
-                { name: '🏷️ ' + (await t('tickets.handler.category', guildId) || 'Catégorie'), value: categoryConfig?.label || 'Défaut', inline: true },
-                { name: '📅 ' + (await t('tickets.handler.date', guildId) || 'Date'), value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true }
-            );
-        
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('ticket_close_confirm').setLabel(await t('tickets.handler.btn_close', guildId)).setStyle(ButtonStyle.Danger).setEmoji('🔒'),
-            new ButtonBuilder().setCustomId('ticket_claim').setLabel(await t('tickets.handler.btn_claim', guildId)).setStyle(ButtonStyle.Success).setEmoji('🙋‍♂️')
-        );
-
-        await ticketChannel.send({ content: `${user.toString()} ${staffRoles.map(r => `<@&${r}>`).join(' ')}`, embeds: [embed], components: [row] });
-
-        await interaction.editReply({ embeds: [createEmbed(await t('tickets.panel.created', guildId, { channel: ticketChannel.toString() }), '', 'success')] });
-
-    } catch (error) {
-        console.error(error);
-        await interaction.editReply({ embeds: [createEmbed(await t('tickets.panel.error_create', guildId), '', 'error')] });
-    }
+    modal.addComponents(new ActionRowBuilder().addComponents(input));
+    await interaction.showModal(modal);
 }
 
 // --- TICKET ACTIONS ---

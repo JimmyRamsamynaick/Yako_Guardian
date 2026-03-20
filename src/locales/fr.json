@@ -333,10 +333,10 @@
         "success": "Ticket pris en charge par <@{{user}}>."
     },
     "ticket_rename": {
-        "not_ticket": "❌ Ce salon n'est pas un ticket actif.",
-        "usage": "**Usage:** `+rename <nouveau-nom>`",
-        "success": "✅ Ticket renommé en **{{name}}**.",
-        "error": "❌ Impossible de renommer le salon (Rate limit ou Permissions)."
+        "not_ticket": "Ce salon n'est pas un ticket actif.",
+        "usage": "**Utilisation:** `+rename <nouveau-nom>`",
+        "success": "Ticket renommé en **{{name}}**.",
+        "error": "Impossible de renommer le salon (Rate limit ou Permissions)."
     },
     "ticket_del": {
         "not_ticket": "❌ Cette commande n'est disponible que dans un ticket.",
@@ -349,6 +349,11 @@
     },
     "tickets": {
         "handler": {
+            "modal_create_title": "Ouverture du ticket",
+            "modal_create_label": "Expliquez votre problème",
+            "modal_create_placeholder": "Décrivez ici en quelques lignes la raison de votre ticket...",
+            "ticket_welcome": "👋 Bienvenue {{user}} !\nUn membre du staff va s'occuper de vous bientôt.",
+            "ticket_desc_title": "📝 Description du problème",
             "error_not_configured": "❌ Le système de tickets n'est pas configuré sur ce serveur.",
             "dashboard_categories_title": "Gestion des catégories",
             "btn_add_cat": "Ajouter",

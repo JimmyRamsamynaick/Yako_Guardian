@@ -442,13 +442,18 @@
         "success": "Ticket claimed by <@{{user}}>."
     },
     "ticket_rename": {
-        "not_ticket": "❌ This channel is not an active ticket.",
+        "not_ticket": "This channel is not an active ticket.",
         "usage": "**Usage:** `+rename <new-name>`",
-        "success": "✅ Ticket renamed to **{{name}}**.",
-        "error": "❌ Unable to rename channel (Rate limit or Permissions)."
+        "success": "Ticket renamed to **{{name}}**.",
+        "error": "Unable to rename channel (Rate limit or Permissions)."
     },
     "tickets": {
         "handler": {
+            "modal_create_title": "Open Ticket",
+            "modal_create_label": "Explain your issue",
+            "modal_create_placeholder": "Describe here in a few lines the reason for your ticket...",
+            "ticket_welcome": "👋 Welcome {{user}}!\nA staff member will be with you shortly.",
+            "ticket_desc_title": "📝 Issue Description",
             "error_not_configured": "❌ Ticket system is not configured on this server.",
             "dashboard_categories_title": "Category Management",
             "btn_add_cat": "Add",
