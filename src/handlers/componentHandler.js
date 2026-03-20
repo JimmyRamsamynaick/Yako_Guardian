@@ -20,6 +20,7 @@ const { handleRoleMenuInteraction } = require('./roleMenuHandler');
 const { handleHelpMenu } = require('./helpHandler');
 const { handleTicketSettings, handleTicketModal, handleTicketCreate, handleTicketClaim, handleTicketClose } = require('./ticketHandler');
 const { handleTempVocInteraction } = require('./tempVocHandler');
+const { handlePunishInteraction } = require('./punishHandler');
 const { handleNotificationInteraction } = require('./notificationHandler');
 const { handleModmailInteraction } = require('./modmailInteractionHandler');
 const { handleAutoInteraction } = require('./autoInteractionHandler');
@@ -51,6 +52,8 @@ module.exports = (client) => {
 
         if (customId.startsWith('secur_')) {
             await handleSecurPanel(client, interaction);
+        } else if (customId.startsWith('punish_')) {
+            await handlePunishInteraction(client, interaction);
         } else if (customId.startsWith('captcha_')) {
             const { handleCaptchaInteraction } = require('./captchaHandler');
             await handleCaptchaInteraction(client, interaction);

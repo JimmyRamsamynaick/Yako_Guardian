@@ -2,6 +2,7 @@ const { PermissionsBitField } = require('discord.js');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
 const { createEmbed, THEME } = require('../../utils/design');
+const { sendPunishPanel } = require('../../handlers/punishHandler');
 const ms = require('ms');
 
 module.exports = {
@@ -15,15 +16,20 @@ module.exports = {
             return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.admin_only', message.guild.id), 'error')] });
         }
 
+        const sub = args[0]?.toLowerCase();
+
+        // IF NO ARGS OR PANEL, SHOW PANEL
+        if (!sub || sub === 'panel') {
+            return await sendPunishPanel(message, message.guild.id);
+        }
+
         const config = await getGuildConfig(message.guild.id);
         if (!config.moderation) config.moderation = {};
         if (!config.moderation.strikes) config.moderation.strikes = { punishments: [] };
         if (!config.moderation.strikes.punishments) config.moderation.strikes.punishments = [];
 
-        const sub = args[0]?.toLowerCase();
-
         // LIST
-        if (!sub || sub === 'list') {
+        if (sub === 'list') {
             const list = config.moderation.strikes.punishments.sort((a, b) => a.count - b.count);
             
             if (list.length === 0) {

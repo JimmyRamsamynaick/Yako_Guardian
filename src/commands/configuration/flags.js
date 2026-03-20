@@ -2,6 +2,7 @@ const { PermissionsBitField } = require('discord.js');
 const { createEmbed, THEME } = require('../../utils/design');
 const { getGuildConfig } = require('../../utils/mongoUtils');
 const { t } = require('../../utils/i18n');
+const { sendPunishPanel } = require('../../handlers/punishHandler');
 const ms = require('ms');
 
 module.exports = {
@@ -14,18 +15,14 @@ module.exports = {
             return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'Administrator' }), 'error')] });
         }
 
-        const config = await getGuildConfig(message.guild.id);
         const sub = args[0]?.toLowerCase();
 
-        if (!sub) {
-            const embed = createEmbed(await t('flags.title', message.guild.id), await t('flags.help_desc', message.guild.id), 'info');
-            embed.addFields([
-                { name: "Commandes", value: `${await t('flags.help_add', message.guild.id)}\n${await t('flags.help_remove', message.guild.id)}\n${await t('flags.help_toggle', message.guild.id)}\n${await t('flags.help_list', message.guild.id)}` },
-                { name: "Types", value: `\`link\`, \`spam\`, \`everyone\`, \`mention\`, \`badwords\`, \`invite\`, \`caps\``, inline: true },
-                { name: "Actions", value: `\`warn\`, \`mute\`, \`kick\`, \`ban\`, \`timeout\``, inline: true }
-            ]);
-            return message.channel.send({ embeds: [embed] });
+        // IF NO ARGS OR PANEL, SHOW PANEL
+        if (!sub || sub === 'panel') {
+            return await sendPunishPanel(message, message.guild.id);
         }
+
+        const config = await getGuildConfig(message.guild.id);
 
         if (sub === 'add') {
             const type = args[1]?.toLowerCase();
