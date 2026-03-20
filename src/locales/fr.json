@@ -1061,6 +1061,9 @@
         "reason_invite": "Automod: Lien d'invitation interdit",
         "reason_link": "Automod: Lien interdit",
         "reason_spam": "Automod: Spam détecté",
+        "reason_everyone": "Automod: Mention @everyone/@here interdite",
+        "reason_mention": "Automod: Mentions excessives ({{count}})",
+        "reason_caps": "Automod: Trop de majuscules",
         "warning": "⚠️ {{user}}, veuillez cesser ce comportement.\nRaison: **{{reason}}**"
     },
     "sanction": {
@@ -1590,6 +1593,24 @@
         "type_antiraid": "`antiraid` : Pour les modules anti-raid (spam, mass join...)",
         "type_all": "`all` : Pour tous les modules de sécurité",
         "sanctions_list": "`derank` (Retire les rôles), `kick` (Expulse), `ban` (Bannit)"
+    },
+    "flags": {
+        "title": "🚩 Configuration des Flags",
+        "description": "Configure les sanctions automatiques pour divers événements (spam, liens, etc.)",
+        "usage": "**Utilisation:** `+flags <add/remove/toggle/list> [type] [action] [valeur]`",
+        "list_empty": "Aucun flag configuré sur ce serveur.",
+        "field_type": "Type",
+        "field_action": "Action",
+        "field_value": "Valeur",
+        "field_status": "Statut",
+        "success_add": "✅ Flag **{{type}}** configuré: **{{action}}** ({{value}})",
+        "success_remove": "✅ Flag **{{type}}** supprimé.",
+        "success_toggle": "✅ Flag **{{type}}** désormais: **{{status}}**",
+        "invalid_type": "❌ Type de flag invalide (link/spam/everyone/mention/badwords/invite/caps).",
+        "invalid_action": "❌ Action invalide (warn/mute/kick/ban/timeout).",
+        "invalid_value": "❌ Valeur invalide (nombre d'avertissements ou durée).",
+        "types_list": "Types: `link`, `spam`, `everyone`, `mention`, `badwords`, `invite`, `caps`",
+        "actions_list": "Actions: `warn`, `mute`, `kick`, `ban`, `timeout`"
     },
     "raidlog": {
         "usage": "**Utilisation:** `+raidlog <on/off>` (dans le salon désiré)",

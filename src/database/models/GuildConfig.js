@@ -170,7 +170,15 @@ const GuildConfigSchema = new mongoose.Schema({
         },
 
         nodeRankRoles: [String],
-        picOnlyChannels: [String]
+        picOnlyChannels: [String],
+
+        flags: [{
+            type: { type: String, enum: ['link', 'spam', 'everyone', 'mention', 'badwords', 'invite', 'caps'] },
+            action: { type: String, enum: ['warn', 'mute', 'kick', 'ban', 'timeout'] },
+            amount: { type: Number, default: 1 }, // number of warns or duration for mute
+            duration: Number, // in ms if action is mute/timeout
+            enabled: { type: Boolean, default: true }
+        }]
     },
 
     // Public Channels (Generic "Public" mode, behavior defined by commands)
