@@ -4,12 +4,16 @@ const { t } = require('../utils/i18n');
 const { createEmbed, THEME } = require('../utils/design');
 const ms = require('ms');
 
-async function sendPunishPanel(message, guildId) {
+async function sendPunishPanel(messageOrReply, guildId) {
     const config = await getGuildConfig(guildId);
     const embed = await generatePunishEmbed(guildId, config);
     const components = await generatePunishComponents(guildId, config);
 
-    await message.channel.send({ embeds: [embed], components });
+    if (messageOrReply.edit) {
+        await messageOrReply.edit({ embeds: [embed], components });
+    } else {
+        await messageOrReply.channel.send({ embeds: [embed], components });
+    }
 }
 
 async function handlePunishInteraction(client, interaction) {

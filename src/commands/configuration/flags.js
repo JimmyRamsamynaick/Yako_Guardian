@@ -19,7 +19,8 @@ module.exports = {
 
         // IF NO ARGS OR PANEL, SHOW PANEL
         if (!sub || sub === 'panel') {
-            return await sendPunishPanel(message, message.guild.id);
+            const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.punish_loading_title', message.guild.id), `${THEME.icons.loading} ${await t('common.processing', message.guild.id)}`, 'loading')] });
+            return await sendPunishPanel(replyMsg, message.guild.id);
         }
 
         const config = await getGuildConfig(message.guild.id);
