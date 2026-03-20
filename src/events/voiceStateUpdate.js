@@ -11,6 +11,12 @@ module.exports = {
         if (newState.channelId) {
             const active = await ActiveTempVoc.findOne({ channelId: newState.channelId });
             if (active && active.ownerId !== newState.member.id) {
+                // 0. BOT & WHITELIST BYPASS
+                // If it's a bot or in the tempvoc whitelist, they can stay
+                if (newState.member.user.bot || active.allowedUsers.includes(newState.member.id)) {
+                    return;
+                }
+
                 // 1. Blacklist check
                 if (active.blockedUsers.includes(newState.member.id)) {
                     try {
