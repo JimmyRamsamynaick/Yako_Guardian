@@ -1545,6 +1545,8 @@
             "not_owner": "❌ You are not the owner of this channel.",
             "locked": "🔒 Channel locked.",
             "unlocked": "🔓 Channel unlocked.",
+            "already_locked": "The channel is already locked.",
+            "already_unlocked": "The channel is already unlocked.",
             "visible": "👁️ Channel visible.",
             "hidden": "🙈 Channel hidden.",
             "purge_none": "❌ No one to purge.",
@@ -1572,11 +1574,11 @@
             "transfer_member_not_found": "❌ Member not found.",
             "transfer_success": "Channel transferred to {{user}}.",
             "wl_added": "✅ Added to WL: {{list}}",
-            "wl_removed": "❌ Removed from WL: {{list}}",
+            "wl_removed": "Removed from WL: {{list}}",
             "no_change": "ℹ️ No changes.",
             "bl_added": "✅ Added to BL: {{list}}",
-            "bl_removed": "❌ Removed from BL: {{list}}",
-            "error": "❌ Error: {{error}}"
+            "bl_removed": "Removed from BL: {{list}}",
+            "error": "Error: {{error}}"
         },
         "permission": "❌ `Administrator` permission required.",
         "usage": "**Usage:** `+tempvoc setup` or `+tempvoc cmd`",

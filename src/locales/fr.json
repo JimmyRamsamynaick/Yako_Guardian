@@ -1998,6 +1998,8 @@
             "not_owner": "❌ Vous n'êtes pas le propriétaire de ce salon.",
             "locked": "🔒 Salon verrouillé.",
             "unlocked": "🔓 Salon déverrouillé.",
+            "already_locked": "Le salon est déjà verrouillé.",
+            "already_unlocked": "Le salon est déjà déverrouillé.",
             "visible": "👁️ Salon visible.",
             "hidden": "🙈 Salon masqué.",
             "purge_none": "❌ Personne à purger.",
@@ -2025,11 +2027,11 @@
             "transfer_member_not_found": "❌ Membre introuvable.",
             "transfer_success": "Salon transféré à {{user}}.",
             "wl_added": "✅ Ajouté à la WL: {{list}}",
-            "wl_removed": "❌ Retiré de la WL: {{list}}",
+            "wl_removed": "Retiré de la WL: {{list}}",
             "no_change": "ℹ️ Aucun changement.",
             "bl_added": "✅ Ajouté à la BL: {{list}}",
-            "bl_removed": "❌ Retiré de la BL: {{list}}",
-            "error": "❌ Erreur: {{error}}"
+            "bl_removed": "Retiré de la BL: {{list}}",
+            "error": "Erreur: {{error}}"
         },
         "permission": "❌ Permission `Administrateur` requise.",
         "usage": "**Usage:** `+tempvoc setup` ou `+tempvoc cmd`",

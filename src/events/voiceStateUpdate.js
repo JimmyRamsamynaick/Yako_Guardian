@@ -7,20 +7,43 @@ const { createEmbed } = require('../utils/design');
 module.exports = {
     name: 'voiceStateUpdate',
     async execute(client, oldState, newState) {
-        // --- BLACKLIST CHECK ---
+        // --- BLACKLIST & LOCK CHECK ---
         if (newState.channelId) {
             const active = await ActiveTempVoc.findOne({ channelId: newState.channelId });
-            if (active && active.blockedUsers.includes(newState.member.id) && active.ownerId !== newState.member.id) {
-                try {
-                    await newState.disconnect(await t('tempvoc.blacklisted', newState.guild.id));
-                } catch (e) {
-                    // Ignore if already disconnected
+            if (active && active.ownerId !== newState.member.id) {
+                // 1. Blacklist check
+                if (active.blockedUsers.includes(newState.member.id)) {
+                    try {
+                        await newState.disconnect(await t('tempvoc.blacklisted', newState.guild.id));
+                    } catch (e) {}
+                    return;
                 }
-                return;
+
+                // 2. Lock check
+                const channel = newState.channel;
+                if (channel) {
+                    const everyoneOverwrites = channel.permissionOverwrites.cache.get(newState.guild.id);
+                    const isLocked = everyoneOverwrites?.deny.has(PermissionsBitField.Flags.Connect);
+                    
+                    if (isLocked && !active.allowedUsers.includes(newState.member.id)) {
+                        // If they were already granted perms (SendMessages etc.), they can join.
+                        // But if they just left, we should have removed it.
+                        // Let's explicitly check if they have a specific Connect: true overwrite
+                        const memberOverwrites = channel.permissionOverwrites.cache.get(newState.member.id);
+                        const hasExplicitConnect = memberOverwrites?.allow.has(PermissionsBitField.Flags.Connect);
+
+                        if (!hasExplicitConnect) {
+                            try {
+                                await newState.disconnect();
+                            } catch (e) {}
+                            return;
+                        }
+                    }
+                }
             }
         }
 
-        // --- DELETE EMPTY TEMP CHANNELS ---
+        // --- DELETE EMPTY TEMP CHANNELS & REMOVE PERMS ON LEAVE ---
         if (oldState.channelId) {
             const active = await ActiveTempVoc.findOne({ channelId: oldState.channelId });
             if (active) {
@@ -29,8 +52,22 @@ module.exports = {
                     try {
                         await channel.delete();
                         await ActiveTempVoc.deleteOne({ channelId: oldState.channelId });
+                        return; // Exit if channel deleted
                     } catch (e) {
                         console.error("Failed to delete temp channel:", e);
+                    }
+                }
+
+                // Cleanup: remove all personal overwrites when leaving a locked channel
+                // unless they are the owner or whitelisted
+                if (channel && active.ownerId !== oldState.member.id && !active.allowedUsers.includes(oldState.member.id)) {
+                    const everyoneOverwrites = channel.permissionOverwrites.cache.get(oldState.guild.id);
+                    const isLocked = everyoneOverwrites?.deny.has(PermissionsBitField.Flags.Connect);
+                    
+                    if (isLocked) {
+                        // More aggressive cleanup: delete any specific overwrites for this member
+                        // This removes the temporary SendMessages/ViewChannel perms granted during locking
+                        await channel.permissionOverwrites.delete(oldState.member.id).catch(() => {});
                     }
                 }
             }
