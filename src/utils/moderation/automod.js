@@ -38,10 +38,15 @@ async function checkAutomod(client, message, config) {
 
         const limit = antispam.limit || 5;
         const timeWindow = (antispam.time || 5) * 1000; 
-        const now = Date.now();
+        
+        // Account for bot latency (ping) to avoid clustering issues
+        const latencyBuffer = client.ws.ping > 0 ? client.ws.ping : 300; 
+        const effectiveWindow = timeWindow + latencyBuffer;
 
-        // 1. Clean up messages older than the time window
-        userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
+        const currentMsgTime = message.createdTimestamp;
+
+        // 1. Clean up messages older than the effective window (Using Discord timestamps only)
+        userData.messages = userData.messages.filter(msg => (currentMsgTime - msg.createdTimestamp) < effectiveWindow);
         
         // 2. Add current message
         userData.messages.push(message);
@@ -50,13 +55,16 @@ async function checkAutomod(client, message, config) {
         guildMap.set(message.author.id, userData);
         spamMap.set(message.guild.id, guildMap);
 
-        // 3. TRIGGER ONLY IF: Count reached AND more than 1 message (impossible to spam with 1 msg)
+        // 3. TRIGGER ONLY IF: Count reached AND more than 1 message
         if (userData.count >= limit && userData.count > 1) {
             const firstMsg = userData.messages[0];
             const lastMsg = userData.messages[userData.messages.length - 1];
+            
+            // Difference between when messages were SENT to Discord
             const actualTimeSpan = lastMsg.createdTimestamp - firstMsg.createdTimestamp;
 
-            // If the user sent LIMIT messages in LESS than TIMEWINDOW seconds
+            // If the user sent LIMIT messages in LESS than the configured time
+            // We ignore bot's processing time entirely
             if (actualTimeSpan <= timeWindow) {
                 triggeredType = "spam";
                 reason = await t('automod.reason_spam', message.guild.id);
