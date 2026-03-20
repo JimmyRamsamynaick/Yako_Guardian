@@ -121,63 +121,52 @@ async function checkAutomod(client, message, config) {
         // Apply Flag Sanction
         if (flag) {
             try {
-                let actionTaken = "";
                 const reasonText = `[Flag: ${triggeredType.toUpperCase()}] ${reason}`;
 
-                switch (flag.action) {
-                    case 'warn':
-                        // Add strikes (amount)
-                        const strikesToAdd = Array(flag.amount || 1).fill({ reason: reasonText, moderatorId: client.user.id, type: triggeredType });
-                        
-                        const oldData = await UserStrike.findOne({ guildId: message.guild.id, userId: message.author.id });
-                        const oldTotal = oldData?.strikes?.length || 0;
+                // IF FLAG ACTION IS NOT WARN, EXECUTE DIRECTLY (Simple & Instant)
+                if (flag.action !== 'warn') {
+                    switch (flag.action) {
+                        case 'mute':
+                            const muteRoleId = config.moderation.muteRole;
+                            if (muteRoleId && message.member.manageable) {
+                                const role = message.guild.roles.cache.get(muteRoleId);
+                                if (role) await message.member.roles.add(role, reasonText);
+                            }
+                            break;
 
-                        const updated = await UserStrike.findOneAndUpdate(
-                            { guildId: message.guild.id, userId: message.author.id },
-                            { $push: { strikes: { $each: strikesToAdd } } },
-                            { upsert: true, new: true }
-                        );
-                        
-                        actionTaken = await t('moderation.action_warned', message.guild.id);
-                        // Check for total strikes punishments (pass old and new)
-                        const totalStrikes = updated.strikes.length;
-                        const result = await applyPunishment(client, message.guild, message.member, totalStrikes, oldTotal);
-                        if (result) actionTaken = result;
-                        break;
-                    
-                    case 'mute':
-                        const muteRoleId = config.moderation.muteRole;
-                        if (muteRoleId && message.member.manageable) {
-                            const role = message.guild.roles.cache.get(muteRoleId);
-                            if (role) await message.member.roles.add(role, reasonText);
-                            actionTaken = await t('moderation.action_muted', message.guild.id);
-                        }
-                        break;
+                        case 'timeout':
+                            if (flag.duration && message.member.moderatable) {
+                                await message.member.timeout(flag.duration, reasonText);
+                            }
+                            break;
 
-                    case 'timeout':
-                        if (flag.duration && message.member.moderatable) {
-                            await message.member.timeout(flag.duration, reasonText);
-                            actionTaken = await t('moderation.action_timeout', message.guild.id, { duration: ms(flag.duration) });
-                        }
-                        break;
+                        case 'kick':
+                            if (message.member.kickable) await message.member.kick(reasonText);
+                            break;
 
-                    case 'kick':
-                        if (message.member.kickable) {
-                            await message.member.kick(reasonText);
-                            actionTaken = await t('moderation.action_kicked', message.guild.id);
-                        }
-                        break;
-
-                    case 'ban':
-                        if (message.member.bannable) {
-                            await message.member.ban({ reason: reasonText });
-                            actionTaken = await t('moderation.action_banned', message.guild.id);
-                        }
-                        break;
+                        case 'ban':
+                            if (message.member.bannable) await message.member.ban({ reason: reasonText });
+                            break;
+                    }
+                    return true; // Stop here, action applied directly
                 }
 
-                // Log the action if possible
-                // (Optional: send to log channel)
+                // IF FLAG ACTION IS WARN, USE THE STRIKE SYSTEM
+                const strikesToAdd = Array(flag.amount || 1).fill({ reason: reasonText, moderatorId: client.user.id, type: triggeredType });
+                
+                const oldData = await UserStrike.findOne({ guildId: message.guild.id, userId: message.author.id });
+                const oldTotal = oldData?.strikes?.length || 0;
+
+                const updated = await UserStrike.findOneAndUpdate(
+                    { guildId: message.guild.id, userId: message.author.id },
+                    { $push: { strikes: { $each: strikesToAdd } } },
+                    { upsert: true, new: true }
+                );
+                
+                // Check thresholds for warnings
+                const totalStrikes = updated.strikes.length;
+                await applyPunishment(client, message.guild, message.member, totalStrikes, oldTotal);
+                
             } catch (e) {
                 console.error("Failed to apply flag sanction:", e);
             }
