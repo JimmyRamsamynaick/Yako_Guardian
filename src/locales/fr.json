@@ -942,7 +942,7 @@
         "unban_success_short": "Débanni",
         "warn_list_footer": "Total: {{count}} avertissements.",
         "warn_list_footer_limit": "\n(Seuls les 20 premiers sont affichés)",
-        "warn_list_item": "**{{index}}.** `{{user}}` - **{{count}}** avertissements (Dernier: {{date}})",
+        "warn_list_item": "**{{index}}.** `{{user}}` (ID: {{id}}) - **{{count}}** avertissements (Dernier: {{date}})",
         "mute_dm_reason": "Vous avez été mute définitivement sur **{{guild}}**\nRaison: {{reason}}",
         "kick_dm_reason": "Vous avez été expulsé de **{{guild}}**\nRaison: {{reason}}",
         "ban_dm_reason": "Vous avez été banni de **{{guild}}**\nRaison: {{reason}}",

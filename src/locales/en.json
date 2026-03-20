@@ -797,7 +797,7 @@
         "unban_success_short": "Unbanned",
         "warn_list_footer": "Total: {{count}} warnings.",
         "warn_list_footer_limit": "\n(Only the first 20 are displayed)",
-        "warn_list_item": "**{{index}}.** `{{user}}` - **{{count}}** warnings (Last: {{date}})",
+        "warn_list_item": "**{{index}}.** `{{user}}` (ID: {{id}}) - **{{count}}** warnings (Last: {{date}})",
         "mute_dm_reason": "You have been permanently muted in **{{guild}}**\nReason: {{reason}}",
         "kick_dm_reason": "You have been kicked from **{{guild}}**\nReason: {{reason}}",
         "ban_dm_reason": "You have been banned from **{{guild}}**\nReason: {{reason}}",

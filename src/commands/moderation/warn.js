@@ -78,6 +78,7 @@ module.exports = {
                 return await t('moderation.warn_list_item', message.guild.id, {
                     index: index + 1,
                     user: item.user.tag,
+                    id: item.user.id,
                     count: item.count,
                     date: new Date(item.lastStrike).toLocaleDateString()
                 });
