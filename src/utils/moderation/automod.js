@@ -5,7 +5,8 @@ const { t } = require('../i18n');
 const { createEmbed } = require('../design');
 const ms = require('ms');
 
-const spamMap = new Map(); // guildId -> userId -> { count, lastMsgTime, messages: [] }
+const spamMap = new Map(); // guildId -> userId -> { messages: [] }
+const raidMap = new Map(); // guildId -> channelId -> { messages: [] }
 
 async function checkAutomod(client, message, config) {
     if (!config.moderation) return false;
@@ -30,36 +31,52 @@ async function checkAutomod(client, message, config) {
 
     // --- DETECTIONS ---
     
-    // 1. Antispam (Check first to collect messages)
+    // 1. Antispam (INDIVIDUAL & RAID)
     const antispam = config.moderation.antispam;
     if (antispam?.enabled && !isWhitelisted(antispam)) {
-        const guildMap = spamMap.get(message.guild.id) || new Map();
-        const userData = guildMap.get(message.author.id) || { messages: [] };
-
         const limit = antispam.limit || 5;
         const timeWindow = (antispam.time || 5) * 1000; 
         const now = message.createdTimestamp;
 
-        // 1. Filter out old messages (Strict Window)
+        // --- A. INDIVIDUAL SPAM ---
+        const guildSpamMap = spamMap.get(message.guild.id) || new Map();
+        const userData = guildSpamMap.get(message.author.id) || { messages: [] };
+        
         userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
+        if (!userData.messages.find(m => m.id === message.id)) userData.messages.push(message);
         
-        // 2. Add current message if not already tracked (avoid double events)
-        if (!userData.messages.find(m => m.id === message.id)) {
-            userData.messages.push(message);
-        }
-        
-        guildMap.set(message.author.id, userData);
-        spamMap.set(message.guild.id, guildMap);
+        guildSpamMap.set(message.author.id, userData);
+        spamMap.set(message.guild.id, guildSpamMap);
 
-        // 3. TRIGGER: Only if we have EXACTLY or MORE than the limit in the window
         if (userData.messages.length >= limit) {
             triggeredType = "spam";
             reason = await t('automod.reason_spam', message.guild.id);
             spamMessages = [...userData.messages]; 
-            
-            // RESET user tracking immediately
             userData.messages = [];
-            guildMap.set(message.author.id, userData);
+            guildSpamMap.set(message.author.id, userData);
+        }
+
+        // --- B. RAID DETECTION (Global channel spam) ---
+        if (!triggeredType) {
+            const guildRaidMap = raidMap.get(message.guild.id) || new Map();
+            const channelData = guildRaidMap.get(message.channel.id) || { messages: [] };
+
+            channelData.messages = channelData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
+            if (!channelData.messages.find(m => m.id === message.id)) channelData.messages.push(message);
+
+            guildRaidMap.set(message.channel.id, channelData);
+            raidMap.set(message.guild.id, guildRaidMap);
+
+            // If the total messages in channel exceeds 2x the individual limit in the same time
+            // Or if it exceeds a hard threshold (e.g., 10 messages in 3s by multiple people)
+            const raidLimit = Math.max(limit * 2, 8); 
+            if (channelData.messages.length >= raidLimit) {
+                triggeredType = "raid";
+                reason = "AutoMod: Raid / Global Spam detected";
+                spamMessages = [...channelData.messages];
+                channelData.messages = [];
+                guildRaidMap.set(message.channel.id, channelData);
+            }
         }
     }
 
