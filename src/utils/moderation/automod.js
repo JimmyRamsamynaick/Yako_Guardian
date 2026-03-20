@@ -34,36 +34,30 @@ async function checkAutomod(client, message, config) {
     const antispam = config.moderation.antispam;
     if (antispam?.enabled && !isWhitelisted(antispam)) {
         const guildMap = spamMap.get(message.guild.id) || new Map();
-        const userData = guildMap.get(message.author.id) || { count: 0, lastMsgTime: Date.now(), messages: [] };
+        const userData = guildMap.get(message.author.id) || { count: 0, lastMsgTime: 0, messages: [] };
 
         const limit = antispam.limit || 5;
         const timeWindow = (antispam.time || 5) * 1000; 
-
         const now = Date.now();
-        const diff = now - userData.lastMsgTime;
 
-        // Clean up messages older than the time window
+        // 1. Clean up messages older than the time window
         userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
+        
+        // 2. Add current message
         userData.messages.push(message);
         userData.count = userData.messages.length;
-        userData.lastMsgTime = now;
         
         guildMap.set(message.author.id, userData);
         spamMap.set(message.guild.id, guildMap);
 
-        // TRIGGER ONLY IF: 
-        // 1. Threshold reached
-        // 2. AND messages are very close together (less than 1.5s average between messages)
-        // 3. OR messages are identical/very similar
-        if (userData.count >= limit) {
-            const avgDiff = timeWindow / userData.count;
+        // 3. TRIGGER ONLY IF: Count reached AND more than 1 message (impossible to spam with 1 msg)
+        if (userData.count >= limit && userData.count > 1) {
             const firstMsg = userData.messages[0];
             const lastMsg = userData.messages[userData.messages.length - 1];
             const actualTimeSpan = lastMsg.createdTimestamp - firstMsg.createdTimestamp;
 
-            // If the user sent X messages in a very short time (e.g., 5 messages in less than 2s)
-            // or if they are just sending too many messages for a normal human discussion
-            if (actualTimeSpan < (timeWindow * 0.6) || actualTimeSpan < 2000) {
+            // If the user sent LIMIT messages in LESS than TIMEWINDOW seconds
+            if (actualTimeSpan <= timeWindow) {
                 triggeredType = "spam";
                 reason = await t('automod.reason_spam', message.guild.id);
                 spamMessages = [...userData.messages]; 
