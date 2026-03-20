@@ -114,8 +114,14 @@ async function checkAutomod(client, message, config) {
         setTimeout(() => warningMsg?.delete().catch(() => {}), 5000);
 
         // 3. Find flag config to see how many flags to give
-        const flag = flags.find(f => f.type === triggeredType && f.enabled);
-        const amountToGive = flag ? flag.amount : 1; // Default to 1 if no flag config found but module is enabled
+        let flag = flags.find(f => f.type === triggeredType && f.enabled);
+        
+        // Fallback: Treat 'invite' as 'link' if no specific invite flag is set
+        if (!flag && triggeredType === 'invite') {
+            flag = flags.find(f => f.type === 'link' && f.enabled);
+        }
+
+        const amountToGive = flag ? flag.amount : 1; 
 
         try {
             const reasonText = `[AutoMod: ${triggeredType.toUpperCase()}] ${reason}`;
