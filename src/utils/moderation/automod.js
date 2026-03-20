@@ -30,15 +30,18 @@ async function checkAutomod(client, message, config) {
     // --- DETECTIONS ---
     
     // 1. Links & Invites
-    const inviteRegex = /(discord\.(gg|io|me|li)|discordapp\.com\/invite)/i;
-    const linkRegex = /https?:\/\/[^\s]+/i;
-    
-    if (inviteRegex.test(message.content)) {
-        triggeredType = "invite";
-        reason = await t('automod.reason_invite', message.guild.id);
-    } else if (linkRegex.test(message.content)) {
-        triggeredType = "link";
-        reason = await t('automod.reason_link', message.guild.id);
+    const antilink = config.moderation.antilink;
+    if (antilink?.enabled && !isWhitelisted(antilink)) {
+        const inviteRegex = /(discord\.(gg|io|me|li)|discordapp\.com\/invite)/i;
+        const linkRegex = /https?:\/\/[^\s]+/i;
+        
+        if (inviteRegex.test(message.content)) {
+            triggeredType = "invite";
+            reason = await t('automod.reason_invite', message.guild.id);
+        } else if (antilink.mode === 'all' && linkRegex.test(message.content)) {
+            triggeredType = "link";
+            reason = await t('automod.reason_link', message.guild.id);
+        }
     }
 
     // 2. Everyone/Here
@@ -48,9 +51,10 @@ async function checkAutomod(client, message, config) {
     }
 
     // 3. Mass Mention
-    if (!triggeredType) {
+    const massmention = config.moderation.massmention;
+    if (!triggeredType && massmention?.enabled && !isWhitelisted(massmention)) {
         const mentions = message.mentions.users.size + message.mentions.roles.size;
-        if (mentions > (config.moderation.massmention?.limit || 5)) {
+        if (mentions > (massmention.limit || 5)) {
             triggeredType = "mention";
             reason = await t('automod.reason_mention', message.guild.id, { count: mentions });
         }
@@ -66,20 +70,22 @@ async function checkAutomod(client, message, config) {
     }
 
     // 5. Badwords
-    if (!triggeredType && config.moderation.badwords?.list?.length > 0) {
+    const badwords = config.moderation.badwords;
+    if (!triggeredType && badwords?.enabled && !isWhitelisted(badwords)) {
         const content = message.content.toLowerCase();
-        if (config.moderation.badwords.list.some(word => content.includes(word.toLowerCase()))) {
+        if (badwords.list?.some(word => content.includes(word.toLowerCase()))) {
             triggeredType = "badwords";
             reason = await t('automod.reason_badwords', message.guild.id);
         }
     }
 
     // 6. Antispam
-    if (!triggeredType) {
+    const antispam = config.moderation.antispam;
+    if (!triggeredType && antispam?.enabled && !isWhitelisted(antispam)) {
         const guildMap = spamMap.get(message.guild.id) || new Map();
         const userData = guildMap.get(message.author.id) || { count: 0, lastMsgTime: Date.now() };
-        const limit = config.moderation.antispam?.limit || 5;
-        const time = config.moderation.antispam?.time || 5000;
+        const limit = antispam.limit || 5;
+        const time = antispam.time || 5000;
 
         if (Date.now() - userData.lastMsgTime > time) {
              userData.count = 1;
@@ -99,29 +105,25 @@ async function checkAutomod(client, message, config) {
 
     // --- ACTION ---
     if (triggeredType) {
-        // Check if whitelisted for THIS specific module
-        const moduleSettings = config.moderation[triggeredType === 'invite' || triggeredType === 'link' ? 'antilink' : triggeredType];
-        if (isWhitelisted(moduleSettings)) return false;
-
-        // Find flag config
-        const flag = flags.find(f => f.type === triggeredType && f.enabled);
-        if (!flag) return false; // If no flag configured, we do nothing (Simple)
-
+        // 1. Delete message immediately
         if (message.deletable) await message.delete().catch(() => {});
         
+        // 2. Send warning message
         const warning = await t('automod.warning', message.guild.id, { user: message.author, reason });
-        const title = "AutoMod";
-        const warningMsg = await message.channel.send({ embeds: [createEmbed(title, warning, 'moderation')] });
+        const warningMsg = await message.channel.send({ embeds: [createEmbed("AutoMod", warning, 'moderation')] });
         setTimeout(() => warningMsg?.delete().catch(() => {}), 5000);
+
+        // 3. Find flag config to see how many flags to give
+        const flag = flags.find(f => f.type === triggeredType && f.enabled);
+        const amountToGive = flag ? flag.amount : 1; // Default to 1 if no flag config found but module is enabled
 
         try {
             const reasonText = `[AutoMod: ${triggeredType.toUpperCase()}] ${reason}`;
 
-            // Add strikes (amount from flag)
-            const strikesToAdd = Array(flag.amount || 1).fill({ reason: reasonText, moderatorId: client.user.id, type: triggeredType });
-            
             const oldData = await UserStrike.findOne({ guildId: message.guild.id, userId: message.author.id });
             const oldTotal = oldData?.strikes?.length || 0;
+
+            const strikesToAdd = Array(amountToGive).fill({ reason: reasonText, moderatorId: client.user.id, type: triggeredType });
 
             const updated = await UserStrike.findOneAndUpdate(
                 { guildId: message.guild.id, userId: message.author.id },
@@ -129,9 +131,8 @@ async function checkAutomod(client, message, config) {
                 { upsert: true, new: true }
             );
             
-            // Apply punishments based on NEW total
-            const totalStrikes = updated.strikes.length;
-            await applyPunishment(client, message.guild, message.member, totalStrikes, oldTotal);
+            // 4. Apply punishments based on NEW total
+            await applyPunishment(client, message.guild, message.member, updated.strikes.length, oldTotal);
             
         } catch (e) {
             console.error("Failed to apply AutoMod action:", e);
