@@ -34,44 +34,32 @@ async function checkAutomod(client, message, config) {
     const antispam = config.moderation.antispam;
     if (antispam?.enabled && !isWhitelisted(antispam)) {
         const guildMap = spamMap.get(message.guild.id) || new Map();
-        const userData = guildMap.get(message.author.id) || { count: 0, lastMsgTime: 0, messages: [] };
+        const userData = guildMap.get(message.author.id) || { messages: [] };
 
         const limit = antispam.limit || 5;
         const timeWindow = (antispam.time || 5) * 1000; 
-        
-        // Account for bot latency (ping) to avoid clustering issues
-        const latencyBuffer = client.ws.ping > 0 ? client.ws.ping : 300; 
-        const effectiveWindow = timeWindow + latencyBuffer;
+        const now = message.createdTimestamp;
 
-        const currentMsgTime = message.createdTimestamp;
-
-        // 1. Clean up messages older than the effective window (Using Discord timestamps only)
-        userData.messages = userData.messages.filter(msg => (currentMsgTime - msg.createdTimestamp) < effectiveWindow);
+        // 1. Filter out old messages (Strict Window)
+        userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
         
-        // 2. Add current message
-        userData.messages.push(message);
-        userData.count = userData.messages.length;
+        // 2. Add current message if not already tracked (avoid double events)
+        if (!userData.messages.find(m => m.id === message.id)) {
+            userData.messages.push(message);
+        }
         
         guildMap.set(message.author.id, userData);
         spamMap.set(message.guild.id, guildMap);
 
-        // 3. TRIGGER ONLY IF: Count reached AND more than 1 message
-        if (userData.count >= limit && userData.count > 1) {
-            const firstMsg = userData.messages[0];
-            const lastMsg = userData.messages[userData.messages.length - 1];
+        // 3. TRIGGER: Only if we have EXACTLY or MORE than the limit in the window
+        if (userData.messages.length >= limit) {
+            triggeredType = "spam";
+            reason = await t('automod.reason_spam', message.guild.id);
+            spamMessages = [...userData.messages]; 
             
-            // Difference between when messages were SENT to Discord
-            const actualTimeSpan = lastMsg.createdTimestamp - firstMsg.createdTimestamp;
-
-            // If the user sent LIMIT messages in LESS than the configured time
-            // We ignore bot's processing time entirely
-            if (actualTimeSpan <= timeWindow) {
-                triggeredType = "spam";
-                reason = await t('automod.reason_spam', message.guild.id);
-                spamMessages = [...userData.messages]; 
-                userData.count = 0;
-                userData.messages = [];
-            }
+            // RESET user tracking immediately
+            userData.messages = [];
+            guildMap.set(message.author.id, userData);
         }
     }
 
@@ -129,9 +117,18 @@ async function checkAutomod(client, message, config) {
 
     // --- ACTION ---
     if (triggeredType) {
+        // Double-check whitelist with correct module name mapping
+        const moduleMap = {
+            'spam': 'antispam',
+            'invite': 'antilink',
+            'link': 'antilink',
+            'mention': 'massmention'
+        };
+        const moduleName = moduleMap[triggeredType] || triggeredType;
+        if (isWhitelisted(config.moderation[moduleName])) return false;
+
         // 1. Delete message(s) immediately
         if (triggeredType === 'spam' && spamMessages.length > 0) {
-            // Delete all collected spam messages
             for (const msg of spamMessages) {
                 if (msg.deletable) await msg.delete().catch(() => {});
             }
