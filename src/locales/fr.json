@@ -390,7 +390,6 @@
             "error_ticket_db": "❌ Ticket introuvable en base de données.",
             "error_already_claimed": "❌ Ce ticket est déjà pris en charge par {{user}}.",
             "ticket_claimed": "🙋‍♂️ Ticket pris en charge par {{user}}.",
-            "ticket_welcome": "👋 Bonjour {{user}},\nUn membre du staff va prendre en charge votre demande.",
             "created_by": "Créé par",
             "category": "Catégorie",
             "date": "Date",
@@ -443,6 +442,7 @@
         "permission_denied_simple": "❌ Vous n'avez pas la permission.",
         "loading_users": "Recherche des utilisateurs...",
         "loading_bans": "Recherche des bannissements...",
+        "loading": "Chargement en cours...",
         "loading_title": "Chargement",
         "success_title": "Succès",
         "sanction_processing": "Application des sanctions...",
@@ -742,14 +742,6 @@
     "strikes": {
         "description": "Affiche les avertissements d'un membre",
         "usage": "**Utilisation:** `+strikes <user>`"
-    },
-    "banlist": {
-        "description": "Affiche la liste des membres bannis du serveur",
-        "usage": "**Utilisation:** `+banlist`",
-        "title": "Membres Bannis",
-        "total": "Total: {{count}} bannissements",
-        "empty": "Il n'y a aucun membre banni sur ce serveur.",
-        "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Raison:** {{reason}}\n**Date:** {{date}}\n"
     },
     "mutelist": {
         "description": "Affiche la liste des membres mutés",
@@ -1572,18 +1564,16 @@
         "description": "Bannit un membre",
         "usage": "**Utilisation:** `+ban <user> [raison]`"
     },
-    "banlist": {
-        "description": "Affiche la liste des membres bannis du serveur",
-        "usage": "**Utilisation:** `+banlist`",
+    "banlist_cmd": {
         "title": "Membres Bannis",
         "total": "Total: {{count}} bannissements",
         "empty": "Il n'y a aucun membre banni sur ce serveur.",
         "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Raison:** {{reason}}\n**Date:** {{date}}\n"
     },
-
-
-
-
+    "banlist": {
+        "description": "Affiche la liste des membres bannis du serveur",
+        "usage": "**Utilisation:** `+banlist`"
+    },
     "punition": {
         "help_title": "⚖️ Configuration des Punitions",
         "help_description": "Définissez les sanctions automatiques pour les systèmes de sécurité.",

@@ -67,11 +67,14 @@ async function t(key, guildId, variables = {}) {
     if (!text) return key;
 
     // 6. Replace Variables
-    for (const [varName, varValue] of Object.entries(variables)) {
-        text = text.replace(new RegExp(`{{${varName}}}`, 'g'), varValue);
+    if (variables && typeof variables === 'object') {
+        for (const [varName, varValue] of Object.entries(variables)) {
+            const val = varValue !== undefined && varValue !== null ? String(varValue) : '';
+            text = text.replace(new RegExp(`{{${varName}}}`, 'g'), val);
+        }
     }
 
-    return text;
+    return String(text);
 }
 
 module.exports = { t };

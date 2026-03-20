@@ -13,6 +13,16 @@
         "logs_title": "Logs",
         "logs_value": "RaidLog: {{raidlog}}\\nModLog: {{modlog}}"
     },
+    "banlist_cmd": {
+        "title": "Banned Members",
+        "total": "Total: {{count}} bans",
+        "empty": "There are no banned members on this server.",
+        "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Reason:** {{reason}}\n**Date:** {{date}}\n"
+    },
+    "banlist": {
+        "description": "Displays the list of banned members from the server",
+        "usage": "**Usage:** `+banlist`"
+    },
     "helpall": {
         "title": "📜 Command List by Level",
         "menu_description": "**Your Level:** {{level}}\n\nPlease select a permission level below to view available commands.",
@@ -310,14 +320,6 @@
         "usage": "**Usage:** `+strikes <user>`"
     },
 
-    "banlist": {
-        "description": "Shows the list of banned members on the server",
-        "usage": "**Usage:** `+banlist`",
-        "title": "Banned Members",
-        "total": "Total: {{count}} bans",
-        "empty": "There are no banned members on this server.",
-        "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Reason:** {{reason}}\n**Date:** {{date}}\n"
-    },
     "mutelist": {
         "description": "Display the list of muted members",
         "usage": "**Usage:** `+mutelist`"
@@ -494,7 +496,6 @@
             "error_ticket_db": "❌ Ticket not found in database.",
             "error_already_claimed": "❌ This ticket is already claimed by {{user}}.",
             "ticket_claimed": "🙋‍♂️ Ticket claimed by {{user}}.",
-            "ticket_welcome": "👋 Hello {{user}},\nA staff member will take care of your request.",
             "btn_close": "Close",
             "btn_claim": "Claim"
         },
@@ -582,6 +583,7 @@
         "none": "None",
         "loading_users": "Searching for users...",
         "loading_bans": "Searching for bans...",
+        "loading": "Loading...",
         "loading_title": "Loading",
         "sanction_processing": "Applying sanctions...",
         "processing": "Processing...",
@@ -1158,14 +1160,6 @@
     "ban": {
         "description": "Bans a member",
         "usage": "**Usage:** `+ban <user> [reason]`"
-    },
-    "banlist": {
-        "description": "Shows the list of banned members on the server",
-        "usage": "**Usage:** `+banlist`",
-        "title": "Banned Members",
-        "total": "Total: {{count}} bans",
-        "empty": "There are no banned members on this server.",
-        "item": "**{{index}}.** `{{user}}` (ID: {{id}})\n**Reason:** {{reason}}\n**Date:** {{date}}\n"
     },
 
     "punition": {

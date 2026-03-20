@@ -19,14 +19,20 @@ async function createPagination(client, message, items, itemsPerPage = 10, title
         
         const listItems = [];
         for (let i = 0; i < currentItems.length; i++) {
-            const formatted = await formatter(currentItems[i], start + i + 1);
-            listItems.push(formatted);
+            try {
+                const formatted = await formatter(currentItems[i], start + i + 1);
+                listItems.push(String(formatted));
+            } catch (err) {
+                listItems.push(`Error formatting item ${start + i + 1}`);
+            }
         }
         
         const list = listItems.join('\n');
         
+        const pageText = await t('common.page', message.guild.id);
+        
         return createEmbed(
-            `${title} (${await t('common.page', message.guild.id)} ${p + 1}/${maxPages})`,
+            `${title} (${pageText} ${p + 1}/${maxPages})`,
             list,
             'info'
         );

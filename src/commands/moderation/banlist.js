@@ -20,7 +20,7 @@ module.exports = {
         }
 
         const loadingEmbed = createEmbed(
-            await t('banlist.title', message.guild.id),
+            await t('banlist_cmd.title', message.guild.id),
             `${THEME.icons.loading} ${await t('common.loading', message.guild.id)}`,
             'loading'
         );
@@ -32,8 +32,8 @@ module.exports = {
             if (bans.size === 0) {
                 return replyMsg.edit({ 
                     embeds: [createEmbed(
-                        await t('banlist.title', message.guild.id), 
-                        await t('banlist.empty', message.guild.id), 
+                        await t('banlist_cmd.title', message.guild.id), 
+                        await t('banlist_cmd.empty', message.guild.id), 
                         'info'
                     )] 
                 });
@@ -43,30 +43,29 @@ module.exports = {
                 user: ban.user.tag,
                 id: ban.user.id,
                 reason: ban.reason || 'Aucune raison fournie',
-                // Discord API doesn't provide date directly in GuildBan, 
-                // but we can try to extract it from audit logs if needed.
-                // For simplicity and performance, we'll focus on user and reason.
                 date: 'Inconnue' 
             }));
 
-            // Remove loading message before showing pagination
-            await replyMsg.delete().catch(() => {});
+            // Supprimer le message de chargement avant d'afficher la pagination
+            if (replyMsg.deletable) await replyMsg.delete().catch(() => {});
+
+            const title = await t('banlist_cmd.title', message.guild.id);
 
             await createPagination(
                 client, 
                 message, 
                 banItems, 
                 5, 
-                await t('banlist.title', message.guild.id),
+                title,
                 async (item, index) => {
-                    const line = await t('banlist.item', message.guild.id, {
-                        index,
-                        user: item.user,
-                        id: item.id,
-                        reason: item.reason,
-                        date: item.date
+                    const result = await t('banlist_cmd.item', message.guild.id, {
+                        index: String(index),
+                        user: String(item.user),
+                        id: String(item.id),
+                        reason: String(item.reason),
+                        date: String(item.date)
                     });
-                    return line;
+                    return result;
                 }
             );
 
