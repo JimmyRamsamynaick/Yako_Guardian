@@ -28,10 +28,12 @@ module.exports = {
                 // 2. Lock check
                 const channel = newState.channel;
                 if (channel) {
+                    // Check if channel name starts with the lock emoji OR if Connect is denied for everyone
                     const everyoneOverwrites = channel.permissionOverwrites.cache.get(newState.guild.id);
-                    const isLocked = everyoneOverwrites?.deny.has(PermissionsBitField.Flags.Connect);
+                    const isLockedByPerms = everyoneOverwrites?.deny.has(PermissionsBitField.Flags.Connect);
+                    const isLockedByName = channel.name.startsWith('🔒');
                     
-                    if (isLocked && !active.allowedUsers.includes(newState.member.id)) {
+                    if ((isLockedByPerms || isLockedByName) && !active.allowedUsers.includes(newState.member.id)) {
                         // If they were already granted perms (SendMessages etc.), they can join.
                         // But if they just left, we should have removed it.
                         // Let's explicitly check if they have a specific Connect: true overwrite
