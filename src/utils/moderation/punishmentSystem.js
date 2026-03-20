@@ -6,16 +6,26 @@ const ms = require('ms');
 const { createEmbed } = require('../design');
 const { t } = require('../i18n');
 
-async function applyPunishment(client, guild, member, strikeCount) {
+async function applyPunishment(client, guild, member, strikeCount, oldStrikeCount = null) {
     const config = await getGuildConfig(guild.id);
     
     if (!config.moderation || !config.moderation.strikes) return null;
 
     // Find matching punishment
     const punishments = config.moderation.strikes.punishments || [];
-    const rule = punishments.find(p => p.count === strikeCount);
+    
+    let rule;
+    if (oldStrikeCount !== null) {
+        // Find the highest threshold passed between old and new count
+        rule = punishments
+            .filter(p => p.count > oldStrikeCount && p.count <= strikeCount)
+            .sort((a, b) => b.count - a.count)[0];
+    } else {
+        // Legacy behavior: exact match
+        rule = punishments.find(p => p.count === strikeCount);
+    }
 
-    if (!rule) return null; // No rule for this specific strike count
+    if (!rule) return null; // No rule reached in this jump
 
     // Execute Action
     try {

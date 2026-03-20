@@ -128,6 +128,10 @@ async function checkAutomod(client, message, config) {
                     case 'warn':
                         // Add strikes (amount)
                         const strikesToAdd = Array(flag.amount || 1).fill({ reason: reasonText, moderatorId: client.user.id, type: triggeredType });
+                        
+                        const oldData = await UserStrike.findOne({ guildId: message.guild.id, userId: message.author.id });
+                        const oldTotal = oldData?.strikes?.length || 0;
+
                         const updated = await UserStrike.findOneAndUpdate(
                             { guildId: message.guild.id, userId: message.author.id },
                             { $push: { strikes: { $each: strikesToAdd } } },
@@ -135,9 +139,9 @@ async function checkAutomod(client, message, config) {
                         );
                         
                         actionTaken = await t('moderation.action_warned', message.guild.id);
-                        // Check for total strikes punishments
+                        // Check for total strikes punishments (pass old and new)
                         const totalStrikes = updated.strikes.length;
-                        const result = await applyPunishment(client, message.guild, message.member, totalStrikes);
+                        const result = await applyPunishment(client, message.guild, message.member, totalStrikes, oldTotal);
                         if (result) actionTaken = result;
                         break;
                     
@@ -180,12 +184,15 @@ async function checkAutomod(client, message, config) {
         } else {
             // Default: 1 Strike if no flag configured
             try {
+                const oldData = await UserStrike.findOne({ guildId: message.guild.id, userId: message.author.id });
+                const oldTotal = oldData?.strikes?.length || 0;
+
                 const updated = await UserStrike.findOneAndUpdate(
                     { guildId: message.guild.id, userId: message.author.id },
                     { $push: { strikes: { reason, moderatorId: client.user.id, type: triggeredType } } },
                     { upsert: true, new: true }
                 );
-                await applyPunishment(client, message.guild, message.member, updated.strikes.length);
+                await applyPunishment(client, message.guild, message.member, updated.strikes.length, oldTotal);
             } catch (e) {
                 console.error("Failed to add default strike:", e);
             }
