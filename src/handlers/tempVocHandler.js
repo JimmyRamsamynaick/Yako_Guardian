@@ -23,12 +23,11 @@ async function handleTempVocInteraction(client, interaction) {
         // Check if channel is temp voc
         const active = await ActiveTempVoc.findOne({ channelId: channel.id });
         if (!active) {
-            // Can't defer if we want to reply ephemeral error? 
-            // Better to just reply directly or defer then reply.
-            // Since this is a quick DB check, reply directly is fine.
-            // But to be safe and consistent, let's just reply.
-            // However, we need to handle the defer logic below.
-            // Let's do the check first.
+            return interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.not_temp_voc', guildId), '', 'error')], ephemeral: true });
+        }
+
+        if (active.ownerId !== member.id) {
+            return interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.not_owner', guildId), '', 'error')], ephemeral: true });
         }
 
         // We defer immediately unless it's a modal trigger, modal submission, or a select menu that needs update()
@@ -42,14 +41,6 @@ async function handleTempVocInteraction(client, interaction) {
             await interaction.deferReply({ ephemeral: true });
         }
 
-        if (!active) {
-            return interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.not_temp_voc', guildId), '', 'error')], ephemeral: true });
-        }
-
-        if (active.ownerId !== member.id) {
-            return interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.not_owner', guildId), '', 'error')], ephemeral: true });
-        }
-
         // --- BUTTONS ---
 
         if (customId === 'tempvoc_lock') {
@@ -57,21 +48,43 @@ async function handleTempVocInteraction(client, interaction) {
             const everyone = guild.roles.everyone;
             const canConnect = channel.permissionsFor(everyone).has(PermissionsBitField.Flags.Connect);
             
-            if (!canConnect) {
+            if (!canConnect || channel.name.startsWith('🔒')) {
                 return interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.already_locked', guildId), '', 'error')] });
             }
 
-            await channel.permissionOverwrites.edit(guild.id, { Connect: false, ViewChannel: true });
+            // 1. Rename channel to include the lock emoji
+            if (!channel.name.startsWith('🔒')) {
+                await channel.setName(`🔒-${channel.name}`).catch(() => {});
+            }
+
+            // 2. Lock permissions for everyone
+            // We keep ViewChannel: true if it was already true, or let it follow @everyone default
+            await channel.permissionOverwrites.edit(guild.id, { Connect: false });
             
-            // Allow members already in the channel to send messages
+            // 3. Ensure Whitelist (Database) keeps access
+            for (const userId of active.allowedUsers) {
+                await channel.permissionOverwrites.edit(userId, { 
+                    Connect: true,
+                    ViewChannel: true
+                }).catch(() => {});
+            }
+
+            // 4. Ensure Bot keeps access
+            await channel.permissionOverwrites.edit(client.user.id, {
+                Connect: true,
+                ViewChannel: true,
+                ManageChannels: true
+            }).catch(() => {});
+
+            // 5. Allow members already in the channel to send messages (interface vocale)
             const membersInChannel = channel.members;
             for (const [memberId, m] of membersInChannel) {
-                // Ensure they can send messages in the voice chat
-                // BUT DO NOT give them Connect: true, otherwise they can rejoin!
-                await channel.permissionOverwrites.edit(memberId, { 
-                    SendMessages: true,
-                    ViewChannel: true
-                });
+                if (memberId !== member.id && !active.allowedUsers.includes(memberId)) {
+                    await channel.permissionOverwrites.edit(memberId, { 
+                        SendMessages: true,
+                        ViewChannel: true
+                    }).catch(() => {});
+                }
             }
 
             await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.locked', guildId), '', 'success')] });
@@ -80,11 +93,30 @@ async function handleTempVocInteraction(client, interaction) {
             const everyone = guild.roles.everyone;
             const canConnect = channel.permissionsFor(everyone).has(PermissionsBitField.Flags.Connect);
             
-            if (canConnect) {
+            if (canConnect && !channel.name.startsWith('🔒')) {
                 return interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.already_unlocked', guildId), '', 'error')] });
             }
 
-            await channel.permissionOverwrites.edit(guild.id, { Connect: true, ViewChannel: true });
+            // 1. Remove lock emoji from name
+            let newName = channel.name;
+            if (newName.startsWith('🔒-')) newName = newName.replace('🔒-', '');
+            else if (newName.startsWith('🔒')) newName = newName.replace('🔒', '');
+            
+            if (newName !== channel.name) {
+                await channel.setName(newName).catch(() => {});
+            }
+
+            // 2. Restore permissions for everyone
+            await channel.permissionOverwrites.edit(guild.id, { Connect: true });
+
+            // 3. Remove specific overwrites added during lock for members who are not Whitelisted/Owner
+            const overwrites = channel.permissionOverwrites.cache;
+            for (const [id, overwrite] of overwrites) {
+                if (id !== guild.id && id !== member.id && id !== client.user.id && !active.allowedUsers.includes(id)) {
+                    await channel.permissionOverwrites.delete(id).catch(() => {});
+                }
+            }
+
             await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.unlocked', guildId), '', 'success')] });
         }
         else if (customId === 'tempvoc_hide') {
