@@ -5,7 +5,8 @@ const { t } = require('../i18n');
 const { createEmbed } = require('../design');
 const ms = require('ms');
 
-const spamMap = new Map(); // guildId -> userId -> { messages: [] }
+const spamMap = new Map(); // guildId -> userId -> { messages: [], lastAction: Date, warningTimestamp: Date }
+const channelActivityMap = new Map(); // guildId -> channelId -> { lastMessages: [] }
 
 /**
  * Calculate Levenshtein distance between two strings
@@ -30,78 +31,91 @@ function levenshteinDistance(s1, s2) {
 
 /**
  * Calculate a spam score from 0 to 100
+ * PRIORITY: Avoid false positives.
+ * MODE SURVEILLANCE: Strict evaluation.
  */
-async function calculateSpamScore(messages, newMessage, guildId) {
+async function calculateSpamScore(messages, newMessage, guildId, isUnderSurveillance = false) {
     let score = 0;
     const count = messages.length;
-    if (count <= 1) return 0;
-
-    const firstMsg = messages[0];
-    const lastMsg = messages[count - 1];
+    
+    const firstMsg = messages[0] || newMessage;
+    const lastMsg = newMessage;
     const duration = lastMsg.createdTimestamp - firstMsg.createdTimestamp;
     
-    // 1. Frequency (Flood) - Up to 40 points
-    // Base score for message count (each message after the first adds 5 points)
-    score += (count - 1) * 8; 
+    // --- 1. INTELLIGENCE CONTEXTUELLE (REDUIRE LE SCORE) ---
+    
+    // A. Interaction Humaine
+    const hasReply = messages.some(m => m.type === 19) || newMessage.type === 19; 
+    const hasMentions = messages.some(m => m.mentions.users.size > 0) || newMessage.mentions.users.size > 0;
+    
+    // B. Activité Globale (Plusieurs personnes parlent)
+    const guildActivity = channelActivityMap.get(guildId) || new Map();
+    const channelActivity = guildActivity.get(newMessage.channel.id) || { lastMessages: [] };
+    const uniqueUsers = new Set(channelActivity.lastMessages.map(m => m.authorId)).size;
+    
+    // C. Variété du contenu
+    let totalLength = 0;
+    let uniqueContents = new Set();
+    messages.forEach(m => {
+        totalLength += m.content.length;
+        uniqueContents.add(m.content.trim().toLowerCase());
+    });
+    uniqueContents.add(newMessage.content.trim().toLowerCase());
+    
+    const varietyRatio = uniqueContents.size / (count + 1);
 
-    // Bonus for high frequency
-    if (duration > 0) {
-        const msPerMsg = duration / (count - 1);
-        if (msPerMsg < 600) score += 25; // Very fast (~2 msg/sec)
-        else if (msPerMsg < 1200) score += 15; // Fast (~1 msg/sec)
-        else if (msPerMsg < 2500) score += 5; // Moderate
+    // Si discussion active (>= 2 autres personnes), on est très tolérant (SAUF SI SURVEILLANCE)
+    if (!isUnderSurveillance) {
+        if (uniqueUsers >= 3) return 0; 
+        if (uniqueUsers === 2 && !hasReply) score -= 20;
+        if (varietyRatio > 0.8 && totalLength > 20) score -= 30; // Discussion variée
     }
 
-    // 2. Repetition & Similarity - Up to 40 points
+    // --- 2. DETECTION DE SPAM (AUGMENTER LE SCORE) ---
+
+    // A. Fréquence (Flood)
+    score += (count + 1) * 15; // Augmenté pour plus de réactivité
+
+    if (duration > 0) {
+        const msPerMsg = duration / (count || 1);
+        if (msPerMsg < 500) score += 50; 
+        else if (msPerMsg < 1000) score += 30;
+    } else if (isUnderSurveillance) {
+        score += 40; // Suspect immédiat en surveillance
+    }
+
+    // B. Répétition & Similarité
     let similarityScore = 0;
-    for (let i = 0; i < count - 1; i++) {
-        const m1 = messages[i].content.trim().toLowerCase();
-        const m2 = messages[i+1].content.trim().toLowerCase();
+    const allMessages = [...messages, newMessage];
+    for (let i = 0; i < allMessages.length - 1; i++) {
+        const m1 = allMessages[i].content.trim().toLowerCase();
+        const m2 = allMessages[i+1].content.trim().toLowerCase();
         
         if (!m1 || !m2) continue;
 
         if (m1 === m2) {
-            similarityScore += 20; // Exact match
+            similarityScore += 35; // Augmenté
         } else {
             const distance = levenshteinDistance(m1, m2);
             const maxLength = Math.max(m1.length, m2.length);
             const similarity = 1 - (distance / maxLength);
-            if (similarity > 0.85) similarityScore += 15; // Highly similar
-            else if (similarity > 0.6) similarityScore += 5; // Somewhat similar
+            if (similarity > 0.85) similarityScore += 25;
         }
     }
-    score += Math.min(similarityScore, 40);
+    score += Math.min(similarityScore, 70);
 
-    // 3. Content Suspicousness - Up to 20 points
-    const content = newMessage.content;
-    const lowerContent = content.toLowerCase();
-
-    // Very short messages in burst ("ok", ".", etc)
-    if (content.length > 0 && content.length < 4) score += 10;
-
-    // Repetitive characters (e.g. "heyyyyy")
-    const repetitiveChars = /(.)\1{4,}/.test(lowerContent);
-    if (repetitiveChars) score += 15;
-
-    // Many emojis
-    const emojiCount = (content.match(/<a?:\w+:\d+>|[\u{1F300}-\u{1F9FF}]/gu) || []).length;
-    if (emojiCount > 4) score += 10;
-
-    // Many mentions
-    if (newMessage.mentions.users.size > 2) score += 10;
-
-    // Links
-    if (/https?:\/\/[^\s]+/.test(content)) score += 10;
-
-    // Bypass attempts (spaces between every letter)
-    const words = content.trim().split(/\s+/);
-    if (words.length > 3 && words.every(w => w.length === 1)) score += 20;
-
-    // 4. Intelligence contextuelle (Anti-False Positives)
-    // If messages are long and varied, reduce score
-    if (content.length > 50 && score > 0) {
-        score -= 10;
+    // C. Rafales Humaines (Pensées découpées) - MOINS DE TOLÉRANCE EN SURVEILLANCE
+    if (varietyRatio > 0.7 && totalLength < 50 && count < 5) {
+        score -= isUnderSurveillance ? 10 : 50; 
     }
+
+    // D. Cas isolés
+    if (uniqueUsers === 1 && count >= 2) score += 20; 
+
+    // --- 3. DECISION FINALE ---
+    
+    // Si l'utilisateur interagit (réponse/mention), on divise le score par 2 (SAUF SI SURVEILLANCE)
+    if (!isUnderSurveillance && (hasReply || hasMentions)) score /= 2;
 
     return Math.min(Math.max(score, 0), 100);
 }
@@ -142,11 +156,21 @@ async function checkAutomod(client, message, config) {
     // Ignore permissions (Admins usually ignored)
     if (await isBotOwner(message.author.id)) return false;
     if (message.author.id === message.guild.ownerId) return false;
-    
-    // TEMPORARY: Allow Admins to be detected for testing purposes
-    // if (message.member.permissions.has('Administrator')) return false; 
-    
     if (message.member.permissions.has('Administrator')) return false; 
+
+    // --- MISE À JOUR DE L'ACTIVITÉ DU SALON ---
+    const now = message.createdTimestamp;
+    let guildActivity = channelActivityMap.get(message.guild.id);
+    if (!guildActivity) {
+        guildActivity = new Map();
+        channelActivityMap.set(message.guild.id, guildActivity);
+    }
+    let channelActivity = guildActivity.get(message.channel.id) || { lastMessages: [] };
+    
+    // On garde les messages des 10 dernières secondes
+    channelActivity.lastMessages = channelActivity.lastMessages.filter(m => (now - m.timestamp) < 10000);
+    channelActivity.lastMessages.push({ authorId: message.author.id, timestamp: now });
+    guildActivity.set(message.channel.id, channelActivity);
 
     // Helper for whitelist check (channels/roles)
     const isWhitelisted = (setting) => {
@@ -165,17 +189,24 @@ async function checkAutomod(client, message, config) {
     // 1. Antispam (INDIVIDUAL SCORING SYSTEM)
     const antispam = config.moderation.antispam;
     if (antispam?.enabled && !isWhitelisted(antispam)) {
-        // Use user-defined time window or default to 10s
-        const timeWindow = (antispam.time || 10) * 1000; 
-        const now = message.createdTimestamp;
+        // Fenêtre d'analyse glissante (10s)
+        const timeWindow = 10000; 
 
         const guildSpamMap = spamMap.get(message.guild.id) || new Map();
-        const userData = guildSpamMap.get(message.author.id) || { messages: [] };
+        const userData = guildSpamMap.get(message.author.id) || { messages: [], lastAction: 0, warningTimestamp: 0 };
         
-        // Filter out old messages (Strict Window)
+        // Mode Surveillance renforcée (10s après un warning)
+        const isUnderSurveillance = (now - userData.warningTimestamp) < 10000;
+
+        // Anti-spam rapide : si on a agi il y a moins de 5s, on ignore (SAUF SI SURVEILLANCE)
+        if (!isUnderSurveillance && (now - userData.lastAction < 5000)) return false;
+
+        // Filter out old messages
         userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
         
-        // Add current message if not already tracked
+        const score = await calculateSpamScore(userData.messages, message, message.guild.id, isUnderSurveillance);
+
+        // Add current message to history
         if (!userData.messages.find(m => m.id === message.id)) {
             userData.messages.push(message);
         }
@@ -183,73 +214,70 @@ async function checkAutomod(client, message, config) {
         guildSpamMap.set(message.author.id, userData);
         spamMap.set(message.guild.id, guildSpamMap);
 
-        // Analyze score if we have more than 1 message
-        if (userData.messages.length > 1) {
-            const score = await calculateSpamScore(userData.messages, message, message.guild.id);
+        // Get config
+        const spamFlag = flags.find(f => f.type === 'spam' && f.enabled);
+        const baseAmount = spamFlag ? spamFlag.amount : 1;
 
-            // Get configured flag for spam to use its defined amount
-            const spamFlag = flags.find(f => f.type === 'spam' && f.enabled);
-            const baseAmount = spamFlag ? spamFlag.amount : 1;
+        // --- ACTIONS ---
 
-            // LOGIC: 0-40 OK, 40-70 suspect, 70-100 action
-            if (score >= 40) {
-                triggeredType = "spam";
-                spamMessages = [...userData.messages];
+        // Cas 1: Récidive immédiate en mode surveillance
+        if (isUnderSurveillance && score >= 40) {
+            triggeredType = "spam";
+            reason = "[Mode Surveillance] Récidive après avertissement";
+            
+            if (message.deletable) await message.delete().catch(() => {});
+            
+            // On laisse le système +punish gérer la sanction réelle (mute/strike)
+            // On ajoute simplement les strikes pour que le système punish les voit
+            const amountToGive = Math.max(baseAmount * 2, 3);
+            await applyStrikes(client, message, 'spam', reason, amountToGive);
+            
+            userData.messages = [];
+            userData.lastAction = now;
+            guildSpamMap.set(message.author.id, userData);
+            return true;
+        }
+
+        // Cas 2: Détection normale (Seuils plus élevés pour éviter les faux positifs)
+        if (userData.messages.length >= 3 && score >= 60) {
+            triggeredType = "spam";
+            spamMessages = [...userData.messages];
+            userData.lastAction = now;
+            
+            if (score < 80) {
+                // SPAM LÉGER -> WARNING + SURVEILLANCE
+                reason = await t('automod.reason_spam_light', message.guild.id, { score });
+                userData.warningTimestamp = now; // Activer le mode surveillance
                 
-                if (score < 70) {
-                    // SPAM LÉGER / SUSPECT
-                    reason = await t('automod.reason_spam_light', message.guild.id, { score });
-                    
-                    const warning = await t('automod.warning_discrete', message.guild.id, { user: message.author });
-                    const warningMsg = await message.channel.send({ content: warning }).catch(() => {});
-                    if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 3000);
-                    
-                    // Give 1 flag (fixed for light spam to avoid over-punishing)
-                    await applyStrikes(client, message, 'spam', reason, 1);
-                    
-                    // Deletion requested for ALL spam types? The prompt said:
-                    // Spam léger : Avertissement discret
-                    // Spam moyen : Suppression + warning
-                    // If the user says "it stays", maybe they want deletion even for light spam?
-                    // Let's stick to the prompt for now, but ensure it's NOT an admin.
-                    return true; 
-                 } else if (score < 85) {
-                    // SPAM MOYEN
-                    reason = await t('automod.reason_spam_medium', message.guild.id, { score });
-                    
-                    if (message.deletable) await message.delete().catch(() => {});
-                    
-                    const warning = await t('automod.warning', message.guild.id, { user: message.author, reason });
-                    const warningMsg = await message.channel.send({ embeds: [createEmbed("AutoMod", warning, 'moderation')] }).catch(() => {});
-                    if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 5000);
+                const warning = await t('automod.warning_discrete', message.guild.id, { user: message.author });
+                const warningMsg = await message.channel.send({ content: warning }).catch(() => {});
+                if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 3000);
+                
+                await applyStrikes(client, message, 'spam', reason, 1);
+                return true; 
+             } else {
+                // SPAM LOURD -> SUPPRESSION + SANCTION
+                reason = await t('automod.reason_spam_heavy', message.guild.id, { score });
 
-                    // Use baseAmount from config, or 2 if baseAmount is 1
-                    const amountToGive = Math.max(baseAmount, 2);
-
-                    await applyStrikes(client, message, 'spam', reason, amountToGive);
-                    return true;
-
-                } else {
-                    // SPAM ÉLEVÉ
-                    reason = await t('automod.reason_spam_heavy', message.guild.id, { score });
-
+                if (score > 90) {
                     for (const msg of spamMessages) {
                         if (msg.deletable) await msg.delete().catch(() => {});
                     }
-
-                    userData.messages = [];
-                    guildSpamMap.set(message.author.id, userData);
-
-                    const warning = await t('automod.warning_heavy', message.guild.id, { user: message.author });
-                    const warningMsg = await message.channel.send({ embeds: [createEmbed("AutoMod", warning, 'moderation')] }).catch(() => {});
-                    if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 5000);
-
-                    // Use baseAmount * 2 or a minimum of 5 to ensure a strong punishment (mute/timeout)
-                    const amountToGive = Math.max(baseAmount * 2, 5);
-
-                    await applyStrikes(client, message, 'spam', reason, amountToGive);
-                    return true;
+                } else {
+                    if (message.deletable) await message.delete().catch(() => {});
                 }
+
+                userData.messages = []; 
+                guildSpamMap.set(message.author.id, userData);
+
+                const warningKey = score > 90 ? 'automod.warning_heavy' : 'automod.warning';
+                const warning = await t(warningKey, message.guild.id, { user: message.author, reason });
+                const warningMsg = await message.channel.send({ embeds: [createEmbed("AutoMod", warning, 'moderation')] }).catch(() => {});
+                if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 5000);
+
+                const amountToGive = score > 90 ? Math.max(baseAmount * 2, 5) : Math.max(baseAmount, 2);
+                await applyStrikes(client, message, 'spam', reason, amountToGive);
+                return true;
             }
         }
     }
