@@ -126,20 +126,23 @@ async function calculateSpamScore(messages, newMessage, guildId, isUnderSurveill
 async function applyStrikes(client, message, type, reason, amount) {
     try {
         const reasonText = `[AutoMod: ${type.toUpperCase()}] ${reason}`;
-        
+        const oldData = await UserStrike.findOne({ guildId: message.guild.id, userId: message.author.id });
+        const oldTotal = oldData?.strikes?.length || 0;
+
         const strikesToAdd = Array(amount).fill({ 
             reason: reasonText, 
             moderatorId: client.user.id, 
             type: type 
         });
 
-        await UserStrike.findOneAndUpdate(
+        const updated = await UserStrike.findOneAndUpdate(
             { guildId: message.guild.id, userId: message.author.id },
             { $push: { strikes: { $each: strikesToAdd } } },
             { upsert: true, new: true }
         );
         
-        // Removed applyPunishment call: delegation to punish panel system
+        // Trigger punishment system based on panel config
+        await applyPunishment(client, message.guild, message.member, updated.strikes.length, oldTotal);
         return true;
     } catch (e) {
         console.error("Failed to apply strikes:", e);
@@ -219,20 +222,18 @@ async function checkAutomod(client, message, config) {
         // --- ACTIONS ---
 
         // Cas 1: Récidive immédiate en mode surveillance
-        if (isUnderSurveillance && score >= 35) { // Seuil encore plus bas
+        if (isUnderSurveillance && score >= 30) { // Seuil encore plus bas
             triggeredType = "spam";
             reason = "[Mode Surveillance] Récidive après avertissement";
             
             if (message.deletable) await message.delete().catch(() => {});
             
-            // On reset l'historique et on relance la surveillance
-            userData.warningTimestamp = now; 
+            // On ajoute 3 strikes d'un coup en surveillance pour forcer une sanction du panel
+            await applyStrikes(client, message, 'spam', reason, 3);
+            
             userData.messages = [];
             userData.lastAction = now;
             guildSpamMap.set(message.author.id, userData);
-
-            // On ajoute les strikes (sans sanction directe)
-            await applyStrikes(client, message, 'spam', reason, 2);
             return true;
         }
 
