@@ -30,12 +30,11 @@ async function handleTempVocInteraction(client, interaction) {
             return interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.not_owner', guildId), '', 'error')], ephemeral: true });
         }
 
-        // We defer immediately unless it's a modal trigger, modal submission, or a select menu that needs update()
+        // We defer immediately unless it's a modal trigger or select menu that needs update()
         const noDefer = [
             'tempvoc_limit', 'tempvoc_rename', 
             'tempvoc_modal_limit', 'tempvoc_modal_rename',
-            'tempvoc_select_kick', 'tempvoc_select_transfer', 'tempvoc_select_wl', 'tempvoc_select_bl',
-            'tempvoc_lock', 'tempvoc_unlock', 'tempvoc_hide', 'tempvoc_purge' // Add main buttons to noDefer
+            'tempvoc_select_kick', 'tempvoc_select_transfer', 'tempvoc_select_wl', 'tempvoc_select_bl'
         ];
         
         if (!noDefer.includes(customId)) {
@@ -45,26 +44,17 @@ async function handleTempVocInteraction(client, interaction) {
         // --- BUTTONS ---
 
         if (customId === 'tempvoc_lock') {
-            await interaction.deferUpdate(); // Immediate ack on button click
-            
-            // Lock logic: We check the current permissions for @everyone
+            // Lock logic: We apply permissions for everyone
             const everyone = guild.roles.everyone;
-            const canConnect = channel.permissionsFor(everyone).has(PermissionsBitField.Flags.Connect);
-            
-            // If it's already locked in permissions, we consider it locked
-            if (!canConnect) {
-                return interaction.followUp({ embeds: [createEmbed(await t('tempvoc.handler.already_locked', guildId), '', 'error')], ephemeral: true });
-            }
-
             const promises = [];
 
             // 1. Lock permissions for everyone
-            promises.push(channel.permissionOverwrites.edit(guild.id, { 
+            promises.push(channel.permissionOverwrites.edit(everyone, { 
                 Connect: false,
                 SendMessages: false 
             }).catch(() => {}));
             
-            // 3. Ensure Whitelist (Database) keeps access
+            // 2. Ensure Whitelist (Database) keeps access
             for (const userId of active.allowedUsers) {
                 promises.push(channel.permissionOverwrites.edit(userId, { 
                     Connect: true,
@@ -73,7 +63,7 @@ async function handleTempVocInteraction(client, interaction) {
                 }).catch(() => {}));
             }
 
-            // 4. Ensure Bot, Owner and Fonda keep access
+            // 3. Ensure Bot, Owner and Fonda keep access
             promises.push(channel.permissionOverwrites.edit(client.user.id, {
                 Connect: true,
                 ViewChannel: true,
@@ -97,7 +87,7 @@ async function handleTempVocInteraction(client, interaction) {
                 MoveMembers: true
             }).catch(() => {}));
 
-            // 5. Allow members already in the channel to send messages
+            // 4. Allow members already in the channel to connect (prevents being kicked if they reconnect)
             const membersInChannel = channel.members;
             for (const [memberId, m] of membersInChannel) {
                 if (memberId !== member.id && !active.allowedUsers.includes(memberId) && memberId !== guild.ownerId) {
@@ -110,28 +100,20 @@ async function handleTempVocInteraction(client, interaction) {
             }
 
             await Promise.all(promises);
-            await interaction.followUp({ embeds: [createEmbed(await t('tempvoc.handler.locked', guildId), '', 'success')], ephemeral: true });
+            await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.locked', guildId), '', 'success')] });
         }
         else if (customId === 'tempvoc_unlock') {
-            await interaction.deferUpdate(); // Immediate ack on button click
-
             const everyone = guild.roles.everyone;
-            const canConnect = channel.permissionsFor(everyone).has(PermissionsBitField.Flags.Connect);
-            
-            // If it's already unlocked in permissions, we consider it unlocked
-            if (canConnect) {
-                return interaction.followUp({ embeds: [createEmbed(await t('tempvoc.handler.already_unlocked', guildId), '', 'error')], ephemeral: true });
-            }
-
             const promises = [];
 
             // 1. Restore permissions for everyone
-            promises.push(channel.permissionOverwrites.edit(guild.id, { 
+            promises.push(channel.permissionOverwrites.edit(everyone, { 
                 Connect: true,
-                SendMessages: true 
+                SendMessages: true,
+                ViewChannel: true // Ensure visible
             }).catch(() => {}));
 
-            // 3. Clean up specific overwrites
+            // 2. Clean up specific overwrites
             const overwrites = channel.permissionOverwrites.cache;
             for (const [id, overwrite] of overwrites) {
                 if (id !== guild.id && id !== member.id && id !== client.user.id && !active.allowedUsers.includes(id) && id !== guild.ownerId) {
@@ -140,7 +122,7 @@ async function handleTempVocInteraction(client, interaction) {
             }
 
             await Promise.all(promises);
-            await interaction.followUp({ embeds: [createEmbed(await t('tempvoc.handler.unlocked', guildId), '', 'success')], ephemeral: true });
+            await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.unlocked', guildId), '', 'success')] });
         }
         else if (customId === 'tempvoc_hide') {
             // Toggle hide/unhide
@@ -299,21 +281,23 @@ async function handleTempVocInteraction(client, interaction) {
         
         // --- SELECTS ---
         else if (customId === 'tempvoc_select_kick') {
+            await interaction.deferUpdate();
             const targetId = interaction.values[0];
             const target = channel.members.get(targetId);
             if (target) {
                 const targetTag = target.user.username;
                 await target.voice.disconnect("Kicked by owner").catch(() => {});
-                await interaction.update({ embeds: [createEmbed(await t('tempvoc.handler.kick_success', guildId, { user: `**${targetTag}**` }), '', 'success')], components: [] });
+                await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.kick_success', guildId, { user: `**${targetTag}**` }), '', 'success')], components: [] });
             } else {
-                await interaction.update({ embeds: [createEmbed(await t('tempvoc.handler.kick_member_not_found', guildId), '', 'error')], components: [] });
+                await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.kick_member_not_found', guildId), '', 'error')], components: [] });
             }
         }
         else if (customId === 'tempvoc_select_transfer') {
+            await interaction.deferUpdate();
             const targetId = interaction.values[0];
             const target = guild.members.cache.get(targetId); // Ensure member is fetched or use cache
             
-            if (!target) return interaction.update({ embeds: [createEmbed(await t('tempvoc.handler.transfer_member_not_found', guildId), '', 'error')], components: [] });
+            if (!target) return interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.transfer_member_not_found', guildId), '', 'error')], components: [] });
 
             active.ownerId = targetId;
             await active.save();
@@ -324,19 +308,21 @@ async function handleTempVocInteraction(client, interaction) {
             const targetUser = await client.users.fetch(targetId).catch(() => null);
             const targetDisplayName = targetUser ? `**${targetUser.username}**` : targetId;
 
-            await interaction.update({ embeds: [createEmbed(await t('tempvoc.handler.transfer_success', guildId, { user: targetDisplayName }), '', 'success')], components: [] });
+            await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.transfer_success', guildId, { user: targetDisplayName }), '', 'success')], components: [] });
         }
         else if (customId === 'tempvoc_select_wl') {
+            await interaction.deferUpdate();
             const targetIds = interaction.values;
             const added = [];
             const removed = [];
+            const promises = [];
 
             for (const id of targetIds) {
                 if (active.allowedUsers.includes(id)) {
                     active.allowedUsers = active.allowedUsers.filter(u => u !== id);
                     removed.push(id);
                     // Remove Perms
-                    await channel.permissionOverwrites.delete(id).catch(() => {});
+                    promises.push(channel.permissionOverwrites.delete(id).catch(() => {}));
                 } else {
                     // If user is in BL, remove them from BL first
                     if (active.blockedUsers.includes(id)) {
@@ -346,13 +332,15 @@ async function handleTempVocInteraction(client, interaction) {
                     active.allowedUsers.push(id);
                     added.push(id);
                     // Add Perms: Connect + View + SendMessages (for locked/hidden channels)
-                    await channel.permissionOverwrites.edit(id, { 
+                    promises.push(channel.permissionOverwrites.edit(id, { 
                         Connect: true, 
                         ViewChannel: true,
                         SendMessages: true 
-                    }).catch(() => {});
+                    }).catch(() => {}));
                 }
             }
+            
+            await Promise.all(promises);
             await active.save();
             
             const messages = [];
@@ -373,19 +361,21 @@ async function handleTempVocInteraction(client, interaction) {
                 messages.push(await t('tempvoc.handler.wl_removed', guildId, { list: names.join(', ') }));
             }
             
-            await interaction.update({ embeds: [createEmbed(messages.join('\n') || await t('tempvoc.handler.no_change', guildId), '', 'info')], components: [] });
+            await interaction.editReply({ embeds: [createEmbed(messages.join('\n') || await t('tempvoc.handler.no_change', guildId), '', 'info')], components: [] });
         }
         else if (customId === 'tempvoc_select_bl') {
+            await interaction.deferUpdate();
             const targetIds = interaction.values;
             const added = [];
             const removed = [];
+            const promises = [];
 
             for (const id of targetIds) {
                 if (active.blockedUsers.includes(id)) {
                     active.blockedUsers = active.blockedUsers.filter(u => u !== id);
                     removed.push(id);
                     // Remove Perms (Reset to default)
-                    await channel.permissionOverwrites.delete(id).catch(() => {});
+                    promises.push(channel.permissionOverwrites.delete(id).catch(() => {}));
                 } else {
                     // If user is in WL, remove them from WL first
                     if (active.allowedUsers.includes(id)) {
@@ -395,13 +385,15 @@ async function handleTempVocInteraction(client, interaction) {
                     active.blockedUsers.push(id);
                     added.push(id);
                     // Add Perms (Block)
-                    await channel.permissionOverwrites.edit(id, { Connect: false, ViewChannel: false });
+                    promises.push(channel.permissionOverwrites.edit(id, { Connect: false, ViewChannel: false }).catch(() => {}));
                     
                     // Kick if present
                     const m = channel.members.get(id);
-                    if (m) await m.voice.disconnect("Blacklisted").catch(() => {});
+                    if (m) promises.push(m.voice.disconnect("Blacklisted").catch(() => {}));
                 }
             }
+            
+            await Promise.all(promises);
             await active.save();
             
             const messages = [];
@@ -422,7 +414,7 @@ async function handleTempVocInteraction(client, interaction) {
                 messages.push(await t('tempvoc.handler.bl_removed', guildId, { list: names.join(', ') }));
             }
             
-            await interaction.update({ embeds: [createEmbed(messages.join('\n') || await t('tempvoc.handler.no_change', guildId), '', 'info')], components: [] });
+            await interaction.editReply({ embeds: [createEmbed(messages.join('\n') || await t('tempvoc.handler.no_change', guildId), '', 'info')], components: [] });
         }
     } catch (error) {
         console.error("Error in handleTempVocInteraction:", error);
