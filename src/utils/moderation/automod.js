@@ -190,20 +190,27 @@ async function checkAutomod(client, message, config) {
     // 1. Antispam (INDIVIDUAL SCORING SYSTEM)
     const antispam = config.moderation.antispam;
     if (antispam?.enabled && !isWhitelisted(antispam)) {
-        // Fenêtre d'analyse glissante (10s)
-        const timeWindow = 10000; 
-
         const guildSpamMap = spamMap.get(message.guild.id) || new Map();
         const userData = guildSpamMap.get(message.author.id) || { messages: [], lastAction: 0, warningTimestamp: 0 };
         
         // Mode Surveillance renforcée (10s après un warning)
         const isUnderSurveillance = (now - userData.warningTimestamp) < 10000;
 
+        // --- OPTIMISATION CRITIQUE : SUPPRESSION PREEMPTIVE ---
+        // En mode surveillance, si le message est ultra-court (flood type "w"), on supprime AVANT tout calcul
+        if (isUnderSurveillance && message.content.length < 5) {
+            message.delete().catch(() => {});
+            // On continue quand même pour logger/sanctionner, mais le message est déjà parti de Discord
+        }
+
+        // Fenêtre d'analyse glissante (8s en normal, 4s en surveillance pour être plus nerveux)
+        const timeWindow = isUnderSurveillance ? 4000 : 8000; 
+
         // Anti-spam rapide : si on a agi il y a moins de 2s, on ignore (SAUF SI SURVEILLANCE)
         if (!isUnderSurveillance && (now - userData.lastAction < 2000)) return false;
 
         // Filter out old messages (Strict window)
-        userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < 8000);
+        userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
         
         const score = await calculateSpamScore(userData.messages, message, message.guild.id, isUnderSurveillance);
 
@@ -227,7 +234,7 @@ async function checkAutomod(client, message, config) {
             triggeredType = "spam";
             reason = "[Mode Surveillance] Récidive après avertissement";
             
-            // Suppression FORCEE et IMMEDIATE
+            // On s'assure qu'il est supprimé (si pas déjà fait par la préemption)
             message.delete().catch(() => {});
             
             // On reset l'historique et on relance la surveillance
