@@ -358,6 +358,7 @@ const generateSecurStatusText = async (guildId, s, m) => {
     const antispam = m?.moderation?.antispam?.enabled || false;
     const antilink = m?.moderation?.antilink?.enabled || false;
     const badwords = m?.moderation?.badwords?.enabled || false;
+    const anticaps = m?.moderation?.anticaps?.enabled || false;
 
     return `${modules}
 \`Anti-Token\` : ${await tr(s.antitoken_level)}
@@ -373,6 +374,7 @@ const generateSecurStatusText = async (guildId, s, m) => {
 \`Anti-Spam\` : ${await tr(antispam)}
 \`Anti-Link\` : ${await tr(antilink)}
 \`Bad Words\` : ${await tr(badwords)}
+\`Anti-Caps\` : ${await tr(anticaps)}
 
 ${footer}`;
 };
@@ -395,6 +397,7 @@ const getSecurRowSelect = async (guildId) => new ActionRowBuilder()
                     { label: 'Anti-Spam', value: 'antispam', description: 'Empêche le spam de messages', emoji: '📨' },
                     { label: 'Anti-Link', value: 'antilink', description: 'Bloque les liens et invitations', emoji: '🔗' },
                     { label: 'Bad Words', value: 'badwords', description: 'Censure les mots interdits', emoji: '🤬' },
+                    { label: 'Anti-Caps', value: 'anticaps', description: 'Bloque l\'excès de majuscules', emoji: '🔠' },
                 ])
         );
 
@@ -609,7 +612,8 @@ async function handleSecurPanel(client, interaction) {
                 $set: { 
                     'moderation.antispam.enabled': true,
                     'moderation.antilink.enabled': true,
-                    'moderation.badwords.enabled': true
+                    'moderation.badwords.enabled': true,
+                    'moderation.anticaps.enabled': true
                 }
             });
 
@@ -641,7 +645,8 @@ async function handleSecurPanel(client, interaction) {
                     'moderation.antispam.enabled': true,
                     'moderation.antilink.enabled': true,
                     'moderation.antilink.mode': 'all', // Max protection
-                    'moderation.badwords.enabled': true
+                    'moderation.badwords.enabled': true,
+                    'moderation.anticaps.enabled': true
                 }
             });
             
@@ -672,7 +677,8 @@ async function handleSecurPanel(client, interaction) {
                 $set: { 
                     'moderation.antispam.enabled': false,
                     'moderation.antilink.enabled': false,
-                    'moderation.badwords.enabled': false
+                    'moderation.badwords.enabled': false,
+                    'moderation.anticaps.enabled': false
                 }
             });
 
@@ -694,7 +700,7 @@ async function handleSecurPanel(client, interaction) {
         const matchLimits = interaction.customId.match(/^secur_btn_limits_(.+)$/);
         if (matchLimits) {
             const moduleName = matchLimits[1];
-            const isMongo = ['antispam', 'antilink', 'badwords'].includes(moduleName);
+            const isMongo = ['antispam', 'antilink', 'badwords', 'anticaps'].includes(moduleName);
 
             // Mongo Limit Modal (Only for Antispam for now)
             if (isMongo && moduleName === 'antispam') {
@@ -779,7 +785,7 @@ async function handleSecurPanel(client, interaction) {
         if (match) {
             const moduleName = match[1];
             const action = match[2];
-            const isMongo = ['antispam', 'antilink', 'badwords'].includes(moduleName);
+            const isMongo = ['antispam', 'antilink', 'badwords', 'anticaps'].includes(moduleName);
 
             if (action === 'config') {
                 if (isMongo) {

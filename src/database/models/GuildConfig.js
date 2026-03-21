@@ -160,6 +160,12 @@ const GuildConfigSchema = new mongoose.Schema({
             ignoredRoles: [String]
         },
 
+        anticaps: {
+            enabled: { type: Boolean, default: false },
+            ignoredChannels: [String],
+            ignoredRoles: [String]
+        },
+
         strikes: {
             seniorityThreshold: { type: Number, default: 604800000 }, // 7 days
             punishments: [{
@@ -173,7 +179,7 @@ const GuildConfigSchema = new mongoose.Schema({
         picOnlyChannels: [String],
 
         flags: [{
-            type: { type: String, enum: ['link', 'spam', 'everyone', 'mention', 'badwords', 'invite', 'caps'] },
+            type: { type: String, enum: ['link', 'spam', 'everyone', 'mention', 'badwords', 'invite', 'caps', 'massmention'] },
             action: { type: String, enum: ['warn', 'mute', 'kick', 'ban', 'timeout'] },
             amount: { type: Number, default: 1 }, // number of warns or duration for mute
             duration: Number, // in ms if action is mute/timeout

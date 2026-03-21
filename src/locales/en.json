@@ -358,9 +358,14 @@
         "reason_link": "Automod: Link detected",
         "reason_spam": "Automod: Spam detected",
         "reason_everyone": "Automod: Forbidden @everyone/@here mention",
-        "reason_mention": "Automod: Excessive mentions ({{count}})",
-        "reason_caps": "Automod: Too many capitals",
-        "warning": "⚠️ {{user}}, please stop this behavior.\nReason: **{{reason}}**"
+        "reason_mention": "Automod: Excessive Mentions ({{count}})",
+        "reason_caps": "Automod: Too many Caps",
+        "reason_spam_light": "Automod: Light Spam (Score: {{score}})",
+        "reason_spam_medium": "Automod: Medium Spam (Score: {{score}})",
+        "reason_spam_heavy": "Automod: Heavy Spam (Score: {{score}})",
+        "warning": "⚠️ {{user}}, please stop this behavior.\nReason: **{{reason}}**",
+        "warning_discrete": "⚠️ {{user}}, please slow down (Spam detected).",
+        "warning_heavy": "🚫 {{user}}, your messages were deleted due to excessive spam. Punishment applied."
     },
     "sanction": {
         "expired_tempban": "Tempban expired",
@@ -842,6 +847,21 @@
         "mute_dm_title": "Sanction",
         "ban_title": "Ban"
     },
+    "antispam": {
+        "description": "Configure the anti-spam system",
+        "usage": "Usage: `+antispam <on/off>` or `+antispam <limit>/<time>` (e.g., 5/5s)",
+        "success_state": "✅ AntiSpam: **{{status}}**.",
+        "success_config": "✅ AntiSpam configured: **{{limit}}** messages in **{{time}}**.",
+        "invalid_time": "❌ Invalid time format (e.g., 5s, 10m).",
+        "invalid_limit": "❌ Invalid limit."
+    },
+    "massmention": {
+        "description": "Configure the mass mention protection system",
+        "usage": "Usage: `+massmention <on/off>` or `+massmention <number>` (e.g., 5)",
+        "success_state": "✅ Anti-Mention: **{{status}}**.",
+        "success_config": "✅ Anti-Mention configured: **{{limit}}** mentions allowed.",
+        "invalid_limit": "❌ Invalid mention limit."
+    },
     "muterole": {
         "reason_auto": "Auto-generated Mute Role",
         "description": "Sets or generates the Mute role for the server",
@@ -884,6 +904,7 @@
         "desc_antieveryone": "Anti @everyone / @here",
         "desc_antiupdate": "Anti server modification",
         "desc_antideco": "Anti disconnection",
+        "desc_anticaps": "Blocks excessive caps",
         "config_limit_label": "Limit Count (e.g. 3)",
         "config_time_label": "Time in ms (e.g. 10000 for 10s)",
         "config_saved": "✅ Configuration saved for {{module}}: {{count}} actions in {{time}}ms.",
@@ -900,6 +921,7 @@
         "module_antieveryone": "Anti-Everyone",
         "module_antiupdate": "Anti-Update",
         "module_antideco": "Anti-Deco",
+        "module_anticaps": "Anti-Caps",
         "description": "Configure security modules (Antiraid)",
         "usage": "**Usage:** `+secur`"
     },
@@ -2615,15 +2637,6 @@
         "field_modlog": "**ModLog:** {{state}}",
         "field_secur": "**SecurInvite:** {{state}}",
         "footer": "Use the buttons to navigate"
-    },
-
-    "antispam": {
-        "description": "Configure the anti-spam system",
-        "usage": "Usage: `+antispam <on/off>` or `+antispam <limit>/<time>` (e.g., 5/5s)",
-        "success_state": "✅ AntiSpam: **{{status}}**.",
-        "success_config": "✅ AntiSpam configured: **{{limit}}** messages in **{{time}}**.",
-        "invalid_time": "❌ Invalid time format (e.g., 5s, 10m).",
-        "invalid_limit": "❌ Invalid limit."
     },
     "security": {
         "status_title": "🛡️ Security Status",

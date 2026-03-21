@@ -37,7 +37,8 @@ module.exports = {
             `**AntiSpam:** ${bool(config.moderation?.antispam?.enabled)}`,
             `**AntiLink:** ${bool(config.moderation?.antilink?.enabled)}`,
             `**MassMention:** ${bool(config.moderation?.massmention?.enabled)}`,
-            `**BadWords:** ${bool(config.moderation?.badwords?.enabled)}`
+            `**BadWords:** ${bool(config.moderation?.badwords?.enabled)}`,
+            `**AntiCaps:** ${bool(config.moderation?.anticaps?.enabled)}`
         ].join('\n');
 
         // Logs

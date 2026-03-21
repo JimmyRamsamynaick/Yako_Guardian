@@ -1016,6 +1016,13 @@
         "invalid_time": "❌ Format temps invalide (ex: 5s, 10m).",
         "invalid_limit": "❌ Limite invalide."
     },
+    "massmention": {
+        "description": "Configure le système anti-mentions massives",
+        "usage": "Usage: `+massmention <on/off>` ou `+massmention <nombre>` (ex: 5)",
+        "success_state": "✅ Anti-Mention: **{{status}}**.",
+        "success_config": "✅ Anti-Mention configuré: **{{limit}}** mentions autorisées.",
+        "invalid_limit": "❌ Limite de mentions invalide."
+    },
 
     "muterole": {
         "reason_auto": "Rôle Mute auto-généré",
@@ -1064,7 +1071,12 @@
         "reason_everyone": "Automod: Mention @everyone/@here interdite",
         "reason_mention": "Automod: Mentions excessives ({{count}})",
         "reason_caps": "Automod: Trop de majuscules",
-        "warning": "⚠️ {{user}}, veuillez cesser ce comportement.\nRaison: **{{reason}}**"
+        "reason_spam_light": "Automod: Spam léger (Score: {{score}})",
+        "reason_spam_medium": "Automod: Spam moyen (Score: {{score}})",
+        "reason_spam_heavy": "Automod: Spam élevé (Score: {{score}})",
+        "warning": "⚠️ {{user}}, veuillez cesser ce comportement.\nRaison: **{{reason}}**",
+        "warning_discrete": "⚠️ {{user}}, merci de ralentir (Spam détecté).",
+        "warning_heavy": "🚫 {{user}}, vos messages ont été supprimés pour spam excessif. Sanction appliquée."
     },
     "sanction": {
         "expired_tempban": "Ban temporaire expiré",
@@ -1093,6 +1105,7 @@
         "desc_antieveryone": "Anti @everyone / @here",
         "desc_antiupdate": "Anti modification serveur",
         "desc_antideco": "Anti déconnexion",
+        "desc_anticaps": "Bloque l'excès de majuscules",
         "config_limit_label": "Nombre limite (ex: 3)",
         "config_time_label": "Temps en ms (ex: 10000 pour 10s)",
         "config_saved": "✅ Configuration sauvegardée pour {{module}} : {{count}} actions en {{time}}ms.",
@@ -1109,6 +1122,7 @@
         "module_antieveryone": "Anti-Everyone",
         "module_antiupdate": "Anti-Update",
         "module_antideco": "Anti-Deco",
+        "module_anticaps": "Anti-Caps",
         "description": "Configurez les modules de sécurité (Antiraid)",
         "usage": "**Utilisation:** `+secur`"
     },

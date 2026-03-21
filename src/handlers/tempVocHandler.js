@@ -34,7 +34,8 @@ async function handleTempVocInteraction(client, interaction) {
         const noDefer = [
             'tempvoc_limit', 'tempvoc_rename', 
             'tempvoc_modal_limit', 'tempvoc_modal_rename',
-            'tempvoc_select_kick', 'tempvoc_select_transfer', 'tempvoc_select_wl', 'tempvoc_select_bl'
+            'tempvoc_select_kick', 'tempvoc_select_transfer', 'tempvoc_select_wl', 'tempvoc_select_bl',
+            'tempvoc_lock', 'tempvoc_unlock', 'tempvoc_hide', 'tempvoc_purge' // Add main buttons to noDefer
         ];
         
         if (!noDefer.includes(customId)) {
@@ -44,80 +45,102 @@ async function handleTempVocInteraction(client, interaction) {
         // --- BUTTONS ---
 
         if (customId === 'tempvoc_lock') {
-            // Lock: Visible but Locked
+            await interaction.deferUpdate(); // Immediate ack on button click
+            
+            // Lock logic: We check the current permissions for @everyone
             const everyone = guild.roles.everyone;
             const canConnect = channel.permissionsFor(everyone).has(PermissionsBitField.Flags.Connect);
             
-            if (!canConnect || channel.name.startsWith('🔒')) {
-                return interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.already_locked', guildId), '', 'error')] });
+            // If it's already locked in permissions, we consider it locked
+            if (!canConnect) {
+                return interaction.followUp({ embeds: [createEmbed(await t('tempvoc.handler.already_locked', guildId), '', 'error')], ephemeral: true });
             }
 
-            // 1. Rename channel to include the lock emoji
-            if (!channel.name.startsWith('🔒')) {
-                await channel.setName(`🔒-${channel.name}`).catch(() => {});
-            }
+            const promises = [];
 
-            // 2. Lock permissions for everyone
-            // We keep ViewChannel: true if it was already true, or let it follow @everyone default
-            await channel.permissionOverwrites.edit(guild.id, { Connect: false });
+            // 1. Lock permissions for everyone
+            promises.push(channel.permissionOverwrites.edit(guild.id, { 
+                Connect: false,
+                SendMessages: false 
+            }).catch(() => {}));
             
             // 3. Ensure Whitelist (Database) keeps access
             for (const userId of active.allowedUsers) {
-                await channel.permissionOverwrites.edit(userId, { 
+                promises.push(channel.permissionOverwrites.edit(userId, { 
                     Connect: true,
-                    ViewChannel: true
-                }).catch(() => {});
+                    ViewChannel: true,
+                    SendMessages: true
+                }).catch(() => {}));
             }
 
-            // 4. Ensure Bot keeps access
-            await channel.permissionOverwrites.edit(client.user.id, {
+            // 4. Ensure Bot, Owner and Fonda keep access
+            promises.push(channel.permissionOverwrites.edit(client.user.id, {
                 Connect: true,
                 ViewChannel: true,
-                ManageChannels: true
-            }).catch(() => {});
+                ManageChannels: true,
+                SendMessages: true
+            }).catch(() => {}));
 
-            // 5. Allow members already in the channel to send messages (interface vocale)
+            if (guild.ownerId !== member.id) {
+                promises.push(channel.permissionOverwrites.edit(guild.ownerId, {
+                    Connect: true,
+                    ViewChannel: true,
+                    SendMessages: true
+                }).catch(() => {}));
+            }
+
+            promises.push(channel.permissionOverwrites.edit(member.id, {
+                Connect: true,
+                ViewChannel: true,
+                SendMessages: true,
+                ManageChannels: true,
+                MoveMembers: true
+            }).catch(() => {}));
+
+            // 5. Allow members already in the channel to send messages
             const membersInChannel = channel.members;
             for (const [memberId, m] of membersInChannel) {
-                if (memberId !== member.id && !active.allowedUsers.includes(memberId)) {
-                    await channel.permissionOverwrites.edit(memberId, { 
+                if (memberId !== member.id && !active.allowedUsers.includes(memberId) && memberId !== guild.ownerId) {
+                    promises.push(channel.permissionOverwrites.edit(memberId, { 
                         SendMessages: true,
-                        ViewChannel: true
-                    }).catch(() => {});
+                        ViewChannel: true,
+                        Connect: true 
+                    }).catch(() => {}));
                 }
             }
 
-            await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.locked', guildId), '', 'success')] });
+            await Promise.all(promises);
+            await interaction.followUp({ embeds: [createEmbed(await t('tempvoc.handler.locked', guildId), '', 'success')], ephemeral: true });
         }
         else if (customId === 'tempvoc_unlock') {
+            await interaction.deferUpdate(); // Immediate ack on button click
+
             const everyone = guild.roles.everyone;
             const canConnect = channel.permissionsFor(everyone).has(PermissionsBitField.Flags.Connect);
             
-            if (canConnect && !channel.name.startsWith('🔒')) {
-                return interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.already_unlocked', guildId), '', 'error')] });
+            // If it's already unlocked in permissions, we consider it unlocked
+            if (canConnect) {
+                return interaction.followUp({ embeds: [createEmbed(await t('tempvoc.handler.already_unlocked', guildId), '', 'error')], ephemeral: true });
             }
 
-            // 1. Remove lock emoji from name
-            let newName = channel.name;
-            if (newName.startsWith('🔒-')) newName = newName.replace('🔒-', '');
-            else if (newName.startsWith('🔒')) newName = newName.replace('🔒', '');
-            
-            if (newName !== channel.name) {
-                await channel.setName(newName).catch(() => {});
-            }
+            const promises = [];
 
-            // 2. Restore permissions for everyone
-            await channel.permissionOverwrites.edit(guild.id, { Connect: true });
+            // 1. Restore permissions for everyone
+            promises.push(channel.permissionOverwrites.edit(guild.id, { 
+                Connect: true,
+                SendMessages: true 
+            }).catch(() => {}));
 
-            // 3. Remove specific overwrites added during lock for members who are not Whitelisted/Owner
+            // 3. Clean up specific overwrites
             const overwrites = channel.permissionOverwrites.cache;
             for (const [id, overwrite] of overwrites) {
-                if (id !== guild.id && id !== member.id && id !== client.user.id && !active.allowedUsers.includes(id)) {
-                    await channel.permissionOverwrites.delete(id).catch(() => {});
+                if (id !== guild.id && id !== member.id && id !== client.user.id && !active.allowedUsers.includes(id) && id !== guild.ownerId) {
+                    promises.push(channel.permissionOverwrites.delete(id).catch(() => {}));
                 }
             }
 
-            await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.unlocked', guildId), '', 'success')] });
+            await Promise.all(promises);
+            await interaction.followUp({ embeds: [createEmbed(await t('tempvoc.handler.unlocked', guildId), '', 'success')], ephemeral: true });
         }
         else if (customId === 'tempvoc_hide') {
             // Toggle hide/unhide
@@ -262,8 +285,16 @@ async function handleTempVocInteraction(client, interaction) {
         }
         else if (customId === 'tempvoc_modal_rename') {
             const name = interaction.fields.getTextInputValue('name');
-            await channel.setName(name);
-            await interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.rename_success', guildId, { name }), '', 'success')], ephemeral: true });
+            
+            try {
+                await channel.setName(name);
+                await interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.rename_success', guildId, { name }), '', 'success')], ephemeral: true });
+            } catch (error) {
+                console.error("[TempVoc] Rename Error:", error);
+                // Handle rate limits or other permission issues
+                const errorMsg = error.code === 50035 ? "Nom de salon invalide ou trop long." : (error.status === 429 ? "Vous changez le nom trop rapidement (Rate Limit Discord)." : error.message);
+                await interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.rename_error', guildId, { error: errorMsg }), '', 'error')], ephemeral: true });
+            }
         }
         
         // --- SELECTS ---
@@ -314,8 +345,12 @@ async function handleTempVocInteraction(client, interaction) {
                     
                     active.allowedUsers.push(id);
                     added.push(id);
-                    // Add Perms
-                    await channel.permissionOverwrites.edit(id, { Connect: true, ViewChannel: true });
+                    // Add Perms: Connect + View + SendMessages (for locked/hidden channels)
+                    await channel.permissionOverwrites.edit(id, { 
+                        Connect: true, 
+                        ViewChannel: true,
+                        SendMessages: true 
+                    }).catch(() => {});
                 }
             }
             await active.save();
