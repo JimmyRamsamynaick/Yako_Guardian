@@ -14,20 +14,21 @@ async function applyPunishment(client, guild, member, strikeCount, oldStrikeCoun
     // Find matching punishment
     const punishments = config.moderation.strikes.punishments || [];
     
-    let rule;
-    if (oldStrikeCount !== null) {
-        // Find the highest threshold passed between old and new count
-        rule = punishments
-            .filter(p => p.count > oldStrikeCount && p.count <= strikeCount)
-            .sort((a, b) => b.count - a.count)[0];
-    } else {
-        // Legacy behavior: exact match
-        rule = punishments.find(p => p.count === strikeCount);
-    }
+    // Sort punishments by count descending to find the highest applicable threshold
+    const sortedPunishments = [...punishments].sort((a, b) => b.count - a.count);
+    
+    // Find the highest punishment where the threshold is reached or exceeded
+    const rule = sortedPunishments.find(p => strikeCount >= p.count);
 
     if (!rule) {
-        console.log(`[Punish] No rule found for strike count ${strikeCount} (Old: ${oldStrikeCount})`);
+        console.log(`[Punish] No rule reached yet for strike count ${strikeCount}`);
         return null; 
+    }
+
+    // Optimization: If it's a timeout/mute and the user is ALREADY timed out/muted, 
+    // we don't need to re-apply unless we want to extend (but let's avoid spamming API)
+    if (rule.action === 'timeout' && member.communicationDisabledUntilTimestamp > Date.now()) {
+        return null;
     }
 
     console.log(`[Punish] Triggering rule: ${rule.count} flags -> ${rule.action} (${rule.duration ? ms(rule.duration) : 'no duration'})`);
