@@ -223,19 +223,21 @@ async function checkAutomod(client, message, config) {
         // --- ACTIONS ---
 
         // Cas 1: Récidive immédiate en mode surveillance
-        if (isUnderSurveillance && score >= 25) { // Seuil encore plus bas pour bloquer le flood post-warning
+        if (isUnderSurveillance && score >= 20) { 
             triggeredType = "spam";
             reason = "[Mode Surveillance] Récidive après avertissement";
             
-            if (message.deletable) await message.delete().catch(() => {});
+            // Suppression FORCEE et IMMEDIATE
+            message.delete().catch(() => {});
             
+            // On reset l'historique et on relance la surveillance
+            userData.warningTimestamp = now; 
+            userData.messages = [];
+            userData.lastAction = now;
+            guildSpamMap.set(message.author.id, userData);
+
             // On ajoute 3 strikes d'un coup pour forcer une sanction du panel
             await applyStrikes(client, message, 'spam', reason, 3);
-            
-            userData.messages = []; // On vide tout pour repartir à zéro
-            userData.lastAction = now;
-            userData.warningTimestamp = now; // On prolonge la surveillance
-            guildSpamMap.set(message.author.id, userData);
             return true;
         }
 

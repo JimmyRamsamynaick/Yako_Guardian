@@ -6,9 +6,9 @@ const { t } = require('../../utils/i18n');
 module.exports = {
     name: 'messageDelete',
     async execute(client, message) {
-        if (!message.guild || message.author?.bot) return;
+        if (!message || !message.guild || !message.author || message.author.bot) return;
 
-        const executor = await getExecutor(message.guild, AuditLogEvent.MessageDelete, message.author?.id);
+        const executor = await getExecutor(message.guild, AuditLogEvent.MessageDelete, message.author.id);
         const description = await t('logs.details.message_delete', message.guild.id, {
             user: message.author,
             channel: message.channel,
