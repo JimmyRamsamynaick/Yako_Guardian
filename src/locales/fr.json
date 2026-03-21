@@ -2084,7 +2084,7 @@
             "limit_modal_title": "Définir la limite",
             "limit_input_label": "Nombre max d'utilisateurs (0-99)",
             "rename_modal_title": "Renommer le salon",
-            "rename_input_label": "Nouveau nom (Discord limite à 2 modifs / 10 min)",
+            "rename_input_label": "Nouveau nom (2 modifs / 10 min)",
             "kick_none": "❌ Personne à expulser.",
             "kick_select_placeholder": "Sélectionnez le membre à expulser",
             "kick_msg": "👢 Qui voulez-vous expulser ?",
