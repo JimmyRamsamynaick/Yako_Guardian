@@ -6,10 +6,19 @@ const ms = require('ms');
 const { createEmbed } = require('../design');
 const { t } = require('../i18n');
 
+const punishmentCooldowns = new Map(); // guildId_userId -> timestamp
+
 async function applyPunishment(client, guild, member, strikeCount, oldStrikeCount = null) {
     const config = await getGuildConfig(guild.id);
     
     if (!config.moderation || !config.moderation.strikes) return null;
+
+    // --- COOLDOWN SYSTEM (Avoid double punishments in bursts) ---
+    const cooldownKey = `${guild.id}_${member.id}`;
+    const lastPunish = punishmentCooldowns.get(cooldownKey);
+    if (lastPunish && (Date.now() - lastPunish) < 5000) {
+        return null; // Already punished in the last 5 seconds
+    }
 
     // Find matching punishment
     const punishments = config.moderation.strikes.punishments || [];
@@ -31,7 +40,19 @@ async function applyPunishment(client, guild, member, strikeCount, oldStrikeCoun
         return null;
     }
 
+    if (rule.action === 'mute') {
+        const muteRoleId = config.moderation.muteRole;
+        if (muteRoleId && member.roles.cache.has(muteRoleId)) {
+            return null; // Already has mute role
+        }
+    }
+
     console.log(`[Punish] Triggering rule: ${rule.count} flags -> ${rule.action} (${rule.duration ? ms(rule.duration) : 'no duration'})`);
+
+    // Mark as punished to prevent double triggers during async operations
+    punishmentCooldowns.set(cooldownKey, Date.now());
+    // Cleanup cooldown map after 10 seconds
+    setTimeout(() => punishmentCooldowns.delete(cooldownKey), 10000);
 
     // Execute Action
     try {

@@ -234,7 +234,7 @@ async function checkAutomod(client, message, config) {
             triggeredType = "spam";
             reason = "[Mode Surveillance] Récidive après avertissement";
             
-            // On s'assure qu'il est supprimé (si pas déjà fait par la préemption)
+            // Suppression FORCEE et IMMEDIATE
             message.delete().catch(() => {});
             
             // On reset l'historique et on relance la surveillance
@@ -243,8 +243,15 @@ async function checkAutomod(client, message, config) {
             userData.lastAction = now;
             guildSpamMap.set(message.author.id, userData);
 
-            // On ajoute 3 strikes d'un coup pour forcer une sanction du panel
-            await applyStrikes(client, message, 'spam', reason, 3);
+            // OPTIMISATION : On n'ajoute des strikes QUE si l'utilisateur n'est pas déjà mute/timeout
+            // Cela évite l'explosion du compteur de strikes (ex: passer de 3 à 12 en 1s)
+            const isAlreadyPunished = message.member.communicationDisabledUntilTimestamp > now || 
+                                     (config.moderation.muteRole && message.member.roles.cache.has(config.moderation.muteRole));
+
+            if (!isAlreadyPunished) {
+                await applyStrikes(client, message, 'spam', reason, 3);
+            }
+            
             return true;
         }
 
