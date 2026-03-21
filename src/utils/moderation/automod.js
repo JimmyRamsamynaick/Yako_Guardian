@@ -199,17 +199,18 @@ async function checkAutomod(client, message, config) {
         // Mode Surveillance renforcée (10s après un warning)
         const isUnderSurveillance = (now - userData.warningTimestamp) < 10000;
 
-        // Anti-spam rapide : si on a agi il y a moins de 5s, on ignore (SAUF SI SURVEILLANCE)
-        if (!isUnderSurveillance && (now - userData.lastAction < 5000)) return false;
+        // Anti-spam rapide : si on a agi il y a moins de 2s, on ignore (SAUF SI SURVEILLANCE)
+        if (!isUnderSurveillance && (now - userData.lastAction < 2000)) return false;
 
-        // Filter out old messages
-        userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
+        // Filter out old messages (Strict window)
+        userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < 8000);
         
         const score = await calculateSpamScore(userData.messages, message, message.guild.id, isUnderSurveillance);
 
-        // Add current message to history
+        // Add current message to history (limit history size to 10)
         if (!userData.messages.find(m => m.id === message.id)) {
             userData.messages.push(message);
+            if (userData.messages.length > 10) userData.messages.shift();
         }
         
         guildSpamMap.set(message.author.id, userData);
@@ -222,29 +223,30 @@ async function checkAutomod(client, message, config) {
         // --- ACTIONS ---
 
         // Cas 1: Récidive immédiate en mode surveillance
-        if (isUnderSurveillance && score >= 30) { // Seuil encore plus bas
+        if (isUnderSurveillance && score >= 25) { // Seuil encore plus bas pour bloquer le flood post-warning
             triggeredType = "spam";
             reason = "[Mode Surveillance] Récidive après avertissement";
             
             if (message.deletable) await message.delete().catch(() => {});
             
-            // On ajoute 3 strikes d'un coup en surveillance pour forcer une sanction du panel
+            // On ajoute 3 strikes d'un coup pour forcer une sanction du panel
             await applyStrikes(client, message, 'spam', reason, 3);
             
-            userData.messages = [];
+            userData.messages = []; // On vide tout pour repartir à zéro
             userData.lastAction = now;
+            userData.warningTimestamp = now; // On prolonge la surveillance
             guildSpamMap.set(message.author.id, userData);
             return true;
         }
 
         // Cas 2: Détection normale
-        if (userData.messages.length >= 2 && score >= 60) {
+        if (userData.messages.length >= 2 && score >= 55) { // Seuil légèrement abaissé pour plus de réactivité
             triggeredType = "spam";
             spamMessages = [...userData.messages];
             userData.lastAction = now;
             userData.warningTimestamp = now; // Toujours activer surveillance après action
             
-            if (score < 85) {
+            if (score < 80) {
                 // SPAM LÉGER -> WARNING + SURVEILLANCE
                 reason = await t('automod.reason_spam_light', message.guild.id, { score });
                 
@@ -253,12 +255,15 @@ async function checkAutomod(client, message, config) {
                 if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 3000);
                 
                 await applyStrikes(client, message, 'spam', reason, 1);
+                
+                userData.messages = []; // Nettoyage immédiat
+                guildSpamMap.set(message.author.id, userData);
                 return true; 
              } else {
                 // SPAM LOURD -> SUPPRESSION + SANCTION
                 reason = await t('automod.reason_spam_heavy', message.guild.id, { score });
 
-                if (score > 90) {
+                if (score > 85) {
                     for (const msg of spamMessages) {
                         if (msg.deletable) await msg.delete().catch(() => {});
                     }
@@ -269,12 +274,12 @@ async function checkAutomod(client, message, config) {
                 userData.messages = []; 
                 guildSpamMap.set(message.author.id, userData);
 
-                const warningKey = score > 90 ? 'automod.warning_heavy' : 'automod.warning';
+                const warningKey = score > 85 ? 'automod.warning_heavy' : 'automod.warning';
                 const warning = await t(warningKey, message.guild.id, { user: message.author, reason });
                 const warningMsg = await message.channel.send({ embeds: [createEmbed("AutoMod", warning, 'moderation')] }).catch(() => {});
                 if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 5000);
 
-                const amountToGive = score > 90 ? Math.max(baseAmount * 2, 5) : Math.max(baseAmount, 2);
+                const amountToGive = score > 85 ? Math.max(baseAmount * 2, 5) : Math.max(baseAmount, 2);
                 await applyStrikes(client, message, 'spam', reason, amountToGive);
                 return true;
             }
