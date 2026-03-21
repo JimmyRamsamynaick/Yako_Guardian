@@ -274,8 +274,14 @@ async function handleTempVocInteraction(client, interaction) {
             } catch (error) {
                 console.error("[TempVoc] Rename Error:", error);
                 // Handle rate limits or other permission issues
-                const errorMsg = error.code === 50035 ? "Nom de salon invalide ou trop long." : (error.status === 429 ? "Vous changez le nom trop rapidement (Rate Limit Discord)." : error.message);
-                await interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.rename_error', guildId, { error: errorMsg }), '', 'error')], ephemeral: true });
+                let errorMsg = error.message;
+                if (error.status === 429) {
+                    errorMsg = await t('tempvoc.handler.rename_ratelimit', guildId);
+                } else if (error.code === 50035) {
+                    errorMsg = "Nom de salon invalide ou trop long.";
+                }
+                
+                await interaction.reply({ embeds: [createEmbed(errorMsg, '', 'error')], ephemeral: true });
             }
         }
         
