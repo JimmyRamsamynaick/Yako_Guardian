@@ -126,22 +126,20 @@ async function calculateSpamScore(messages, newMessage, guildId, isUnderSurveill
 async function applyStrikes(client, message, type, reason, amount) {
     try {
         const reasonText = `[AutoMod: ${type.toUpperCase()}] ${reason}`;
-        const oldData = await UserStrike.findOne({ guildId: message.guild.id, userId: message.author.id });
-        const oldTotal = oldData?.strikes?.length || 0;
-
+        
         const strikesToAdd = Array(amount).fill({ 
             reason: reasonText, 
             moderatorId: client.user.id, 
             type: type 
         });
 
-        const updated = await UserStrike.findOneAndUpdate(
+        await UserStrike.findOneAndUpdate(
             { guildId: message.guild.id, userId: message.author.id },
             { $push: { strikes: { $each: strikesToAdd } } },
             { upsert: true, new: true }
         );
         
-        await applyPunishment(client, message.guild, message.member, updated.strikes.length, oldTotal);
+        // Removed applyPunishment call: delegation to punish panel system
         return true;
     } catch (e) {
         console.error("Failed to apply strikes:", e);
@@ -221,33 +219,33 @@ async function checkAutomod(client, message, config) {
         // --- ACTIONS ---
 
         // Cas 1: Récidive immédiate en mode surveillance
-        if (isUnderSurveillance && score >= 40) {
+        if (isUnderSurveillance && score >= 35) { // Seuil encore plus bas
             triggeredType = "spam";
             reason = "[Mode Surveillance] Récidive après avertissement";
             
             if (message.deletable) await message.delete().catch(() => {});
             
-            // On laisse le système +punish gérer la sanction réelle (mute/strike)
-            // On ajoute simplement les strikes pour que le système punish les voit
-            const amountToGive = Math.max(baseAmount * 2, 3);
-            await applyStrikes(client, message, 'spam', reason, amountToGive);
-            
+            // On reset l'historique et on relance la surveillance
+            userData.warningTimestamp = now; 
             userData.messages = [];
             userData.lastAction = now;
             guildSpamMap.set(message.author.id, userData);
+
+            // On ajoute les strikes (sans sanction directe)
+            await applyStrikes(client, message, 'spam', reason, 2);
             return true;
         }
 
-        // Cas 2: Détection normale (Seuils plus élevés pour éviter les faux positifs)
-        if (userData.messages.length >= 3 && score >= 60) {
+        // Cas 2: Détection normale
+        if (userData.messages.length >= 2 && score >= 60) {
             triggeredType = "spam";
             spamMessages = [...userData.messages];
             userData.lastAction = now;
+            userData.warningTimestamp = now; // Toujours activer surveillance après action
             
-            if (score < 80) {
+            if (score < 85) {
                 // SPAM LÉGER -> WARNING + SURVEILLANCE
                 reason = await t('automod.reason_spam_light', message.guild.id, { score });
-                userData.warningTimestamp = now; // Activer le mode surveillance
                 
                 const warning = await t('automod.warning_discrete', message.guild.id, { user: message.author });
                 const warningMsg = await message.channel.send({ content: warning }).catch(() => {});
