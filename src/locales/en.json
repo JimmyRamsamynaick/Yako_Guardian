@@ -1643,7 +1643,7 @@
             "limit_modal_title": "Set Limit",
             "limit_input_label": "Max users (0-99)",
             "rename_modal_title": "Rename Channel",
-            "rename_input_label": "New Name",
+            "rename_input_label": "New Name (Discord limits to 2 renames / 10 min)",
             "kick_none": "❌ No one to kick.",
             "kick_select_placeholder": "Select member to kick",
             "kick_msg": "👢 Who do you want to kick?",
