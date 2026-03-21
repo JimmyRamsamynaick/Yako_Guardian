@@ -8,7 +8,7 @@ const ms = require('ms');
 module.exports = {
     name: 'punish',
     description: 'punish.description',
-    category: 'Moderation',
+    category: 'Configuration',
     usage: 'punish.usage',
     aliases: ['setpunish', 'punishment'],
     async run(client, message, args) {
