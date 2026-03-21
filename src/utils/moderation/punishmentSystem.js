@@ -25,7 +25,12 @@ async function applyPunishment(client, guild, member, strikeCount, oldStrikeCoun
         rule = punishments.find(p => p.count === strikeCount);
     }
 
-    if (!rule) return null; // No rule reached in this jump
+    if (!rule) {
+        console.log(`[Punish] No rule found for strike count ${strikeCount} (Old: ${oldStrikeCount})`);
+        return null; 
+    }
+
+    console.log(`[Punish] Triggering rule: ${rule.count} flags -> ${rule.action} (${rule.duration ? ms(rule.duration) : 'no duration'})`);
 
     // Execute Action
     try {
@@ -56,12 +61,20 @@ async function applyPunishment(client, guild, member, strikeCount, oldStrikeCoun
 
             case 'mute':
                 const muteRoleId = config.moderation.muteRole;
+                let mutedWithRole = false;
                 if (muteRoleId) {
                     const role = guild.roles.cache.get(muteRoleId);
                     if (role && member.manageable) {
                         await member.roles.add(role, reasonText);
                         actionTaken = await t('moderation.action_muted', guild.id);
+                        mutedWithRole = true;
                     }
+                }
+                
+                // Fallback to timeout if no role or failed to add role, and duration is present
+                if (!mutedWithRole && rule.duration && member.moderatable) {
+                    await member.timeout(rule.duration, reasonText);
+                    actionTaken = await t('moderation.action_timeout', guild.id, { duration: ms(rule.duration) });
                 }
                 break;
             
@@ -69,6 +82,12 @@ async function applyPunishment(client, guild, member, strikeCount, oldStrikeCoun
                 // Just a notification
                 actionTaken = await t('moderation.action_warned', guild.id);
                 break;
+        }
+
+        if (actionTaken) {
+            console.log(`[Punish] Action successfully taken: ${actionTaken} for ${member.user.tag}`);
+        } else {
+            console.log(`[Punish] Failed to take action (insufficient permissions?)`);
         }
 
         return actionTaken;
