@@ -5,7 +5,7 @@ const { t } = require('../i18n');
 const { createEmbed } = require('../design');
 const ms = require('ms');
 
-const spamMap = new Map(); // guildId -> userId -> { messages: [], lastAction: Date, warningTimestamp: Date }
+const spamMap = new Map(); // guildId -> userId -> { messages: [], lastAction: Date, warningTimestamp: Date, isProcessing: Boolean }
 const channelActivityMap = new Map(); // guildId -> channelId -> { lastMessages: [] }
 
 /**
@@ -191,16 +191,21 @@ async function checkAutomod(client, message, config) {
     const antispam = config.moderation.antispam;
     if (antispam?.enabled && !isWhitelisted(antispam)) {
         const guildSpamMap = spamMap.get(message.guild.id) || new Map();
-        const userData = guildSpamMap.get(message.author.id) || { messages: [], lastAction: 0, warningTimestamp: 0 };
+        const userData = guildSpamMap.get(message.author.id) || { messages: [], lastAction: 0, warningTimestamp: 0, isProcessing: false };
         
+        // --- CONCURRENCY LOCK ---
+        // If we are already processing an action for this user, ignore subsequent messages for 1s
+        if (userData.isProcessing) {
+            message.delete().catch(() => {}); // Preemptive delete during processing
+            return true;
+        }
+
         // Mode Surveillance renforcée (10s après un warning)
         const isUnderSurveillance = (now - userData.warningTimestamp) < 10000;
 
         // --- OPTIMISATION CRITIQUE : SUPPRESSION PREEMPTIVE ---
-        // En mode surveillance, si le message est ultra-court (flood type "w"), on supprime AVANT tout calcul
         if (isUnderSurveillance && message.content.length < 5) {
             message.delete().catch(() => {});
-            // On continue quand même pour logger/sanctionner, mais le message est déjà parti de Discord
         }
 
         // Fenêtre d'analyse glissante (8s en normal, 4s en surveillance pour être plus nerveux)
@@ -237,14 +242,14 @@ async function checkAutomod(client, message, config) {
             // Suppression FORCEE et IMMEDIATE
             message.delete().catch(() => {});
             
-            // On reset l'historique et on relance la surveillance
+            // ACTIVATE CONCURRENCY LOCK
+            userData.isProcessing = true;
             userData.warningTimestamp = now; 
             userData.messages = [];
             userData.lastAction = now;
             guildSpamMap.set(message.author.id, userData);
 
             // OPTIMISATION : On n'ajoute des strikes QUE si l'utilisateur n'est pas déjà mute/timeout
-            // Cela évite l'explosion du compteur de strikes (ex: passer de 3 à 12 en 1s)
             const isAlreadyPunished = message.member.communicationDisabledUntilTimestamp > now || 
                                      (config.moderation.muteRole && message.member.roles.cache.has(config.moderation.muteRole));
 
@@ -252,15 +257,27 @@ async function checkAutomod(client, message, config) {
                 await applyStrikes(client, message, 'spam', reason, 3);
             }
             
+            // RELEASE LOCK AFTER LATENCY WINDOW
+            setTimeout(() => {
+                const currentData = guildSpamMap.get(message.author.id);
+                if (currentData) {
+                    currentData.isProcessing = false;
+                    guildSpamMap.set(message.author.id, currentData);
+                }
+            }, 2000);
+
             return true;
         }
 
         // Cas 2: Détection normale
-        if (userData.messages.length >= 2 && score >= 55) { // Seuil légèrement abaissé pour plus de réactivité
+        if (userData.messages.length >= 2 && score >= 55) { 
             triggeredType = "spam";
             spamMessages = [...userData.messages];
+            
+            // ACTIVATE CONCURRENCY LOCK
+            userData.isProcessing = true;
             userData.lastAction = now;
-            userData.warningTimestamp = now; // Toujours activer surveillance après action
+            userData.warningTimestamp = now; 
             
             if (score < 80) {
                 // SPAM LÉGER -> WARNING + SURVEILLANCE
@@ -272,10 +289,9 @@ async function checkAutomod(client, message, config) {
                 
                 await applyStrikes(client, message, 'spam', reason, 1);
                 
-                userData.messages = []; // Nettoyage immédiat
+                userData.messages = []; 
                 guildSpamMap.set(message.author.id, userData);
-                return true; 
-             } else {
+            } else {
                 // SPAM LOURD -> SUPPRESSION + SANCTION
                 reason = await t('automod.reason_spam_heavy', message.guild.id, { score });
 
@@ -297,8 +313,18 @@ async function checkAutomod(client, message, config) {
 
                 const amountToGive = score > 85 ? Math.max(baseAmount * 2, 5) : Math.max(baseAmount, 2);
                 await applyStrikes(client, message, 'spam', reason, amountToGive);
-                return true;
             }
+
+            // RELEASE LOCK AFTER LATENCY WINDOW
+            setTimeout(() => {
+                const currentData = guildSpamMap.get(message.author.id);
+                if (currentData) {
+                    currentData.isProcessing = false;
+                    guildSpamMap.set(message.author.id, currentData);
+                }
+            }, 2000);
+
+            return true;
         }
     }
 
