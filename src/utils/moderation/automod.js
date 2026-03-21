@@ -193,15 +193,22 @@ async function checkAutomod(client, message, config) {
         const guildSpamMap = spamMap.get(message.guild.id) || new Map();
         const userData = guildSpamMap.get(message.author.id) || { messages: [], lastAction: 0, warningTimestamp: 0, isProcessing: false };
         
-        // --- CONCURRENCY LOCK ---
-        // If we are already processing an action for this user, ignore subsequent messages for 1s
+        // --- CONCURRENCY LOCK (IMMEDIATE) ---
+        // On verrouille l'utilisateur dès qu'un message entre pour éviter les rafales durant l'analyse async
         if (userData.isProcessing) {
             message.delete().catch(() => {}); // Preemptive delete during processing
             return true;
         }
+        userData.isProcessing = true;
+        guildSpamMap.set(message.author.id, userData);
+        spamMap.set(message.guild.id, guildSpamMap);
 
         // Mode Surveillance renforcée (10s après un warning)
         const isUnderSurveillance = (now - userData.warningTimestamp) < 10000;
+
+        // Get config flags
+        const spamFlag = flags.find(f => f.type === 'spam' && f.enabled);
+        const baseAmount = spamFlag ? spamFlag.amount : 1;
 
         // --- OPTIMISATION CRITIQUE : SUPPRESSION PREEMPTIVE ---
         if (isUnderSurveillance && message.content.length < 5) {
@@ -225,13 +232,6 @@ async function checkAutomod(client, message, config) {
             if (userData.messages.length > 10) userData.messages.shift();
         }
         
-        guildSpamMap.set(message.author.id, userData);
-        spamMap.set(message.guild.id, guildSpamMap);
-
-        // Get config
-        const spamFlag = flags.find(f => f.type === 'spam' && f.enabled);
-        const baseAmount = spamFlag ? spamFlag.amount : 1;
-
         // --- ACTIONS ---
 
         // Cas 1: Récidive immédiate en mode surveillance
@@ -242,8 +242,7 @@ async function checkAutomod(client, message, config) {
             // Suppression FORCEE et IMMEDIATE
             message.delete().catch(() => {});
             
-            // ACTIVATE CONCURRENCY LOCK
-            userData.isProcessing = true;
+            // LOCK IS ALREADY ACTIVE
             userData.warningTimestamp = now; 
             userData.messages = [];
             userData.lastAction = now;
@@ -254,15 +253,16 @@ async function checkAutomod(client, message, config) {
                                      (config.moderation.muteRole && message.member.roles.cache.has(config.moderation.muteRole));
 
             if (!isAlreadyPunished) {
-                await applyStrikes(client, message, 'spam', reason, 3);
+                // RESPECT PANEL CONFIG: Use baseAmount directly
+                await applyStrikes(client, message, 'spam', reason, baseAmount);
             }
             
             // RELEASE LOCK AFTER LATENCY WINDOW
             setTimeout(() => {
-                const currentData = guildSpamMap.get(message.author.id);
+                const currentData = spamMap.get(message.guild.id)?.get(message.author.id);
                 if (currentData) {
                     currentData.isProcessing = false;
-                    guildSpamMap.set(message.author.id, currentData);
+                    spamMap.get(message.guild.id).set(message.author.id, currentData);
                 }
             }, 2000);
 
@@ -274,8 +274,7 @@ async function checkAutomod(client, message, config) {
             triggeredType = "spam";
             spamMessages = [...userData.messages];
             
-            // ACTIVATE CONCURRENCY LOCK
-            userData.isProcessing = true;
+            // LOCK IS ALREADY ACTIVE
             userData.lastAction = now;
             userData.warningTimestamp = now; 
             
@@ -287,7 +286,8 @@ async function checkAutomod(client, message, config) {
                 const warningMsg = await message.channel.send({ content: warning }).catch(() => {});
                 if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 3000);
                 
-                await applyStrikes(client, message, 'spam', reason, 1);
+                // RESPECT PANEL CONFIG: Use baseAmount directly
+                await applyStrikes(client, message, 'spam', reason, baseAmount);
                 
                 userData.messages = []; 
                 guildSpamMap.set(message.author.id, userData);
@@ -307,25 +307,30 @@ async function checkAutomod(client, message, config) {
                 guildSpamMap.set(message.author.id, userData);
 
                 const warningKey = score > 85 ? 'automod.warning_heavy' : 'automod.warning';
-                const warning = await t(warningKey, message.guild.id, { user: message.author, reason });
-                const warningMsg = await message.channel.send({ embeds: [createEmbed("AutoMod", warning, 'moderation')] }).catch(() => {});
+                const warningText = await t(warningKey, message.guild.id, { user: message.author, reason });
+                const warningMsg = await message.channel.send({ embeds: [createEmbed("AutoMod", warningText, 'moderation')] }).catch(() => {});
                 if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => {}), 5000);
 
-                const amountToGive = score > 85 ? Math.max(baseAmount * 2, 5) : Math.max(baseAmount, 2);
-                await applyStrikes(client, message, 'spam', reason, amountToGive);
+                // RESPECT PANEL CONFIG: Use baseAmount directly without multiplier
+                await applyStrikes(client, message, 'spam', reason, baseAmount);
             }
 
             // RELEASE LOCK AFTER LATENCY WINDOW
             setTimeout(() => {
-                const currentData = guildSpamMap.get(message.author.id);
+                const currentData = spamMap.get(message.guild.id)?.get(message.author.id);
                 if (currentData) {
                     currentData.isProcessing = false;
-                    guildSpamMap.set(message.author.id, currentData);
+                    spamMap.get(message.guild.id).set(message.author.id, currentData);
                 }
             }, 2000);
 
             return true;
         }
+
+        // --- SI PAS DE SPAM DÉTECTÉ, ON LIBÈRE LE VERROU IMMÉDIATEMENT ---
+        userData.isProcessing = false;
+        guildSpamMap.set(message.author.id, userData);
+        spamMap.set(message.guild.id, guildSpamMap);
     }
 
     // 2. Links & Invites
