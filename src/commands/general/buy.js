@@ -8,7 +8,7 @@ module.exports = {
     category: 'General',
     run: async (client, message, args) => {
         // Récupérer l'URL depuis le .env ou mettre le domaine configuré par défaut
-        const websiteUrl = process.env.WEBSITE_URL || 'http://payement-guardian.myddns.me:3002';
+        const websiteUrl = process.env.WEBSITE_URL || 'http://payement-guardian.myddns.me';
         
         const title = await t('buy.title', message.guild.id);
         const desc = await t('buy.description', message.guild.id);
