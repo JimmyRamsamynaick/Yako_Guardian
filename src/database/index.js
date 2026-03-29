@@ -83,6 +83,16 @@ function initDatabase() {
         )
     `);
 
+    // Blacklists (Guild-specific)
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS blacklists (
+            guild_id TEXT,
+            user_id TEXT,
+            reason TEXT,
+            PRIMARY KEY (guild_id, user_id)
+        )
+    `);
+
     // Command Permissions Overrides
     db.exec(`
         CREATE TABLE IF NOT EXISTS command_permissions (
@@ -109,6 +119,16 @@ function initDatabase() {
             created_at INTEGER,
             used_by TEXT, -- guild_id
             used_at INTEGER
+        )
+    `);
+
+    // Purchase Requests
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS purchase_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            paypal_username TEXT,
+            created_at INTEGER
         )
     `);
 
