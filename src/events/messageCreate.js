@@ -1,5 +1,5 @@
 // src/events/messageCreate.js
-const { ChannelType, PermissionsBitField } = require('discord.js');
+const { ChannelType, PermissionsBitField, MessageType } = require('discord.js');
 const logger = require('../utils/logger');
 const { db } = require('../database');
 const AutoReact = require('../database/models/AutoReact');
@@ -9,12 +9,30 @@ const CustomCommand = require('../database/models/CustomCommand');
 const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 const { getCommandLevel, getUserLevel } = require('../utils/permissionUtils');
+const { sendBoostThanks } = require('../utils/boostUtils');
 
 const slowmodeMap = new Map();
 
 module.exports = {
     name: 'messageCreate',
     async execute(client, message) {
+        // --- BOOST DETECTION (System Messages) ---
+        const boostTypes = [
+            MessageType.GuildBoost,
+            MessageType.GuildBoostTier1,
+            MessageType.GuildBoostTier2,
+            MessageType.GuildBoostTier3
+        ];
+
+        if (boostTypes.includes(message.type)) {
+            const member = message.member || await message.guild.members.fetch(message.author.id).catch(() => null);
+            if (member) {
+                await sendBoostThanks(client, message.guild, member);
+            }
+            return;
+        }
+        // --- END BOOST DETECTION ---
+
         // Debug log to confirm message content intent is working
         // logger.info(`Message received in ${message.channel.name}: ${message.content}`);
 

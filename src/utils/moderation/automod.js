@@ -5,7 +5,7 @@ const { t } = require('../i18n');
 const { createEmbed } = require('../design');
 const ms = require('ms');
 
-const spamMap = new Map(); // guildId -> userId -> { messages: [], lastAction: Date, warningTimestamp: Date, isProcessing: Boolean }
+const spamMap = new Map(); // guildId -> userId -> { messages: [], lastAction: Date, warningTimestamp: Date, processingChannel: String }
 const channelActivityMap = new Map(); // guildId -> channelId -> { lastMessages: [] }
 
 /**
@@ -160,7 +160,7 @@ async function checkAutomod(client, message, config) {
     if (message.member.permissions.has('Administrator')) return false; 
 
     // --- MISE À JOUR DE L'ACTIVITÉ DU SALON ---
-    const now = message.createdTimestamp;
+    const now = Date.now();
     let guildActivity = channelActivityMap.get(message.guild.id);
     if (!guildActivity) {
         guildActivity = new Map();
@@ -191,15 +191,15 @@ async function checkAutomod(client, message, config) {
     const antispam = config.moderation.antispam;
     if (antispam?.enabled && !isWhitelisted(antispam)) {
         const guildSpamMap = spamMap.get(message.guild.id) || new Map();
-        const userData = guildSpamMap.get(message.author.id) || { messages: [], lastAction: 0, warningTimestamp: 0, isProcessing: false };
+        const userData = guildSpamMap.get(message.author.id) || { messages: [], lastAction: 0, warningTimestamp: 0, processingChannel: null };
         
         // --- CONCURRENCY LOCK (IMMEDIATE) ---
-        // On verrouille l'utilisateur dès qu'un message entre pour éviter les rafales durant l'analyse async
-        if (userData.isProcessing) {
-            message.delete().catch(() => {}); // Preemptive delete during processing
+        // On verrouille l'utilisateur par salon dès qu'un message entre pour éviter les rafales
+        if (userData.processingChannel === message.channel.id) {
+            message.delete().catch(() => {}); // Preemptive delete during processing in the SAME channel
             return true;
         }
-        userData.isProcessing = true;
+        userData.processingChannel = message.channel.id;
         guildSpamMap.set(message.author.id, userData);
         spamMap.set(message.guild.id, guildSpamMap);
 
@@ -224,7 +224,9 @@ async function checkAutomod(client, message, config) {
         // Filter out old messages (Strict window)
         userData.messages = userData.messages.filter(msg => (now - msg.createdTimestamp) < timeWindow);
         
-        const score = await calculateSpamScore(userData.messages, message, message.guild.id, isUnderSurveillance);
+        // Filter by channel for individual scoring (éviter mute cross-channel)
+        const channelMessages = userData.messages.filter(msg => msg.channelId === message.channelId);
+        const score = await calculateSpamScore(channelMessages, message, message.guild.id, isUnderSurveillance);
 
         // Add current message to history (limit history size to 10)
         if (!userData.messages.find(m => m.id === message.id)) {
@@ -261,7 +263,7 @@ async function checkAutomod(client, message, config) {
             setTimeout(() => {
                 const currentData = spamMap.get(message.guild.id)?.get(message.author.id);
                 if (currentData) {
-                    currentData.isProcessing = false;
+                    currentData.processingChannel = null;
                     spamMap.get(message.guild.id).set(message.author.id, currentData);
                 }
             }, 2000);
@@ -270,9 +272,9 @@ async function checkAutomod(client, message, config) {
         }
 
         // Cas 2: Détection normale
-        if (userData.messages.length >= 2 && score >= 55) { 
+        if (channelMessages.length >= 2 && score >= 55) { 
             triggeredType = "spam";
-            spamMessages = [...userData.messages];
+            spamMessages = [...channelMessages];
             
             // LOCK IS ALREADY ACTIVE
             userData.lastAction = now;
@@ -289,7 +291,7 @@ async function checkAutomod(client, message, config) {
                 // RESPECT PANEL CONFIG: Use baseAmount directly
                 await applyStrikes(client, message, 'spam', reason, baseAmount);
                 
-                userData.messages = []; 
+                userData.messages = userData.messages.filter(msg => msg.channelId !== message.channelId); 
                 guildSpamMap.set(message.author.id, userData);
             } else {
                 // SPAM LOURD -> SUPPRESSION + SANCTION
@@ -303,7 +305,7 @@ async function checkAutomod(client, message, config) {
                     if (message.deletable) await message.delete().catch(() => {});
                 }
 
-                userData.messages = []; 
+                userData.messages = userData.messages.filter(msg => msg.channelId !== message.channelId); 
                 guildSpamMap.set(message.author.id, userData);
 
                 const warningKey = score > 85 ? 'automod.warning_heavy' : 'automod.warning';
@@ -319,7 +321,7 @@ async function checkAutomod(client, message, config) {
             setTimeout(() => {
                 const currentData = spamMap.get(message.guild.id)?.get(message.author.id);
                 if (currentData) {
-                    currentData.isProcessing = false;
+                    currentData.processingChannel = null;
                     spamMap.get(message.guild.id).set(message.author.id, currentData);
                 }
             }, 2000);
@@ -328,7 +330,7 @@ async function checkAutomod(client, message, config) {
         }
 
         // --- SI PAS DE SPAM DÉTECTÉ, ON LIBÈRE LE VERROU IMMÉDIATEMENT ---
-        userData.isProcessing = false;
+        userData.processingChannel = null;
         guildSpamMap.set(message.author.id, userData);
         spamMap.set(message.guild.id, guildSpamMap);
     }
