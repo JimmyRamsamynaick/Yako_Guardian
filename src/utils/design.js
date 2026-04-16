@@ -81,8 +81,8 @@ function createEmbed(title, description, type = 'default', options = {}) {
         }
     }
 
-    // Add icon to title if present
-    const finalTitle = icon ? `${icon}  ${title}` : title;
+    // Add icon to title if present (and not disabled by options)
+    const finalTitle = (icon && !options.noIcon) ? `${icon}  ${title}` : title;
 
     const embed = new EmbedBuilder()
         .setColor(color);

@@ -343,7 +343,7 @@ async function handleRoleMenuInteraction(client, interaction) {
             }
 
             try {
-                const msg = await channel.send({ embeds: [embed], components: components });
+                const msg = await channel.send({ embeds: [embed], components });
                 // V2 API returns the message object but properties might be slightly different.
                 // Assuming msg.id is available.
                 menu.channelId = channel.id;

@@ -154,7 +154,23 @@ async function handleEmbedInteraction(client, interaction) {
     if (customId === 'embed_send') {
         const embed = getEmbedFromDraft(draft);
         try {
-            await interaction.channel.send({ embeds: [embed] });
+            // PING LOGIC: Extract mentions from title, description and fields
+            const contentToSearch = [
+                draft.title || '',
+                draft.description || '',
+                ...(draft.fields || []).map(f => `${f.name} ${f.value}`)
+            ].join(' ');
+
+            const roleMentions = contentToSearch.match(/<@&\d+>/g) || [];
+            const userMentions = contentToSearch.match(/<@!?\d+>/g) || [];
+            const allMentions = [...new Set([...roleMentions, ...userMentions])];
+            const payload = { embeds: [embed] };
+
+            if (allMentions.length > 0) {
+                payload.content = allMentions.join(' ');
+            }
+
+            await interaction.channel.send(payload);
             embedDrafts.delete(interaction.user.id);
             return interaction.update({
                 embeds: [createEmbed(await t('embed.success', interaction.guildId), '', 'success')],

@@ -9,7 +9,7 @@ module.exports = {
     async run(client, message, args) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
 
-        const content = args.join(' ');
+        const rawContent = args.join(' ');
         
         // Determine upload limit based on guild tier
         // Tier 2: 50MB, Tier 3: 100MB, Others: 25MB
@@ -36,7 +36,7 @@ module.exports = {
             });
         }
 
-        if (!content && validAttachments.length === 0) {
+        if (!rawContent && validAttachments.length === 0) {
             if (ignoredAttachments.length > 0) {
                 return message.channel.send({ 
                     embeds: [createEmbed('Erreur', `Les fichiers suivants sont trop volumineux pour être envoyés par le bot (Limite : ~${Math.round(MAX_SIZE / 1024 / 1024)}MB) : ${ignoredAttachments.join(', ')}`, 'error')] 
@@ -49,51 +49,47 @@ module.exports = {
         
         const payload = { files: validAttachments };
 
-        if (content) {
-            // ... (keep existing title/description logic)
-            let title = content;
-            let description = '';
+        if (rawContent) {
+            const content = rawContent.replace(/\b\d{17,20}\b/g, (id, offset, source) => {
+                const previousChar = source[offset - 1] || '';
+                const nextChar = source[offset + id.length] || '';
 
-            // Discord Limit: Title max 256 chars
-            if (content.length > 256) {
+                if (previousChar === '@' || previousChar === '#' || previousChar === '<' || nextChar === '>') {
+                    return id;
+                }
+
+                return message.guild.roles.cache.has(id) ? `<@&${id}>` : id;
+            });
+
+            let title = '';
+            let description = content;
+
+            // Check if content contains a mention
+            const hasMention = /<(@(!?|&|#)\d+|#\d+)>/.test(content);
+
+            // Determine if we want a title or just everything in description
+            if (content.length <= 256 && !content.includes('\n') && !hasMention) {
+                title = content;
+                description = '';
+            } else {
                 const firstNewline = content.indexOf('\n');
                 if (firstNewline > -1 && firstNewline <= 256) {
-                    title = content.substring(0, firstNewline);
-                    description = content.substring(firstNewline + 1);
+                    const potentialTitle = content.substring(0, firstNewline);
+                    // If the potential title has a mention, put everything in description
+                    if (/<(@(!?|&|#)\d+|#\d+)>/.test(potentialTitle)) {
+                        title = '';
+                        description = content;
+                    } else {
+                        title = potentialTitle;
+                        description = content.substring(firstNewline + 1);
+                    }
                 } else {
-                    title = ' '; // Use space to keep the icon
+                    title = '';
                     description = content;
                 }
             }
 
-            // Format Title to replace raw mentions with display names
-            const formatTitle = (text) => {
-                if (!text) return text;
-                
-                // Roles
-                text = text.replace(/<@&(\d+)>/g, (match, id) => {
-                    const role = message.guild.roles.cache.get(id);
-                    return role ? `@${role.name}` : match;
-                });
-                
-                // Users
-                text = text.replace(/<@!?(\d+)>/g, (match, id) => {
-                    const user = message.mentions.users.get(id) || message.guild.members.cache.get(id)?.user || client.users.cache.get(id);
-                    return user ? `@${user.username}` : match;
-                });
-
-                // Channels
-                text = text.replace(/<#(\d+)>/g, (match, id) => {
-                    const channel = message.guild.channels.cache.get(id);
-                    return channel ? `#${channel.name}` : match;
-                });
-                
-                return text;
-            };
-
-            title = formatTitle(title);
-
-            const embedOptions = {};
+            const embedOptions = { noIcon: true };
             // Check for image attachment to display inside embed
             const imageAttachment = validAttachments.find(a => a.contentType && a.contentType.startsWith('image/'));
             if (imageAttachment) {
@@ -101,6 +97,8 @@ module.exports = {
             }
 
             payload.embeds = [createEmbed(title, description, 'info', embedOptions)];
+
+            // PING LOGIC: Removed top-level content ping, mention only inside embed
         }
 
         try {
