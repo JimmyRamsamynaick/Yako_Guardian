@@ -3,6 +3,7 @@ const { isBotOwner } = require('../ownerUtils');
 const { applyPunishment } = require('./punishmentSystem');
 const { t } = require('../i18n');
 const { createEmbed } = require('../design');
+const { isWhitelisted: isGlobalWhitelisted, isBlacklisted } = require('./listUtils');
 const ms = require('ms');
 
 const spamMap = new Map(); // guildId -> userId -> { messages: [], lastAction: Date, warningTimestamp: Date, processingChannel: String }
@@ -154,10 +155,31 @@ async function checkAutomod(client, message, config) {
     if (!config.moderation) return false;
     const { flags = [] } = config.moderation;
     
-    // Ignore permissions (Admins usually ignored)
+    // --- IMMUNITY CHECKS ---
+    // 1. Bot Owner
     if (await isBotOwner(message.author.id)) return false;
+
+    // 2. Guild Owner
     if (message.author.id === message.guild.ownerId) return false;
-    if (message.member.permissions.has('Administrator')) return false; 
+
+    // 3. Administrator
+    if (message.member && message.member.permissions.has('Administrator')) return false;
+
+    // 4. Global Whitelist (Users & Roles)
+    if (isGlobalWhitelisted(message.guild.id, message.member)) return false;
+
+    // --- BLACKLIST CHECK ---
+    if (isBlacklisted(message.guild.id, message.member)) {
+        // Blacklisted users are handled by standard automod
+    }
+
+    const modConfig = config.moderation;
+    const ignoredChannels = modConfig.ignoredChannels || [];
+    const ignoredRoles = modConfig.ignoredRoles || [];
+
+    // 5. Config-specific ignored channels/roles
+    if (ignoredChannels.includes(message.channel.id)) return false;
+    if (message.member && message.member.roles.cache.some(r => ignoredRoles.includes(r.id))) return false;
 
     // --- MISE À JOUR DE L'ACTIVITÉ DU SALON ---
     const now = Date.now();

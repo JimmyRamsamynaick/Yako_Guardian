@@ -22,10 +22,14 @@ module.exports = {
             );
 
             if (wls.length > 0) {
-                const userList = wls.map(w => `<@${w.user_id}>`).join('\n');
+                const list = wls.map(w => {
+                    const isRole = message.guild.roles.cache.has(w.user_id);
+                    return isRole ? `<@&${w.user_id}> (Rôle)` : `<@${w.user_id}> (Utilisateur)`;
+                }).join('\n');
+                
                 embed.addFields({
                     name: await t('wl.field_users', message.guild.id, { count: wls.length }),
-                    value: userList,
+                    value: list,
                     inline: false
                 });
             }
@@ -33,12 +37,17 @@ module.exports = {
             return message.channel.send({ embeds: [embed] });
         }
 
-        const user = message.mentions.users.first() || client.users.cache.get(args[0]);
-        if (!user) return message.channel.send({ embeds: [createEmbed('Erreur', await t('wl.not_found', message.guild.id), 'error')] });
+        const target = message.mentions.users.first() || 
+                       message.mentions.roles.first() || 
+                       message.guild.roles.cache.get(args[0]) || 
+                       await client.users.fetch(args[0].replace(/[<@!>]/g, '')).catch(() => null);
+
+        if (!target) return message.channel.send({ embeds: [createEmbed('Erreur', await t('wl.not_found', message.guild.id), 'error')] });
 
         db.prepare('INSERT OR REPLACE INTO whitelists (guild_id, user_id, level) VALUES (?, ?, ?)')
-          .run(message.guild.id, user.id, 'wl');
+          .run(message.guild.id, target.id, 'wl');
         
-        message.channel.send({ embeds: [createEmbed('Succès', await t('wl.added', message.guild.id, { user: user.tag }), 'success')] });
+        const targetName = target.tag || target.name;
+        message.channel.send({ embeds: [createEmbed('Succès', await t('wl.added', message.guild.id, { target: targetName }), 'success')] });
     }
 };

@@ -33,21 +33,17 @@ module.exports = {
 
         // 1. Anti-Bot
         if (member.user.bot && settings.antibot !== 'off') {
-            // Check whitelist of the adder? 
-            // We need to know who added the bot.
-            // Audit Log: BotAdd
+            // Check whitelist of the adder
             const { getExecutor } = require('../../utils/audit');
             const { AuditLogEvent } = require('discord.js');
             const executor = await getExecutor(guild, AuditLogEvent.BotAdd, member.id);
             
             if (executor) {
                 const adder = await guild.members.fetch(executor.id).catch(() => null);
-                // Check if adder is whitelisted
-                // If we reuse checkAntiraid, it checks limits. 
-                // For Anti-Bot, usually we want strict "No Bots" unless WL.
+                // Use isWhitelisted helper
+                const { isWhitelisted } = require('../../utils/moderation/listUtils');
                 
-                const isWhitelisted = db.prepare('SELECT level FROM whitelists WHERE guild_id = ? AND user_id = ?').get(guild.id, executor.id);
-                if (!isWhitelisted && executor.id !== guild.ownerId) {
+                if (!isWhitelisted(guild.id, adder) && executor.id !== guild.ownerId) {
                     // Kick bot
                     await member.kick(await t('antiraid.reasons.anti_bot', guild.id));
                     // Sanction adder

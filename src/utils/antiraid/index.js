@@ -1,5 +1,6 @@
 const { db } = require('../../database');
 const { AuditLogEvent, PermissionsBitField } = require('discord.js');
+const { isWhitelisted, isBlacklisted } = require('../moderation/listUtils');
 const logger = require('../logger');
 const { checkSubscription } = require('../subscription');
 const { t } = require('../i18n');
@@ -18,20 +19,22 @@ async function checkAntiraid(client, guild, member, moduleName, type = 'action')
     if (member.id === client.user.id) return false;
 
     // 1. Check Whitelist
-    const isWhitelisted = db.prepare('SELECT level FROM whitelists WHERE guild_id = ? AND user_id = ?').get(guild.id, member.id);
-    if (isWhitelisted) return false; // Allowed
+    if (isWhitelisted(guild.id, member)) return false; // Allowed
 
-    // 2. Check Owner
+    // 2. Check Blacklist
+    if (isBlacklisted(guild.id, member)) return true; // Blocked
+
+    // 3. Check Owner
     if (member.id === guild.ownerId) return false;
 
-    // 3. Get Module Settings
+    // 4. Get Module Settings
     const settings = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guild.id);
     if (!settings) return false;
 
     const moduleState = settings[moduleName];
     if (moduleState === 'off') return false;
 
-    // 4. Check Limits (if applicable)
+    // 5. Check Limits (if applicable)
     // If moduleState is 'max', we might skip limits and act immediately, or strict limits.
     // Let's assume 'max' means stricter or immediate action, but for now we treat 'on' and 'max' similarly regarding limits, 
     // maybe 'max' implies 1 action is enough.

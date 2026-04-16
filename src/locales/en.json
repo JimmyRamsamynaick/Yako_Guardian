@@ -1263,12 +1263,24 @@
         "title": "🛡️ Whitelist",
         "owner_only": "❌ Only the server owner can manage the whitelist.",
         "empty": "The whitelist is empty.",
-        "list_description": "The users below are immune to automated actions.",
-        "field_users": "Users ({{count}})",
-        "not_found": "❌ User not found.",
-        "added": "✅ **{{user}}** added to whitelist.",
-        "description": "Manage whitelist (Immunized users)",
-        "usage": "**Usage:** `+wl [user]`"
+        "list_description": "The users and roles below are immune to automated actions.",
+        "field_users": "Targets ({{count}})",
+        "not_found": "❌ User or role not found.",
+        "added": "✅ **{{target}}** added to whitelist.",
+        "description": "Manage whitelist (Immunized users/roles)",
+        "usage": "**Usage:** `+wl [user/role]`"
+    },
+    "blacklist": {
+        "title": "🚫 Server Blacklist",
+        "owner_only": "❌ Only the server owner can manage the blacklist.",
+        "empty": "The blacklist is empty.",
+        "list_description": "The users and roles below are restricted on this server.",
+        "field_users": "Targets ({{count}})",
+        "not_found": "❌ User or role not found.",
+        "added": "✅ **{{target}}** added to blacklist.",
+        "removed": "✅ **{{target}}** removed from blacklist.",
+        "description": "Manage blacklist (Restricted users/roles)",
+        "usage": "**Usage:** `+blacklist [user/role]`"
     },
     "prefix": {
         "permission": "❌ Administrator permission required.",
@@ -1280,10 +1292,10 @@
 
     "unwl": {
         "owner_only": "❌ Only the server owner can manage the whitelist.",
-        "not_found": "❌ User not found.",
-        "success": "✅ **{{user}}** has been removed from the whitelist.",
-        "description": "Remove a user from the whitelist",
-        "usage": "**Usage:** `+unwl <user>`"
+        "not_found": "❌ User or role not found.",
+        "success": "✅ **{{target}}** has been removed from the whitelist.",
+        "description": "Remove a user or role from the whitelist",
+        "usage": "**Usage:** `+unwl <user/role>`"
     },
     "slowmode": {
         "title": "Slowmode",
