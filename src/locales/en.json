@@ -1,5 +1,4 @@
 {
-
     "configuration": {
         "dashboard_title": "⚙️ Configuration - {{guild}}",
         "general_title": "General",
@@ -221,7 +220,6 @@
             "avatar": "**Avatar:** [Old]({{old}}) ➔ [New]({{new}})"
         }
     },
-
     "clear": {
         "description": "Delete messages or sanctions",
         "usage": "**Usage:** `+clear <number>` or `+clear sanctions <user>`",
@@ -229,7 +227,6 @@
         "limit_success": "✅ Deletion limit set to **{{count}}** messages.",
         "limit_invalid": "❌ Invalid number."
     },
-
     "clone": {
         "description": "Copy/Paste a server (Owner only)",
         "usage": "Usage: `+clone <copy/paste> <code>`"
@@ -319,7 +316,6 @@
         "description": "View a member's active warnings",
         "usage": "**Usage:** `+strikes <user>`"
     },
-
     "mutelist": {
         "description": "Display the list of muted members",
         "usage": "**Usage:** `+mutelist`"
@@ -762,7 +758,6 @@
         "clear_process_messages": "Deleting messages...",
         "clear_success_user_suffix": " from {{user}}",
         "clear_error_old": "❌ Unable to delete messages (older than 14 days?).",
-
         "sanctions_none": "✅ No sanction history for <@{{user}}>.",
         "sanctions_title": "Sanction History - {{user}}",
         "sanctions_page_footer": "Page {{current}}/{{total}} | Total: {{count}}",
@@ -785,13 +780,11 @@
         "timeout_loading": "Configuring...",
         "timeout_enabled_desc": "✅ The bot will now use Discord's native Timeouts.",
         "timeout_disabled_desc": "⚠️ The bot will now use the classic Mute Role system.",
-
         "ban_executed_title": "Ban Performed",
         "ban_moderation_title": "MODERATION",
         "kick_moderation_title": "KICK",
         "kick_title": "Kick",
         "kick_executed_title": "Kick Performed",
-
         "unwarn_title": "Unwarn",
         "unwarn_success_all": "✅ All warnings for **{{user}}** have been removed.",
         "unwarn_success_all_simple": "Removed all warnings ({{count}}).",
@@ -886,7 +879,6 @@
         "generation_title": "Generation",
         "generation_process": "Creating role and configuring channels..."
     },
-
     "secur": {
         "panel_title": "**YAKO GUARDIAN - SECURITY PANEL**",
         "modules_title": "**🛡️ Antiraid Modules**",
@@ -929,7 +921,6 @@
         "description": "Configure security modules (Antiraid)",
         "usage": "**Usage:** `+secur`"
     },
-
     "activate": {
         "owner_only": "❌ Only the server owner can activate a key.",
         "usage": "**Usage:** `+activate <key>`",
@@ -1065,7 +1056,6 @@
         "description": "Check subscription status or activate a key",
         "usage": "**Usage:** `+subscription` or `+subscription activate <key>`"
     },
-
     "help": {
         "category_title": "📂 Category: {{category}}",
         "placeholder": "Select a category",
@@ -1153,14 +1143,11 @@
         "usage": "**Usage:** `+help`",
         "empty_category": "This category is empty."
     },
-
     "timeout": {
         "description": "Enable/Disable Discord Timeout usage instead of Mute role",
         "usage": "**Usage:** `+timeout <on/off>`",
         "success": "✅ Timeout System: **{{status}}**"
     },
-
-
     "antilink": {
         "description": "Configures the anti-link system",
         "usage": "**Usage:** `+antilink <on/off> [invite/all]`",
@@ -1178,13 +1165,10 @@
         "removed": "✅ Word removed: **{{word}}**",
         "cleared": "✅ List cleared."
     },
-
     "unban": {
         "description": "Unban one or more users (ID)",
         "usage": "**Usage:** `+unban <id> [reason]` or `+unban <id1>,, <id2>`"
     },
-
-
     "kick": {
         "description": "Kicks a member",
         "usage": "**Usage:** `+kick <user> [reason]`"
@@ -1193,7 +1177,6 @@
         "description": "Bans a member",
         "usage": "**Usage:** `+ban <user> [reason]`"
     },
-
     "punition": {
         "help_title": "⚖️ Punishment Configuration",
         "help_description": "Set automatic sanctions for security systems.",
@@ -1289,7 +1272,6 @@
         "success": "✅ Prefix set to: `{{prefix}}`",
         "description": "Change the bot prefix on this server"
     },
-
     "unwl": {
         "owner_only": "❌ Only the server owner can manage the whitelist.",
         "not_found": "❌ User or role not found.",
@@ -1559,7 +1541,6 @@
         "placeholder": "Choose channels (optional)",
         "usage": "**Usage:** `+autopublish <on/off>`"
     },
-
     "activity": {
         "permission": "❌ Administrator permission required.",
         "removed": "✅ Custom activity removed.",
@@ -2297,7 +2278,6 @@
         "role_disabled": "✅ Autorole disabled.",
         "permission": "❌ You do not have permission."
     },
-
     "leave": {
         "usage": "❌ Usage: `+leave <menu/settings/message>` or `+leave <channel> <message>`",
         "settings_title": "📤 Leave Settings",
@@ -2333,7 +2313,6 @@
         "already_blacklisted": "❌ User already blacklisted.",
         "bl_added": "✅ **{{user}}** added to blacklist.\nReason: {{reason}}"
     },
-
     "discussion": {
         "description": "Send a DM and await response",
         "usage": "**Usage:** `+discussion <UserID>`",
@@ -2373,7 +2352,6 @@
         "dm_message": "✅ Invite for **{{guildName}}**:\n{{url}}",
         "dm_error": "❌ Cannot send DM."
     },
-
     "reset": {
         "description": "Resets data (Owner/Admin)",
         "usage": "**Usage:** +reset",
@@ -2574,7 +2552,6 @@
             "label_field_inline": "Inline (true/false)"
         }
     },
-
     "forms": {
         "handler": {
             "config_title": "Form Configuration",

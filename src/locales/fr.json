@@ -40,7 +40,6 @@
         "desc_4": "Commandes de Sécurité",
         "desc_5": "Commandes Propriétaire (Serveur)"
     },
-
     "clear": {
         "description": "Supprime des messages ou des sanctions",
         "usage": "**Utilisation:** `+clear <nombre>` ou `+clear sanctions <user>`",
@@ -48,12 +47,10 @@
         "limit_success": "✅ Limite de suppression définie sur **{{count}}** messages.",
         "limit_invalid": "❌ Nombre invalide."
     },
-
     "clone": {
         "description": "Copier/Coller un serveur (Propriétaire uniquement)",
         "usage": "Usage: `+clone <copy/paste> <code>`"
     },
-
     "logs": {
         "usage": "❌ Usage: `+log <status/test/ignore/export/config>`",
         "status_title": "📊 Statut des Logs",
@@ -633,7 +630,6 @@
         "no_leaderboard": "❌ Classement vide.",
         "leaderboard_title": "🏆 Classement du Serveur"
     },
-
     "giveaway": {
         "usage": "❌ Usage: `+giveaway <start/end/reroll/list> [args]`",
         "start_usage": "❌ Usage: `+giveaway start <durée> <gagnants> <prix>`",
@@ -685,7 +681,6 @@
         "description": "Mute un ou plusieurs membres définitivement",
         "usage": "**Utilisation:** `+mute <user> [raison]`"
     },
-
     "lock": {
         "description": "Verrouille un salon (Empêche d'écrire)",
         "usage": "**Utilisation:** `+lock [channel]`"
@@ -755,7 +750,6 @@
         "description": "Retire un rôle à un membre",
         "usage": "**Utilisation:** `+delrole <user> <role>`"
     },
-
     "derank": {
         "description": "Retire tous les rôles d'un membre",
         "usage": "**Utilisation:** `+derank <user>`"
@@ -801,7 +795,6 @@
         "delrole_process": "Retrait du rôle en cours...",
         "role_higher_user": "❌ Vous ne pouvez pas gérer ce rôle (Supérieur ou égal au vôtre).",
         "role_higher_bot": "❌ Je ne peux pas gérer ce rôle (Supérieur ou égal au mien).",
-
         "unmuteall_audit_reason": "Commande Unmute All",
         "unhide_title": "Unhide",
         "unhide_process": "Affichage du salon...",
@@ -891,7 +884,6 @@
         "clear_process_messages": "Suppression des messages...",
         "clear_success_user_suffix": " de {{user}}",
         "clear_error_old": "❌ Impossible de supprimer les messages (plus vieux que 14 jours ?).",
-
         "sanctions_none": "✅ Aucun historique de sanctions pour <@{{user}}>.",
         "sanctions_title": "Historique des sanctions - {{user}}",
         "sanctions_page_footer": "Page {{current}}/{{total}} | Total: {{count}}",
@@ -939,7 +931,6 @@
         "warn_success_msg": "Averti (Total: {{count}})",
         "unmute_title": "Unmute",
         "unmute_processing": "Levée des sanctions...",
-
         "details_label": "Détails :",
         "unban_title": "Débannissement",
         "unban_processing": "Levée des bannissements...",
@@ -1006,7 +997,6 @@
         "default_desc": "Aucune description",
         "not_specified": "Non spécifié"
     },
-
     "antilink": {
         "description": "Configure le système anti-lien",
         "usage": "Usage: `+antilink <on/off> [invite/all]`",
@@ -1027,7 +1017,6 @@
         "success_config": "✅ Anti-Mention configuré: **{{limit}}** mentions autorisées.",
         "invalid_limit": "❌ Limite de mentions invalide."
     },
-
     "muterole": {
         "reason_auto": "Rôle Mute auto-généré",
         "description": "Définit ou génère le rôle Mute pour le serveur",
@@ -1087,7 +1076,6 @@
         "expired_tempmute": "Mute temporaire expiré",
         "expired_tempcmute": "Mute salon temporaire expiré"
     },
-
     "secur": {
         "panel_title": "**YAKO GUARDIAN - PANNEAU DE SÉCURITÉ**",
         "modules_title": "**🛡️ Modules Antiraid**",
@@ -1187,7 +1175,6 @@
         "usage_title": "🛡️ SYSTÈME DE PERMISSIONS",
         "usage_description": "`+perms set <lvl> <cible>` : Ajouter une permission.\n`+perms del <lvl> <cible>` : Retirer une permission.\n`+perms list` : Voir la configuration.\n`+perms reset` : Réinitialiser tout."
     },
-
     "set": {
         "description": "Config (ex: `+set levels on` pour activer les niveaux)",
         "permission": "❌ Permission Administrateur requise.",
@@ -1568,7 +1555,6 @@
         "usage": "**Utilisation:** `+help`",
         "empty_category": "Cette catégorie est vide."
     },
-
     "timeout": {
         "description": "Active/Désactive l'utilisation du Timeout Discord au lieu du rôle Mute",
         "usage": "**Utilisation:** `+timeout <on/off>`",
@@ -1578,8 +1564,6 @@
         "description": "Débannit un ou plusieurs utilisateurs (ID)",
         "usage": "**Utilisation:** `+unban <id> [raison]` ou `+unban <id1>,, <id2>`"
     },
-
-
     "kick": {
         "description": "Expulse un membre",
         "usage": "**Utilisation:** `+kick <user> [raison]`"
@@ -1693,7 +1677,6 @@
         "success": "✅ Préfixe défini sur: `{{prefix}}`",
         "description": "Change le préfixe du bot sur ce serveur"
     },
-
     "unwl": {
         "owner_only": "❌ Seul le propriétaire peut gérer la whitelist.",
         "not_found": "❌ Utilisateur ou rôle introuvable.",
@@ -2666,13 +2649,10 @@
         "read_more": "[Lire la suite]({{url}})",
         "description": "Recherche Wikipédia"
     },
-
     "show": {
         "description": "Commandes d'affichage automatique",
         "usage": "Utilisation: +show"
     },
-
-
     "twitch": {
         "description": "Configure les alertes Twitch",
         "usage": "**Utilisation:** +twitch",
@@ -2743,7 +2723,6 @@
         "dm_message": "✅ Invitation pour **{{guildName}}**:\n{{url}}",
         "dm_error": "❌ Impossible d'envoyer le DM."
     },
-
     "reset": {
         "description": "Réinitialise les données (Owner/Admin)",
         "usage": "**Utilisation:** +reset",
@@ -2944,7 +2923,6 @@
             "label_field_inline": "Inline (true/false)"
         }
     },
-
     "forms": {
         "handler": {
             "config_title": "Configuration Formulaire",
@@ -2998,10 +2976,6 @@
         "description_reset": "✅ Description de l'embed réinitialisée par défaut.",
         "description_set": "✅ Description de l'embed configurée: {{content}}"
     },
-
-
-
-
     "welcome": {
         "default_message": "Bienvenue {user} sur {server} !",
         "title": "Bienvenue !"
@@ -3010,10 +2984,6 @@
         "default_message": "Au revoir {user} !",
         "title": "Au revoir !"
     },
-
-    
-
-
     "yako": {
         "title": "🆘 Support Yako Guardian",
         "description": "Envoie l’invitation du serveur de support",

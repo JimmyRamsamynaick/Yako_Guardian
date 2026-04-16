@@ -1,4 +1,4 @@
-const { db } = require('../database');
+const { db } = require('../../database');
 
 /**
  * Check if a user or their roles are whitelisted in a guild

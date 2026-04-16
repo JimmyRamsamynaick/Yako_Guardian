@@ -44,6 +44,12 @@ async function handleTempVocInteraction(client, interaction) {
         // --- BUTTONS ---
 
         if (customId === 'tempvoc_lock') {
+            // Check if already locked
+            const everyoneOverwrites = channel.permissionOverwrites.cache.get(guild.id);
+            if (everyoneOverwrites?.deny.has(PermissionsBitField.Flags.Connect)) {
+                return interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.already_locked', guildId), '', 'error')] });
+            }
+
             // Lock logic: We apply permissions for everyone
             const everyone = guild.roles.everyone;
             const promises = [];
@@ -87,14 +93,15 @@ async function handleTempVocInteraction(client, interaction) {
                 MoveMembers: true
             }).catch(() => {}));
 
-            // 4. Allow members already in the channel to connect (prevents being kicked if they reconnect)
+            // 4. Allow members already in the channel to CHAT (ViewChannel + SendMessages)
+            // BUT we DO NOT give Connect: true, so if they leave, they can't come back.
             const membersInChannel = channel.members;
             for (const [memberId, m] of membersInChannel) {
                 if (memberId !== member.id && !active.allowedUsers.includes(memberId) && memberId !== guild.ownerId) {
                     promises.push(channel.permissionOverwrites.edit(memberId, { 
                         SendMessages: true,
-                        ViewChannel: true,
-                        Connect: true 
+                        ViewChannel: true
+                        // Connect is NOT granted here to prevent re-join
                     }).catch(() => {}));
                 }
             }
@@ -103,6 +110,12 @@ async function handleTempVocInteraction(client, interaction) {
             await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.locked', guildId), '', 'success')] });
         }
         else if (customId === 'tempvoc_unlock') {
+            // Check if already unlocked
+            const everyoneOverwrites = channel.permissionOverwrites.cache.get(guild.id);
+            if (!everyoneOverwrites?.deny.has(PermissionsBitField.Flags.Connect)) {
+                return interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.already_unlocked', guildId), '', 'error')] });
+            }
+
             const everyone = guild.roles.everyone;
             const promises = [];
 
