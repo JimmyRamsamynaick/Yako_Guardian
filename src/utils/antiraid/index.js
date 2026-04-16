@@ -9,10 +9,17 @@ const { createEmbed } = require('../design');
 // Cache for rate limits: guildId_userId_module -> { count, expires }
 const limitCache = new Map();
 
+/**
+ * Check if an action is allowed by antiraid system
+ * @param {Guild} guild 
+ * @param {GuildMember} member 
+ * @param {string} moduleName 
+ * @returns {Promise<boolean>} false if action is allowed, true if it should be blocked
+ */
 async function checkAntiraid(client, guild, member, moduleName, type = 'action') {
     if (!guild || !member) return false;
 
-    // Check Subscription
+    // --- LICENSE CHECK ---
     if (!checkSubscription(guild.id)) return false;
 
     // 0. Ignore Bot itself

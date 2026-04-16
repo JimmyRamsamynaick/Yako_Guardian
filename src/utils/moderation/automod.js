@@ -1,4 +1,5 @@
 const UserStrike = require('../../database/models/UserStrike');
+const { checkSubscription } = require('../subscription');
 const { isBotOwner } = require('../ownerUtils');
 const { applyPunishment } = require('./punishmentSystem');
 const { t } = require('../i18n');
@@ -152,6 +153,12 @@ async function applyStrikes(client, message, type, reason, amount) {
 }
 
 async function checkAutomod(client, message, config) {
+    if (!message.guild || message.author.bot) return false;
+    const guildId = message.guild.id;
+
+    // --- LICENSE CHECK ---
+    if (!checkSubscription(guildId)) return false;
+
     if (!config.moderation) return false;
     const { flags = [] } = config.moderation;
     
@@ -361,7 +368,7 @@ async function checkAutomod(client, message, config) {
     if (!triggeredType) {
         const antilink = config.moderation.antilink;
         if (antilink?.enabled && !isWhitelisted(antilink)) {
-            const inviteRegex = /(discord\.(gg|io|me|li)|discordapp\.com\/invite)/i;
+            const inviteRegex = /(discord\.(gg|io|me|li)|discord(app)?\.com\/invite)/i;
             const linkRegex = /https?:\/\/[^\s]+/i;
             
             if (inviteRegex.test(message.content)) {
