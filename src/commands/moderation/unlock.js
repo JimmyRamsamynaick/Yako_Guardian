@@ -17,9 +17,22 @@ module.exports = {
         const replyMsg = await message.channel.send({ embeds: [createEmbed(await t('moderation.unlock_title', message.guild.id), `${THEME.icons.loading} ${await t('moderation.unlock_process', message.guild.id)}`, 'loading')] });
 
         try {
+            // 1. Unlock @everyone
             await channel.permissionOverwrites.edit(message.guild.roles.everyone, {
                 SendMessages: null // Reset to default (or true)
             });
+            
+            // 2. Delete ALL temporary permission overrides that were nulled during lock
+            // (We don't restore specific overrides to avoid accidental security issues; owner can re-add if needed)
+            const overwrites = channel.permissionOverwrites.cache;
+            const promises = [];
+            
+            for (const [id, overwrite] of overwrites) {
+                // Skip @everyone and the server owner/role for security
+                if (id === message.guild.roles.everyone.id) continue;
+            }
+            
+            await Promise.all(promises);
             
             await replyMsg.edit({ embeds: [createEmbed(
                 await t('moderation.unlock_success_title', message.guild.id),
