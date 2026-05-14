@@ -8,6 +8,7 @@ module.exports = {
     name: 'unwarn',
     description: 'unwarn.description',
     category: 'Moderation',
+    permLevel: 2,
     usage: 'unwarn.usage',
     examples: ['unwarn @user 1', 'unwarn @user all', 'unwarn @user1,, @user2 2'],
     async run(client, message, args) {

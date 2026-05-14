@@ -13,6 +13,7 @@ module.exports = {
     name: 'warn',
     description: 'warn.description',
     category: 'Moderation',
+    permLevel: 2,
     usage: 'warn.usage',
     examples: ['warn @user Spam', 'warn @user1,, @user2 Spam', 'warn list'],
     async run(client, message, args) {
