@@ -28,9 +28,6 @@ module.exports = {
             }
 
             // 2. If NO user specified, show Global Warn List (All Members)
-            if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-                return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
-            }
 
             const allStrikes = await UserStrike.find({ guildId: message.guild.id });
             const validStrikes = allStrikes.filter(doc => doc.strikes && doc.strikes.length > 0);
@@ -97,9 +94,7 @@ module.exports = {
             return message.channel.send({ embeds: [embed] });
         }
 
-        if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
-            return message.channel.send({ embeds: [createEmbed(await t('common.permission_missing_title', message.guild.id), await t('common.permission_missing', message.guild.id, { perm: 'ModerateMembers' }), 'error')] });
-        }
+
 
         if (!await checkUsage(client, message, module.exports, args)) return;
 

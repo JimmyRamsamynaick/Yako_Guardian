@@ -1132,7 +1132,7 @@
             "roles": "__**🎭 Roles**__\n\n`{{prefix}}massiverole <add/remove> <role>` - *Massive role*\n`{{prefix}}unmassiverole <role>` - *Undo massive role*\n`{{prefix}}temprole <user> <role> <time>` - *Temp role*\n`{{prefix}}untemprole <user> <role>` - *Remove temp role*\n`{{prefix}}rolemenu` - *Role menu*\n`{{prefix}}soutien` - *Support role*\n`{{prefix}}restrict` - *Restriction*\n`{{prefix}}unrestrict <option>` - *Remove restriction*",
             "suggestion": "__**💡 Suggestions**__\n\n`{{prefix}}suggestion <channel>` - *Suggestion system*",
             "tickets": "__**🎫 Tickets**__\n\n`{{prefix}}ticket <create/close/add/remove>` - *Ticket panel*\n`{{prefix}}add <user>` - *Add member*\n`{{prefix}}remove <user>` - *Remove member*\n`{{prefix}}close` - *Close ticket*\n`{{prefix}}rename <name>` - *Rename ticket*\n`{{prefix}}claim` - *Claim ticket*\n`{{prefix}}del` - *Delete ticket*",
-            "utils": "__**🛠️ Utils**__\n\n`{{prefix}}serverinfo` - *Server info*\n`{{prefix}}member <user>` - *Member info*\n`{{prefix}}user <user>` - *User info*\n`{{prefix}}role <role>` - *Role info*\n`{{prefix}}pic <user>` - *Avatar*\n`{{prefix}}banner <user>` - *Banner*\n`{{prefix}}snipe` - *Deleted message*\n`{{prefix}}say <message>` - *Say*\n`{{prefix}}embed` - *Embed creator*\n`{{prefix}}calc <calc>` - *Calculator*\n`{{prefix}}reminder <time> <message>` - *Reminder*\n`{{prefix}}wiki <search>` - *Wiki search*\n`{{prefix}}create <emoji>` - *Create emoji*\n`{{prefix}}alladmins` - *List admins*\n`{{prefix}}allbots` - *List bots*\n`{{prefix}}boosters` - *List boosters*\n`{{prefix}}channel <channel>` - *Channel info*\n`{{prefix}}rolemembers <role>` - *Role members*\n`{{prefix}}vocinfo` - *Voice info*\n`{{prefix}}botadmins` - *List bot admins*\n`{{prefix}}changelogs` - *Update logs*\n`{{prefix}}emoji <emoji>` - *Emoji info*\n`{{prefix}}image <query>` - *Image search*\n`{{prefix}}lb suggestions` - *Leaderboard*\n`{{prefix}}loading <time>` - *Test loading*\n`{{prefix}}newsticker` - *New sticker*\n`{{prefix}}search wiki` - *Wiki search*\n`{{prefix}}yako` - *Support*",
+            "utils": "__**🛠️ Utils**__\n\n`{{prefix}}serverinfo` - *Server info*\n`{{prefix}}member <user>` - *Member info*\n`{{prefix}}user <user>` - *User info*\n`{{prefix}}role <role>` - *Role info*\n`{{prefix}}pic <user>` - *Avatar*\n`{{prefix}}banner <user>` - *Banner*\n`{{prefix}}snipe` - *Deleted message*\n`{{prefix}}say <message>` - *Say*\n`{{prefix}}embed` - *Embed creator*\n`{{prefix}}calc <calc>` - *Calculator*\n`{{prefix}}reminder <time> <message>` - *Reminder*\n`{{prefix}}wiki <search>` - *Wiki search*\n`{{prefix}}create <emoji>` - *Create emoji*\n`{{prefix}}alladmins` - *List admins*\n`{{prefix}}allbots` - *List bots*\n`{{prefix}}boosters` - *List boosters*\n`{{prefix}}channel <channel>` - *Channel info*\n`{{prefix}}rolemembers <role>` - *Role members*\n`{{prefix}}vocinfo` - *Voice info*\n`{{prefix}}botadmins` - *List bot admins*\n`{{prefix}}changelogs` - *Update logs*\n`{{prefix}}emoji <emoji>` - *Emoji info*\n`{{prefix}}sticker` - *Sticker info*\n`{{prefix}}image <query>` - *Image search*\n`{{prefix}}lb suggestions` - *Leaderboard*\n`{{prefix}}loading <time>` - *Test loading*\n`{{prefix}}newsticker` - *New sticker*\n`{{prefix}}search wiki` - *Wiki search*\n`{{prefix}}yako` - *Support*",
             "voice": "__**🔊 Voice**__\n\n`{{prefix}}tempvoc` - *Temp voice*\n`{{prefix}}bringall` - *Move all*\n`{{prefix}}voicekick <user>` - *Voice kick*\n`{{prefix}}voicemove <user> <channel>` - *Voice move*\n`{{prefix}}cleanup` - *Cleanup voice*"
         },
         "handler": {
@@ -2120,6 +2120,22 @@
         "invalid": "❌ Invalid or default emoji.",
         "success": "**Emoji: {{name}}**\n{{url}}",
         "description": "Récupère l’image d’un émoji"
+    },
+    "sticker": {
+        "usage": "**Usage:** `+sticker` (reply to a sticker) or `+sticker <ID>`",
+        "invalid": "❌ No valid sticker found.",
+        "all_present": "All detected stickers are already on this server.",
+        "default_description": "Sticker added via Yako Guardian",
+        "success": "📎 **{{name}}**: {{url}}",
+        "result_title": {
+            "add": "Result of adding stickers",
+            "info": "Sticker Info"
+        },
+        "create": {
+            "success": "✅ Sticker added: **{{sticker}}**",
+            "error": "❌ Error for **{{sticker}}**: {{error}}"
+        },
+        "description": "Gets a sticker's image and adds it to the server if possible"
     },
     "image": {
         "usage": "**Usage:** `+image <query>`",

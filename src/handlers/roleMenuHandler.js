@@ -431,7 +431,12 @@ async function handleUserInteraction(client, interaction) {
     const menuId = parts[3];
 
     const menu = await RoleMenu.findById(menuId);
-    if (!menu) return interaction.reply({ embeds: [createEmbed(await t('roles.handler.menu_not_found', guildId), '', 'error')], ephemeral: true });
+    if (!menu) {
+        if (interaction.replied || interaction.deferred) {
+            return interaction.followUp({ embeds: [createEmbed(await t('roles.handler.menu_not_found', guildId), '', 'error')], ephemeral: true });
+        }
+        return interaction.reply({ embeds: [createEmbed(await t('roles.handler.menu_not_found', guildId), '', 'error')], ephemeral: true });
+    }
 
     if (type === 'select') {
         const selectedRoleIds = values;
@@ -442,6 +447,9 @@ async function handleUserInteraction(client, interaction) {
             if (option && option.requiredRoles && option.requiredRoles.length > 0) {
                 const hasRequired = member.roles.cache.some(r => option.requiredRoles.includes(r.id));
                 if (!hasRequired) {
+                    if (interaction.replied || interaction.deferred) {
+                        return interaction.followUp({ embeds: [createEmbed(await t('roles.handler.error_required_roles', guildId, { option: option.emoji || option.label }), '', 'error')], ephemeral: true });
+                    }
                     return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_required_roles', guildId, { option: option.emoji || option.label }), '', 'error')], ephemeral: true });
                 }
             }
@@ -454,7 +462,10 @@ async function handleUserInteraction(client, interaction) {
         await member.roles.add(toAdd).catch(() => {});
         await member.roles.remove(toRemove).catch(() => {});
 
-        await interaction.reply({ embeds: [createEmbed(await t('roles.handler.roles_updated', guildId), '', 'success')], ephemeral: true });
+        if (interaction.replied || interaction.deferred) {
+            return interaction.followUp({ embeds: [createEmbed(await t('roles.handler.roles_updated', guildId), '', 'success')], ephemeral: true });
+        }
+        return interaction.reply({ embeds: [createEmbed(await t('roles.handler.roles_updated', guildId), '', 'success')], ephemeral: true });
     }
     else if (type === 'btn') {
         const roleId = parts[4];
@@ -463,16 +474,25 @@ async function handleUserInteraction(client, interaction) {
         if (option && option.requiredRoles && option.requiredRoles.length > 0) {
             const hasRequired = member.roles.cache.some(r => option.requiredRoles.includes(r.id));
             if (!hasRequired) {
+                if (interaction.replied || interaction.deferred) {
+                    return interaction.followUp({ embeds: [createEmbed(await t('roles.handler.error_required_roles', guildId), '', 'error')], ephemeral: true });
+                }
                 return interaction.reply({ embeds: [createEmbed(await t('roles.handler.error_required_roles', guildId), '', 'error')], ephemeral: true });
             }
         }
 
         if (member.roles.cache.has(roleId)) {
             await member.roles.remove(roleId);
-            await interaction.reply({ embeds: [createEmbed(await t('roles.handler.role_removed', guildId, { role: `<@&${roleId}>` }), '', 'success')], ephemeral: true });
+            if (interaction.replied || interaction.deferred) {
+                return interaction.followUp({ embeds: [createEmbed(await t('roles.handler.role_removed', guildId, { role: `<@&${roleId}>` }), '', 'success')], ephemeral: true });
+            }
+            return interaction.reply({ embeds: [createEmbed(await t('roles.handler.role_removed', guildId, { role: `<@&${roleId}>` }), '', 'success')], ephemeral: true });
         } else {
             await member.roles.add(roleId);
-            await interaction.reply({ embeds: [createEmbed(await t('roles.handler.role_added', guildId, { role: `<@&${roleId}>` }), '', 'success')], ephemeral: true });
+            if (interaction.replied || interaction.deferred) {
+                return interaction.followUp({ embeds: [createEmbed(await t('roles.handler.role_added', guildId, { role: `<@&${roleId}>` }), '', 'success')], ephemeral: true });
+            }
+            return interaction.reply({ embeds: [createEmbed(await t('roles.handler.role_added', guildId, { role: `<@&${roleId}>` }), '', 'success')], ephemeral: true });
         }
     }
 }

@@ -1544,7 +1544,7 @@
             "roles": "__**🎭 Rôles**__\n\n`{{prefix}}massiverole <add/remove> <role>` - *Rôle massif*\n`{{prefix}}unmassiverole <role>` - *Retirer rôle massif*\n`{{prefix}}temprole <user> <role> <temps>` - *Rôle temporaire*\n`{{prefix}}untemprole <user> <role>` - *Retirer rôle temporaire*\n`{{prefix}}rolemenu` - *Menu rôles*\n`{{prefix}}soutien` - *Rôle soutien*\n`{{prefix}}restrict` - *Restriction*\n`{{prefix}}unrestrict <option>` - *Retirer restriction*",
             "suggestion": "__**💡 Suggestions**__\n\n`{{prefix}}suggestion <salon>` - *Système suggestions*",
             "tickets": "__**🎫 Tickets**__\n\n`{{prefix}}ticket` - *Panel ticket*\n`{{prefix}}add <user>` - *Ajouter membre*\n`{{prefix}}remove <user>` - *Retirer membre*\n`{{prefix}}close` - *Fermer ticket*\n`{{prefix}}rename <nom>` - *Renommer ticket*\n`{{prefix}}claim` - *Prendre en charge*\n`{{prefix}}del` - *Supprimer ticket*",
-            "utils": "__**🛠️ Utilitaires**__\n\n`{{prefix}}serverinfo` - *Infos serveur*\n`{{prefix}}member <user>` - *Infos membre*\n`{{prefix}}user <user>` - *Infos utilisateur*\n`{{prefix}}role <role>` - *Infos rôle*\n`{{prefix}}pic <user>` - *Avatar*\n`{{prefix}}banner <user>` - *Bannière*\n`{{prefix}}snipe` - *Message supprimé*\n`{{prefix}}say <message>` - *Dire*\n`{{prefix}}embed` - *Créateur d'embed*\n`{{prefix}}calc <calc>` - *Calculatrice*\n`{{prefix}}reminder <temps> <message>` - *Rappel*\n`{{prefix}}wiki <recherche>` - *Recherche Wiki*\n`{{prefix}}create <emoji>` - *Créer emoji*\n`{{prefix}}alladmins` - *Liste admins*\n`{{prefix}}allbots` - *Liste bots*\n`{{prefix}}boosters` - *Liste boosters*\n`{{prefix}}channel <salon>` - *Infos salon*\n`{{prefix}}rolemembers <role>` - *Membres rôle*\n`{{prefix}}vocinfo` - *Infos vocal*\n`{{prefix}}botadmins` - *Liste bots admins*\n`{{prefix}}changelogs` - *Mises à jour*\n`{{prefix}}emoji <emoji>` - *Infos émoji*\n`{{prefix}}image <query>` - *Recherche image*\n`{{prefix}}lb suggestions` - *Classement*\n`{{prefix}}loading <temps>` - *Test loading*\n`{{prefix}}newsticker` - *Nouveau sticker*\n`{{prefix}}search wiki` - *Recherche Wiki*\n`{{prefix}}yako` - *Support*",
+            "utils": "__**🛠️ Utilitaires**__\n\n`{{prefix}}serverinfo` - *Infos serveur*\n`{{prefix}}member <user>` - *Infos membre*\n`{{prefix}}user <user>` - *Infos utilisateur*\n`{{prefix}}role <role>` - *Infos rôle*\n`{{prefix}}pic <user>` - *Avatar*\n`{{prefix}}banner <user>` - *Bannière*\n`{{prefix}}snipe` - *Message supprimé*\n`{{prefix}}say <message>` - *Dire*\n`{{prefix}}embed` - *Créateur d'embed*\n`{{prefix}}calc <calc>` - *Calculatrice*\n`{{prefix}}reminder <temps> <message>` - *Rappel*\n`{{prefix}}wiki <recherche>` - *Recherche Wiki*\n`{{prefix}}create <emoji>` - *Créer emoji*\n`{{prefix}}alladmins` - *Liste admins*\n`{{prefix}}allbots` - *Liste bots*\n`{{prefix}}boosters` - *Liste boosters*\n`{{prefix}}channel <salon>` - *Infos salon*\n`{{prefix}}rolemembers <role>` - *Membres rôle*\n`{{prefix}}vocinfo` - *Infos vocal*\n`{{prefix}}botadmins` - *Liste bots admins*\n`{{prefix}}changelogs` - *Mises à jour*\n`{{prefix}}emoji <emoji>` - *Infos émoji*\n`{{prefix}}sticker` - *Infos autocollant* \n`{{prefix}}image <query>` - *Recherche image*\n`{{prefix}}lb suggestions` - *Classement*\n`{{prefix}}loading <temps>` - *Test loading*\n`{{prefix}}newsticker` - *Nouveau sticker*\n`{{prefix}}search wiki` - *Recherche Wiki*\n`{{prefix}}yako` - *Support*",
             "voice": "__**🔊 Vocal**__\n\n`{{prefix}}tempvoc` - *Vocal temporaire*\n`{{prefix}}bringall` - *Move all*\n`{{prefix}}voicekick <user>` - *Kick vocal*\n`{{prefix}}voicemove <user> <channel>` - *Move vocal*\n`{{prefix}}cleanup` - *Nettoyer vocaux*"
         },
         "handler": {
@@ -2530,6 +2530,22 @@
         "invalid": "❌ Émoji invalide ou par défaut.",
         "success": "**Émoji: {{name}}**\n{{url}}",
         "description": "Récupère l’image d’un émoji"
+    },
+    "sticker": {
+        "usage": "**Utilisation:** `+sticker` (répondre à un autocollant) ou `+sticker <ID>`",
+        "invalid": "❌ Aucun autocollant valide trouvé.",
+        "all_present": "Tous les autocollants détectés sont déjà présents sur ce serveur.",
+        "default_description": "Autocollant ajouté via Yako Guardian",
+        "success": "📎 **{{name}}**: {{url}}",
+        "result_title": {
+            "add": "Résultat de l'ajout d'autocollants",
+            "info": "Informations Autocollants"
+        },
+        "create": {
+            "success": "✅ Autocollant ajouté: **{{sticker}}**",
+            "error": "❌ Erreur pour **{{sticker}}**: {{error}}"
+        },
+        "description": "Récupère l'image d'un autocollant et l'ajoute au serveur si possible"
     },
     "image": {
         "usage": "**Utilisation:** `+image <query>`",
