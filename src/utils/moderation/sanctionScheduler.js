@@ -35,6 +35,8 @@ const checkSanctions = async (client) => {
                          await channel.permissionOverwrites.delete(member, await t('sanction.expired_tempcmute', guild.id)).catch(err => logger.error(`Failed to remove tempcmute from ${sanction.userId} in ${guild.name}: ${err.message}`));
                     }
                 }
+            } else if (sanction.type === 'timeout') {
+                // Discord manages expiry natively; only archive the sanction record.
             }
 
             sanction.active = false;

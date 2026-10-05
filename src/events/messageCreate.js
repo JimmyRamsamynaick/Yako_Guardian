@@ -10,6 +10,7 @@ const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
 const { getCommandLevel, getUserLevel } = require('../utils/permissionUtils');
 const { sendBoostThanks } = require('../utils/boostUtils');
+const { handleAntiSpam } = require('../antiSpam');
 
 const slowmodeMap = new Map();
 
@@ -114,6 +115,14 @@ module.exports = {
 
         // Get guild settings (prefix)
         const config = await getGuildConfig(message.guild.id);
+
+        // --- ADVANCED ANTI-SPAM ---
+        const antiSpamTriggered = await handleAntiSpam(client, message, config).catch((err) => {
+            logger.error(`[AntiSpam] Erreur pour message ${message.id} user ${message.author.id}: ${err.message}`);
+            return false;
+        });
+        if (antiSpamTriggered) return;
+        // --- END ADVANCED ANTI-SPAM ---
 
         // --- LEVEL SYSTEM ---
         if (config.community?.levels?.enabled) {

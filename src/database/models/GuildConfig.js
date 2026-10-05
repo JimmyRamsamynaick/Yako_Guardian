@@ -133,10 +133,34 @@ const GuildConfigSchema = new mongoose.Schema({
         
         antispam: {
             enabled: { type: Boolean, default: false },
-            limit: { type: Number, default: 5 },
-            time: { type: Number, default: 5000 },
+            debug: { type: Boolean, default: false },
+            profile: { type: String, enum: ['lenient', 'balanced', 'strict'], default: 'balanced' },
+            similarityThreshold: { type: Number, default: 0.86 },
+            historyRetentionMs: { type: Number, default: 600000 },
+            cleanupIntervalMs: { type: Number, default: 60000 },
+            decayPerSecond: { type: Number, default: 0.8 },
+            maxTrackedMessages: { type: Number, default: 80 },
+            antiSpamChannels: [String],
+            trustedDomains: [String],
+            blockedDomains: [String],
+            suspiciousDomains: [String],
+            ignoredUsers: [String],
             ignoredChannels: [String],
-            ignoredRoles: [String]
+            ignoredRoles: [String],
+            ignoredCategories: [String],
+            ignoredPermissions: [String],
+            windows: { type: Object, default: {} },
+            weights: { type: Object, default: {} },
+            thresholds: { type: Object, default: {} },
+            actions: { type: Object, default: {} },
+            channelOverrides: [{
+                channelId: String,
+                thresholds: { type: Object, default: {} },
+                weights: { type: Object, default: {} },
+                actions: { type: Object, default: {} }
+            }],
+            limit: { type: Number, default: 5 },
+            time: { type: Number, default: 5000 }
         },
 
         antilink: {

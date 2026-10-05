@@ -4,7 +4,7 @@ const SanctionSchema = new mongoose.Schema({
     guildId: { type: String, required: true },
     userId: { type: String, required: true },
     moderatorId: { type: String, required: true },
-    type: { type: String, required: true, enum: ['warn', 'mute', 'tempmute', 'kick', 'ban', 'tempban', 'unban', 'unmute', 'cmute', 'tempcmute', 'uncmute'] },
+    type: { type: String, required: true, enum: ['warn', 'mute', 'tempmute', 'timeout', 'kick', 'ban', 'tempban', 'unban', 'unmute', 'cmute', 'tempcmute', 'uncmute'] },
     reason: { type: String, default: 'Aucune raison fournie' },
     timestamp: { type: Date, default: Date.now },
     duration: { type: Number, default: null }, // Duration in ms for temp actions
