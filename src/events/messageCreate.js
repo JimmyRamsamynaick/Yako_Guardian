@@ -115,6 +115,7 @@ module.exports = {
 
         // Get guild settings (prefix)
         const config = await getGuildConfig(message.guild.id);
+        if (!config) return;
 
         // --- ADVANCED ANTI-SPAM ---
         const antiSpamTriggered = await handleAntiSpam(client, message, config).catch((err) => {
@@ -201,8 +202,15 @@ module.exports = {
         // --- END AUTO SLOWMODE ---
 
         // --- Automod Check ---
-        const { checkAutomod } = require('../utils/moderation/automod');
-        if (await checkAutomod(client, message, config)) return;
+        try {
+            const { checkAutomod } = require('../utils/moderation/automod');
+            if (await checkAutomod(client, message, config)) return;
+        } catch (automodError) {
+            logger.error(`[AutoMod] Echec critique pour message ${message.id} user ${message.author.id} guild ${message.guild.id}: ${automodError.message}`);
+            if (process.env.NODE_ENV !== 'production') {
+                logger.error(automodError.stack || String(automodError));
+            }
+        }
         // --- End Automod Check ---
 
         let prefix = config.prefix || client.config.prefix;

@@ -19,10 +19,12 @@ module.exports = (client) => {
                 try {
                     const event = require(filePath);
                     if (event.name && event.execute) {
-                        if (event.once) {
-                            client.once(event.name, (...args) => event.execute(client, ...args));
-                        } else {
-                            client.on(event.name, (...args) => event.execute(client, ...args));
+                        const bind = event.once ? 'once' : 'on';
+                        const handler = (...args) => event.execute(client, ...args);
+                        client[bind](event.name, handler);
+                        // Bridge ready <-> clientReady (Discord.js v14/v15), without double-bind loops
+                        if (event.name === 'clientReady') {
+                            client[bind]('ready', handler);
                         }
                         logger.info(`Event loaded: ${event.name} (${file})`);
                     }

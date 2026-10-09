@@ -21,29 +21,18 @@ module.exports = {
                 return message.channel.send({ embeds: [createEmbed('Erreur', await t('tempvoc.not_owner', message.guild.id), 'error')] });
             }
 
-            // Send Panel
-            const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-            const row1 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('tempvoc_lock').setEmoji('🔒').setLabel(await t('tempvoc.lock', message.guild.id)).setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('tempvoc_unlock').setEmoji('🔓').setLabel(await t('tempvoc.unlock', message.guild.id)).setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('tempvoc_hide').setEmoji('👁️').setLabel(await t('tempvoc.hide', message.guild.id)).setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('tempvoc_transfer').setEmoji('👑').setLabel(await t('tempvoc.transfer', message.guild.id)).setStyle(ButtonStyle.Primary)
-            );
-            const row2 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('tempvoc_limit').setEmoji('👥').setLabel(await t('tempvoc.limit', message.guild.id)).setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('tempvoc_rename').setEmoji('✏️').setLabel(await t('tempvoc.rename', message.guild.id)).setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('tempvoc_kick').setEmoji('👢').setLabel(await t('tempvoc.kick', message.guild.id)).setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('tempvoc_purge').setEmoji('💥').setLabel(await t('tempvoc.purge', message.guild.id)).setStyle(ButtonStyle.Danger)
-            );
-            const row3 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('tempvoc_wl').setEmoji('✅').setLabel(await t('tempvoc.whitelist', message.guild.id)).setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('tempvoc_bl').setEmoji('⛔').setLabel(await t('tempvoc.blacklist', message.guild.id)).setStyle(ButtonStyle.Secondary)
-            );
+            const voiceChannel = message.member.voice.channel;
+            const { buildTempVocPanel } = require('../../utils/tempVocPanel');
+            const panel = await buildTempVocPanel(voiceChannel, active, { mentionOwner: false });
+            const panelMessage = await voiceChannel.send(panel);
 
-            return message.channel.send({ 
-                embeds: [createEmbed('Panel Vocal', await t('tempvoc.panel_title', message.guild.id), 'info')], 
-                components: [row1, row2, row3] 
-            });
+            active.panelMessageId = panelMessage.id;
+            await active.save();
+
+            if (message.channel.id !== voiceChannel.id) {
+                return message.channel.send({ embeds: [createEmbed('Succès', await t('tempvoc.panel_sent', message.guild.id, { channel: `<#${voiceChannel.id}>` }), 'success')] });
+            }
+            return;
         }
 
         // --- SETUP ---

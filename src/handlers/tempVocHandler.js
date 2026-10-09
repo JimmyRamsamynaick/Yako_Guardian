@@ -13,6 +13,7 @@ const {
 const ActiveTempVoc = require('../database/models/ActiveTempVoc');
 const { createEmbed } = require('../utils/design');
 const { t } = require('../utils/i18n');
+const { refreshTempVocPanel } = require('../utils/tempVocPanel');
 
 async function handleTempVocInteraction(client, interaction) {
     try {
@@ -107,6 +108,7 @@ async function handleTempVocInteraction(client, interaction) {
             }
 
             await Promise.all(promises);
+            await refreshTempVocPanel(channel, active);
             await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.locked', guildId), '', 'success')] });
         }
         else if (customId === 'tempvoc_unlock') {
@@ -135,6 +137,7 @@ async function handleTempVocInteraction(client, interaction) {
             }
 
             await Promise.all(promises);
+            await refreshTempVocPanel(channel, active);
             await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.unlocked', guildId), '', 'success')] });
         }
         else if (customId === 'tempvoc_hide') {
@@ -164,6 +167,7 @@ async function handleTempVocInteraction(client, interaction) {
             // If current is FALSE (Hidden), we want to SHOW (True)
             const newStatus = !current;
             await channel.permissionOverwrites.edit(everyone, { ViewChannel: newStatus });
+            await refreshTempVocPanel(channel, active);
             
             await interaction.editReply({ embeds: [createEmbed(newStatus ? await t('tempvoc.handler.visible', guildId) : await t('tempvoc.handler.hidden', guildId), '', 'success')] });
         }
@@ -174,6 +178,7 @@ async function handleTempVocInteraction(client, interaction) {
             for (const [id, m] of members) {
                 if (m.voice) await m.voice.disconnect("Purge").catch(() => {});
             }
+            await refreshTempVocPanel(channel, active);
             await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.purge_success', guildId, { count: members.size }), '', 'success')] });
         }
         else if (customId === 'tempvoc_transfer') {
@@ -276,6 +281,7 @@ async function handleTempVocInteraction(client, interaction) {
                 return interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.limit_invalid', guildId), '', 'error')], ephemeral: true });
             }
             await channel.setUserLimit(limit);
+            await refreshTempVocPanel(channel, active);
             await interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.limit_success', guildId, { limit }), '', 'success')], ephemeral: true });
         }
         else if (customId === 'tempvoc_modal_rename') {
@@ -283,6 +289,7 @@ async function handleTempVocInteraction(client, interaction) {
             
             try {
                 await channel.setName(name);
+                await refreshTempVocPanel(channel, active);
                 await interaction.reply({ embeds: [createEmbed(await t('tempvoc.handler.rename_success', guildId, { name }), '', 'success')], ephemeral: true });
             } catch (error) {
                 console.error("[TempVoc] Rename Error:", error);
@@ -306,6 +313,7 @@ async function handleTempVocInteraction(client, interaction) {
             if (target) {
                 const targetTag = target.user.username;
                 await target.voice.disconnect("Kicked by owner").catch(() => {});
+                await refreshTempVocPanel(channel, active);
                 await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.kick_success', guildId, { user: `**${targetTag}**` }), '', 'success')], components: [] });
             } else {
                 await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.kick_member_not_found', guildId), '', 'error')], components: [] });
@@ -327,6 +335,7 @@ async function handleTempVocInteraction(client, interaction) {
             const targetUser = await client.users.fetch(targetId).catch(() => null);
             const targetDisplayName = targetUser ? `**${targetUser.username}**` : targetId;
 
+            await refreshTempVocPanel(channel, active);
             await interaction.editReply({ embeds: [createEmbed(await t('tempvoc.handler.transfer_success', guildId, { user: targetDisplayName }), '', 'success')], components: [] });
         }
         else if (customId === 'tempvoc_select_wl') {
@@ -361,6 +370,7 @@ async function handleTempVocInteraction(client, interaction) {
             
             await Promise.all(promises);
             await active.save();
+            await refreshTempVocPanel(channel, active);
             
             const messages = [];
             if (added.length > 0) {
@@ -414,6 +424,7 @@ async function handleTempVocInteraction(client, interaction) {
             
             await Promise.all(promises);
             await active.save();
+            await refreshTempVocPanel(channel, active);
             
             const messages = [];
             if (added.length > 0) {

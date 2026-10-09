@@ -11,7 +11,13 @@ module.exports = {
 
         if (!member) return;
 
-        const config = await getGuildConfig(guild.id);
+        let config;
+        try {
+            config = await getGuildConfig(guild.id);
+        } catch (_) {
+            return;
+        }
+        if (!config) return;
 
         // --- Soutien Handler ---
         if (config.soutien && config.soutien.enabled && config.soutien.roleId && config.soutien.statusText) {

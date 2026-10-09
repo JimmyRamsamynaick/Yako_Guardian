@@ -1,6 +1,5 @@
 // src/utils/logger.js
 const { createLogger, format, transports } = require('winston');
-const path = require('path');
 
 const logger = createLogger({
   level: 'info',
@@ -15,17 +14,19 @@ const logger = createLogger({
   defaultMeta: { service: 'YakoGuardian' },
   transports: [
     new transports.File({ filename: 'error.log', level: 'error' }),
-    new transports.File({ filename: 'combined.log' })
+    new transports.File({ filename: 'combined.log' }),
+    // Always log to console so PM2 shows startup/Mongo status in production
+    new transports.Console({
+      format: format.combine(
+        format.colorize(),
+        format.printf(({ level, message, timestamp, stack }) => {
+          return stack
+            ? `${level}: ${message} ${JSON.stringify({ service: 'YakoGuardian', stack, timestamp })}`
+            : `${level}: ${message} ${JSON.stringify({ service: 'YakoGuardian', timestamp })}`;
+        })
+      )
+    })
   ]
 });
-
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new transports.Console({
-    format: format.combine(
-      format.colorize(),
-      format.simple()
-    )
-  }));
-}
 
 module.exports = logger;
