@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
+const { loadEnv, getMongoUri } = require('../utils/loadEnv');
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY_MS = 2000;
@@ -7,7 +8,7 @@ const RETRY_DELAY_MS = 2000;
 let connectingPromise = null;
 let listenersAttached = false;
 
-// Fail fast instead of silent 10s buffering timeouts
+// Fail fast — no silent 10s buffering timeouts
 mongoose.set('bufferCommands', false);
 mongoose.set('bufferTimeoutMS', 0);
 
@@ -65,7 +66,6 @@ async function ensureMongoReady(timeoutMs = 10000) {
         return isMongoReady();
     }
 
-    // Try to (re)connect if nothing is in progress
     try {
         await connectMongo();
     } catch (_) { /* ignore */ }
@@ -74,8 +74,11 @@ async function ensureMongoReady(timeoutMs = 10000) {
 
 /**
  * Connect to MongoDB with retries. Resolves true on success, false otherwise.
+ * Reads MONGO_URI or MONGODB_URI from .env (aliases synced by loadEnv).
  */
 async function connectMongo() {
+    loadEnv();
+
     if (isMongoReady()) {
         console.log('[MongoDB] déjà connecté');
         return true;
@@ -83,11 +86,12 @@ async function connectMongo() {
     if (connectingPromise) return connectingPromise;
 
     connectingPromise = (async () => {
-        const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+        const uri = getMongoUri();
         console.log(`[MongoDB] URI: ${maskUri(uri)}`);
+        console.log(`[MongoDB] vars: MONGO_URI=${Boolean(process.env.MONGO_URI)} MONGODB_URI=${Boolean(process.env.MONGODB_URI)}`);
 
         if (!uri) {
-            const msg = 'MONGO_URI absente du .env — MongoDB requis pour démarrer.';
+            const msg = 'MONGO_URI / MONGODB_URI absente du .env — MongoDB requis.';
             console.error(`[MongoDB] ${msg}`);
             logger.error(msg);
             return false;
@@ -105,7 +109,6 @@ async function connectMongo() {
                     maxPoolSize: 10
                 });
 
-                // Verify the connection actually works
                 await mongoose.connection.db.admin().command({ ping: 1 });
 
                 console.log('[MongoDB] Connecté et ping OK');
@@ -126,7 +129,7 @@ async function connectMongo() {
         }
 
         console.error('[MongoDB] Impossible de se connecter après plusieurs tentatives.');
-        console.error('[MongoDB] Vérifiez: MONGO_URI, IP whitelist Atlas (0.0.0.0/0 ou IP du VPS), mot de passe.');
+        console.error('[MongoDB] Vérifiez: MONGO_URI ou MONGODB_URI, IP whitelist Atlas, mot de passe.');
         return false;
     })();
 

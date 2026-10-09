@@ -6,7 +6,7 @@ const { generateKey } = require('../utils/subscription');
 const logger = require('../utils/logger');
 const Database = require('better-sqlite3');
 const db = new Database(path.join(process.cwd(), 'data', 'database.sqlite'));
-require('dotenv').config();
+require('../utils/loadEnv').loadEnv();
 
 const app = express();
 const PORT = process.env.PORT || 80;

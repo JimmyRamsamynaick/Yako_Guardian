@@ -172,6 +172,10 @@ function buildMessageSnapshot(message, config) {
     const content = String(message.content || '').slice(0, 600);
     const scamIndicators = detectSuspiciousTextIndicators(content);
     const account = detectAccountFlags(message.author || {});
+    const attachments = extractAttachments(message, config);
+    const imageAttachments = attachments.filter((att) => att.kind === 'image');
+    const uniqueAttachmentFingerprints = new Set(attachments.map((att) => att.fingerprint));
+    const uniqueImageFingerprints = new Set(imageAttachments.map((att) => att.fingerprint));
     return {
         id: message.id,
         userId: message.author.id,
@@ -181,15 +185,22 @@ function buildMessageSnapshot(message, config) {
         content,
         normalizedContent: normalizeText(content),
         isReply: Boolean(message.reference?.messageId),
+        replyToMessageId: message.reference?.messageId || null,
+        replyToUserId: message.mentions?.repliedUser?.id || null,
         mentionsCount: Number(message.mentions?.users?.size || 0),
+        uniqueMentionsUserIds: Array.from(message.mentions?.users?.keys?.() || []),
         everyoneMention: Boolean(message.mentions?.everyone),
         urls: extractUrls(content, config.maxUrlsPerMessage),
-        attachments: extractAttachments(message, config),
+        attachments,
         suspiciousTextIndicators: scamIndicators,
         accountAgeMs: account.ageMs,
         accountVeryYoung: account.veryYoung,
         accountYoung: account.young,
-        avatarMissing: account.avatarMissing
+        avatarMissing: account.avatarMissing,
+        attachmentsCount: attachments.length,
+        imageAttachmentsCount: imageAttachments.length,
+        uniqueAttachmentFingerprintsCount: uniqueAttachmentFingerprints.size,
+        uniqueImageFingerprintsCount: uniqueImageFingerprints.size
     };
 }
 

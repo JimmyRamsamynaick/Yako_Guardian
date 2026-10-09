@@ -39,10 +39,49 @@ function calculateSpamScore(state, config) {
     const shortChannel = countWithin(sameChannel, config.windows.short.intervalMs, now);
     const mediumChannel = countWithin(sameChannel, config.windows.medium.intervalMs, now);
 
+    const nonEmpty = inScope.filter((message) => message.normalizedContent);
+    const uniqueContents = new Set(nonEmpty.map((message) => message.normalizedContent)).size;
+    const replyCount = inScope.filter((message) => Boolean(message.isReply)).length;
+    const directMentionsCount = inScope.reduce((sum, message) => sum + message.mentionsCount, 0);
+    const conversationSignals = replyCount + Math.min(directMentionsCount, inScope.length);
+    const totalMessages = inScope.length;
+    const variedConversation =
+        totalMessages <= 1 ||
+        (nonEmpty.length >= 2 && uniqueContents >= Math.max(2, Math.floor(nonEmpty.length * 0.75)));
+    const replyDominant = totalMessages > 0 && replyCount >= Math.ceil(totalMessages * 0.5);
+    const mentionDominant = totalMessages > 0 && directMentionsCount >= Math.ceil(totalMessages * 0.4);
+    const multiChannelConversation = distinctChannels(inScope) >= 3;
+
+    let convoAttenuation = 1;
+    if (variedConversation && (replyDominant || mentionDominant || multiChannelConversation)) {
+        convoAttenuation = 0.35;
+    } else if (variedConversation && (replyCount > 0 || directMentionsCount > 0)) {
+        convoAttenuation = 0.55;
+    } else if (variedConversation) {
+        convoAttenuation = 0.8;
+    }
+
+    const totalAttachments = inScope.reduce((sum, message) => sum + message.attachmentsCount, 0);
+    const totalImages = inScope.reduce((sum, message) => sum + message.imageAttachmentsCount, 0);
+    const uniqueAttachmentFp = new Set(inScope.flatMap((m) => m.attachments.map((a) => a.fingerprint))).size;
+    const uniqueImageFp = new Set(
+        inScope.flatMap((m) => m.attachments.filter((a) => a.kind === 'image').map((a) => a.fingerprint))
+    ).size;
+    const repeatedAttachmentsSignal =
+        totalAttachments >= 4 && uniqueAttachmentFp <= Math.ceil(totalAttachments * 0.6);
+    const uniqueImagesSignal = totalImages >= 3 && uniqueImageFp === totalImages;
+    const attachmentsOnlyConversation =
+        totalAttachments >= 3 &&
+        nonEmpty.length <= Math.ceil(totalMessages * 0.4) &&
+        uniqueAttachmentFp >= Math.ceil(totalAttachments * 0.75) &&
+        (replyCount > 0 || directMentionsCount > 0 || multiChannelConversation);
+
     if (shortGlobal >= config.windows.short.maxMessages) {
         add(
             'rapidMessages',
-            config.weights.rapidMessages * Math.min(1.5, shortGlobal / config.windows.short.maxMessages),
+            config.weights.rapidMessages *
+                Math.min(1.5, shortGlobal / config.windows.short.maxMessages) *
+                (variedConversation ? convoAttenuation : 1),
             `${shortGlobal} messages en ${Math.round(config.windows.short.intervalMs / 1000)}s`
         );
     }
@@ -56,20 +95,21 @@ function calculateSpamScore(state, config) {
                         mediumGlobal / config.windows.medium.maxMessages,
                         shortChannel / config.windows.short.maxMessages
                     )
-                ),
+                ) *
+                (variedConversation ? convoAttenuation : 1),
             `${Math.max(mediumGlobal, shortChannel)} evenements concentres`
         );
     }
     if (longGlobal >= config.windows.long.maxMessages || mediumChannel >= config.windows.medium.maxMessages) {
         add(
             'rapidMessages',
-            config.weights.rapidMessages * 0.5,
+            config.weights.rapidMessages *
+                0.5 *
+                (variedConversation ? convoAttenuation : 1),
             `${longGlobal} messages en ${Math.round(config.windows.long.intervalMs / 1000)}s`
         );
     }
 
-    const nonEmpty = inScope.filter((message) => message.normalizedContent);
-    const uniqueContents = new Set(nonEmpty.map((message) => message.normalizedContent)).size;
     const exactMatches = latest.normalizedContent
         ? inScope.filter((message) => message.normalizedContent === latest.normalizedContent)
         : [];
@@ -143,6 +183,9 @@ function calculateSpamScore(state, config) {
     const suspiciousFiles = attachmentMessages
         .flatMap((message) => message.attachments)
         .filter((attachment) => ['executable', 'script', 'archive'].includes(attachment.kind)).length;
+    const suspiciousHintsOnImages = attachmentMessages
+        .flatMap((message) => message.attachments)
+        .filter((attachment) => (attachment.grabberFilenameHints || 0) >= 2).length;
 
     if (repeatedAttachments >= 2) {
         const multiplier = Math.min(2.4, 1 + (repeatedAttachments - 2) * 0.35);
@@ -152,6 +195,13 @@ function calculateSpamScore(state, config) {
             `${repeatedAttachments} pieces jointes repetees`
         );
     }
+    if (repeatedAttachmentsSignal && repeatedAttachments >= 1) {
+        add(
+            'repeatedAttachments',
+            config.weights.repeatedAttachments * 0.55,
+            'plusieurs pieces jointes identiques/familiales dans la fenetre'
+        );
+    }
 
     const attachmentShortBurst = countWithin(
         attachmentMessages,
@@ -159,18 +209,25 @@ function calculateSpamScore(state, config) {
         now,
         (message) => message.attachments.length > 0
     );
-    if (attachmentShortBurst >= 3) {
+    if (attachmentShortBurst >= 3 && !uniqueImagesSignal && !attachmentsOnlyConversation) {
         add(
             'burst',
             config.weights.burst * Math.min(1.8, attachmentShortBurst / 3),
             `${attachmentShortBurst} pieces jointes en ${Math.round(config.windows.short.intervalMs / 1000)}s`
         );
     }
-    if (suspiciousFiles > 0 && (repeatedAttachments >= 2 || suspiciousUrlHits > 0 || similarMatches.length >= 1)) {
+    if (suspiciousFiles > 0 && (repeatedAttachments >= 1 || suspiciousUrlHits > 0 || similarMatches.length >= 1 || suspiciousHintsOnImages > 0)) {
         add(
             'suspiciousFiles',
             config.weights.suspiciousFiles,
             `${suspiciousFiles} fichier(s) inhabituel(s) dans un comportement repetitif`
+        );
+    }
+    if (suspiciousHintsOnImages > 0 && (repeatedAttachments >= 1 || suspiciousFiles > 0 || similarMatches.length >= 1)) {
+        add(
+            'suspiciousFiles',
+            config.weights.suspiciousFiles * 0.5,
+            `${suspiciousHintsOnImages} image/fichier avec nom de type grabber/scam`
         );
     }
 
@@ -268,14 +325,26 @@ function calculateSpamScore(state, config) {
         );
     }
 
-    const variedConversation = uniqueContents >= Math.max(2, Math.floor(nonEmpty.length * 0.7));
-    const lowRepetition = exactMatches.length <= 2 && repeatedLatestUrls <= 1 && repeatedAttachments <= 1;
-    const multiChannelConversation = distinctChannels(inScope) >= 3;
+    const lowRepetition =
+        exactMatches.length <= 2 &&
+        repeatedLatestUrls <= 1 &&
+        repeatedAttachments <= 1 &&
+        repeatedDomains <= 3 &&
+        similarMatches.length <= 1 &&
+        suspiciousFiles === 0 &&
+        suspiciousHintsOnImages === 0;
 
-    if (multiChannelConversation && variedConversation && lowRepetition) {
+    if (attachmentsOnlyConversation || uniqueImagesSignal) {
+        add('conversationMitigation', -(config.weights.conversationMitigation * 1.2), null);
+    } else if (multiChannelConversation && variedConversation && lowRepetition) {
         add('conversationMitigation', -config.weights.conversationMitigation, null);
+    } else if (variedConversation && lowRepetition && (replyDominant || mentionDominant)) {
+        add('conversationMitigation', -(config.weights.conversationMitigation * 0.9), null);
+    } else if (variedConversation && lowRepetition) {
+        add('variedConversationMitigation', -(config.weights.variedConversationMitigation * 1.5), null);
     }
-    if ((latest.isReply || latest.mentionsCount > 0) && variedConversation) {
+
+    if ((latest.isReply || latest.mentionsCount > 0) && variedConversation && lowRepetition) {
         add('variedConversationMitigation', -config.weights.variedConversationMitigation, null);
     }
     if (

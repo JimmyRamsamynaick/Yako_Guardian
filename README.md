@@ -76,6 +76,7 @@ Ne perdez plus jamais votre travail.
    ```env
    TOKEN=votre_token_discord
    MONGO_URI=votre_lien_mongodb
+   # (alias accepté) MONGODB_URI=votre_lien_mongodb
    CLIENT_ID=id_du_bot
    OWNER_ID=votre_id_discord
    # ... autres clés

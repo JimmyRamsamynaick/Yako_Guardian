@@ -49,7 +49,6 @@ class AntiSpamManager {
         if (shouldIgnoreMessage(message, config)) return false;
         if (await isBotOwner(message.author.id)) return false;
         if (message.author.id === message.guild.ownerId) return false;
-        if (isWhitelisted(message.guild.id, message.member)) return false;
 
         const snapshot = buildMessageSnapshot(message, config);
         const state = this.store.recordMessage(message.guild.id, message.author.id, snapshot, config);
@@ -66,6 +65,9 @@ class AntiSpamManager {
         }
 
         if (result.score < config.thresholds.activity) return false;
+
+        const isWhitelistedUser = isWhitelisted(message.guild.id, message.member);
+        if (isWhitelistedUser && result.score < config.thresholds.severe) return false;
 
         let actionMode = subscriptionActive ? 'full' : 'light';
         if (!subscriptionActive && result.score >= config.actions.warning.score && result.score < config.actions.severe.score) {

@@ -1,4 +1,5 @@
 const UserStrike = require('../../database/models/UserStrike');
+const logger = require('../../utils/logger');
 const { checkSubscription } = require('../subscription');
 const { isBotOwner } = require('../ownerUtils');
 const { applyPunishment } = require('./punishmentSystem');
@@ -218,7 +219,23 @@ async function checkAutomod(client, message, config) {
     
     // 1. Antispam (INDIVIDUAL SCORING SYSTEM)
     const antispam = config.moderation.antispam;
-    if (antispam?.enabled && !isWhitelisted(antispam)) {
+    const advancedAntiSpamEnabled = Boolean(
+        antispam?.enabled &&
+        (
+            typeof antispam?.windows?.short === 'object' ||
+            typeof antispam?.weights === 'object' ||
+            typeof antispam?.thresholds === 'object' ||
+            typeof antispam?.scorer === 'string' ||
+            antispam?.scorer === 'advanced' ||
+            antispam?.advanced === true ||
+            antispam?.mode === 'advanced'
+        )
+    );
+    const ignoreModule = (moduleCfg) => isWhitelisted(message.guild.id, message.member);
+
+    if (advancedAntiSpamEnabled && !ignoreModule(antispam)) {
+        logger.debug(`[AutoMod] Anti-spam avancé activé : skip legacy anti-spam interne pour guild=${message.guild.id}.`);
+    } else if (antispam?.enabled && !ignoreModule(antispam)) {
         const guildSpamMap = spamMap.get(message.guild.id) || new Map();
         const userData = guildSpamMap.get(message.author.id) || { messages: [], lastAction: 0, warningTimestamp: 0, processingChannel: null };
         
@@ -367,7 +384,7 @@ async function checkAutomod(client, message, config) {
     // 2. Links & Invites
     if (!triggeredType) {
         const antilink = config.moderation.antilink;
-        if (antilink?.enabled && !isWhitelisted(antilink)) {
+        if (antilink?.enabled && !ignoreModule(antilink)) {
             const inviteRegex = /(discord\.(gg|io|me|li)|discord(app)?\.com\/invite)/i;
             const linkRegex = /https?:\/\/[^\s]+/i;
             
@@ -389,7 +406,7 @@ async function checkAutomod(client, message, config) {
 
     // 4. Mass Mention (Advanced Detection)
     const massmention = config.moderation.massmention;
-    if (!triggeredType && massmention?.enabled && !isWhitelisted(massmention)) {
+    if (!triggeredType && massmention?.enabled && !ignoreModule(massmention)) {
         const limit = massmention.limit || 5;
         const now = message.createdTimestamp;
 
@@ -425,7 +442,7 @@ async function checkAutomod(client, message, config) {
 
     // 5. Caps
     const anticaps = config.moderation.anticaps;
-    if (!triggeredType && anticaps?.enabled && !isWhitelisted(anticaps)) {
+    if (!triggeredType && anticaps?.enabled && !ignoreModule(anticaps)) {
         const caps = message.content.replace(/[^A-Z]/g, "").length;
         if (message.content.length > 15 && (caps / message.content.length) > 0.7) {
             triggeredType = "caps";
@@ -435,7 +452,7 @@ async function checkAutomod(client, message, config) {
 
     // 6. Badwords
     const badwords = config.moderation.badwords;
-    if (!triggeredType && badwords?.enabled && !isWhitelisted(badwords)) {
+    if (!triggeredType && badwords?.enabled && !ignoreModule(badwords)) {
         const content = message.content.toLowerCase();
         if (badwords.list?.some(word => content.includes(word.toLowerCase()))) {
             triggeredType = "badwords";
@@ -452,7 +469,7 @@ async function checkAutomod(client, message, config) {
             'massmention': 'massmention'
         };
         const moduleName = moduleMap[triggeredType] || triggeredType;
-        if (isWhitelisted(config.moderation[moduleName])) return false;
+        if (ignoreModule(config.moderation[moduleName])) return false;
 
         // 1. Delete message
         if (message.deletable) await message.delete().catch(() => {});

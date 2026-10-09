@@ -1,12 +1,45 @@
 const { PermissionsBitField } = require('discord.js');
 
 const SAFE_COMMANDS = [
-    'wiki', 'search', 'help', 'helpall', 'calc', 'image', 'leaderboard', 'lb', 
-    'rep', 'rank', 'profile', 'user', 'userinfo', 'server', 'serverinfo', 
-    'botinfo', 'ping', 'support', 'suggestion', 'poll', 'afk', 
-    'remind', 'reminder', 'translate', 'weather', 'avatar', 'pic', 'member', 
+    'wiki', 'search', 'help', 'helpall', 'calc', 'image', 'leaderboard', 'lb',
+    'rep', 'rank', 'profile', 'user', 'userinfo', 'server', 'serverinfo',
+    'botinfo', 'ping', 'support', 'suggestion', 'poll', 'afk',
+    'remind', 'reminder', 'translate', 'weather', 'avatar', 'pic', 'member',
     'members', 'buy', 'subscription', 'store', 'premium'
 ];
+
+const CATEGORY_LEVEL_MAP = Object.freeze({
+    owner: 10,
+    antiraid: 5,
+    secur: 5,
+    security: 5,
+    backups: 5,
+    configuration: 4,
+    administration: 4,
+    automations: 4,
+    moderation: 3,
+    modmail: 3,
+    tickets: 2,
+    roles: 1,
+    community: 1,
+    utils: 1,
+    voice: 1,
+    notifications: 1,
+    suggestion: 1,
+    custom: 1,
+    auto: 4,
+    general: 0,
+    owner: 10
+});
+
+function roleHasAny(member, ids = []) {
+    if (!member?.roles?.cache) return false;
+    const cache = member.roles.cache;
+    for (const id of ids) {
+        if (cache.has(id)) return true;
+    }
+    return false;
+}
 
 /**
  * Determines the required permission level for a command.
@@ -15,44 +48,23 @@ const SAFE_COMMANDS = [
  */
 function getCommandLevel(command) {
     // 1. Explicit Permission Level
-    if (command.permLevel !== undefined) {
+    if (typeof command?.permLevel === 'number') {
         return command.permLevel;
     }
 
     // 2. Safe Commands (Level 0)
-    if (SAFE_COMMANDS.includes(command.name)) {
+    if (command && SAFE_COMMANDS.includes(command.name)) {
         return 0;
     }
 
-    const cat = command.category ? command.category.toLowerCase() : 'general';
+    const cat = command?.category ? String(command.category).toLowerCase() : 'general';
 
-    // 3. Category Mapping
-    if (cat === 'owner') return 10;
-    
-    // Level 5: Security, Antiraid, Backups (Critical)
-    if (cat === 'antiraid' || cat === 'secur' || cat === 'security' || cat === 'backups' || command.name === 'backup') return 5;
-    
-    // Level 4: Configuration, Administration, Automations (High Admin)
-    if (cat === 'configuration' || cat === 'administration' || cat === 'automations') return 4;
+    if (CATEGORY_LEVEL_MAP[cat] !== undefined) {
+        return CATEGORY_LEVEL_MAP[cat];
+    }
 
-    // Level 3: Moderation, Modmail (Moderators)
-    if (cat === 'moderation' || cat === 'modmail') return 3;
-    
-    // Level 2: Tickets (Support)
-    if (cat === 'tickets') return 2;
-
-    // Level 1: Roles, Community (Helpers/Active Members)
-    if (cat === 'roles' || cat === 'community') return 1;
-
-    // Utils: Default to Level 1 or 0? 
-    // User said "que de 1 à 5". Safe commands are 0.
-    // Let's put remaining Utils in Level 1 or 2.
-    // Let's go with Level 1 for general utility/info that isn't purely safe/spammy.
-    if (cat === 'utils') return 1; 
-
-    // General category fallback
-    // If it wasn't safe, it's likely a config or admin command in General
-    return 4; 
+    // Fallback absolu : unknown est ouvert (tout le monde) comme General
+    return 0;
 }
 
 /**
@@ -64,25 +76,21 @@ function getCommandLevel(command) {
  */
 function getUserLevel(member, config, isOwner) {
     if (isOwner) return 10;
-    if (member.id === member.guild.ownerId) return 5;
+    if (!member) return 0;
+    if (member.id === member.guild?.ownerId) return 5;
 
     let userLevel = 0;
-    
+
     // Check Configured Levels
-    if (config.permissionLevels) {
+    if (config?.permissionLevels) {
         for (let i = 5; i >= 1; i--) {
-            const ids = config.permissionLevels[i.toString()] || [];
-            if (ids.includes(member.id) || member.roles.cache.hasAny(...ids)) {
+            const ids = config.permissionLevels[String(i)] || [];
+            if (ids.includes(member.id) || roleHasAny(member, ids)) {
                 if (i > userLevel) userLevel = i;
                 break; // Optimization: Found highest level
             }
         }
     }
-
-    // Fallback for Administrator (Level 4) REMOVED per user request
-    // if (userLevel < 4 && member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-    //    userLevel = 4;
-    // }
 
     return userLevel;
 }
@@ -90,5 +98,6 @@ function getUserLevel(member, config, isOwner) {
 module.exports = {
     getCommandLevel,
     getUserLevel,
-    SAFE_COMMANDS
+    SAFE_COMMANDS,
+    roleHasAny
 };

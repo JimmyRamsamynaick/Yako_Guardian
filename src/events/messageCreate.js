@@ -126,41 +126,54 @@ module.exports = {
         // --- END ADVANCED ANTI-SPAM ---
 
         // --- LEVEL SYSTEM ---
-        if (config.community?.levels?.enabled) {
-            const Level = require('../database/models/Level');
-            let userLevel = await Level.findOne({ guildId: message.guild.id, userId: message.author.id });
-            if (!userLevel) {
-                userLevel = new Level({ guildId: message.guild.id, userId: message.author.id });
-            }
+        if (config.community?.levels?.enabled && !config.__fallback) {
+            try {
+                const Level = require('../database/models/Level');
+                const { isMongoReady, ensureMongoReady } = require('../database/mongo');
+                const mongoOk = isMongoReady() || await ensureMongoReady(1500);
+                if (!mongoOk) throw new Error('MongoDB indisponible pour levels');
 
-            // Increment message count regardless of XP cooldown
-            userLevel.messageCount = (userLevel.messageCount || 0) + 1;
+                let userLevel = await Promise.race([
+                    Level.findOne({ guildId: message.guild.id, userId: message.author.id }).maxTimeMS(2500),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('Level.findOne timeout')), 4000).unref?.())
+                ]);
 
-            const now = Date.now();
-            // Cooldown removed as requested
-            // const lastMsg = userLevel.lastMessageTimestamp || 0;
-            // if (now - lastMsg > 60000) { 
-            
-            const xpGain = Math.floor(Math.random() * 10) + 15; // 15-25 XP
-            userLevel.xp += xpGain;
-            userLevel.lastMessageTimestamp = now;
-
-            const nextLevelXp = 5 * (userLevel.level ** 2) + 50 * userLevel.level + 100;
-            if (userLevel.xp >= nextLevelXp) {
-                userLevel.level++;
-                userLevel.xp -= nextLevelXp; 
-                
-                // Send Level Up Message
-                const channelId = config.community.levels.channelId;
-                const channel = channelId ? message.guild.channels.cache.get(channelId) : message.channel;
-
-                if (channel) {
-                    const msg = config.community.levels.message || await t('level.levelup_default', message.guild.id);
-                    const content = msg.replace(/{user}/g, message.author.toString()).replace(/{level}/g, userLevel.level);
-                    channel.send(content).catch(() => {});
+                if (!userLevel) {
+                    userLevel = new Level({ guildId: message.guild.id, userId: message.author.id });
                 }
+
+                // Increment message count regardless of XP cooldown
+                userLevel.messageCount = (userLevel.messageCount || 0) + 1;
+
+                const now = Date.now();
+                // Cooldown removed as requested
+            
+                const xpGain = Math.floor(Math.random() * 10) + 15; // 15-25 XP
+                userLevel.xp += xpGain;
+                userLevel.lastMessageTimestamp = now;
+
+                const nextLevelXp = 5 * (userLevel.level ** 2) + 50 * userLevel.level + 100;
+                if (userLevel.xp >= nextLevelXp) {
+                    userLevel.level++;
+                    userLevel.xp -= nextLevelXp; 
+
+                    // Send Level Up Message
+                    const channelId = config.community.levels.channelId;
+                    const channel = channelId ? message.guild.channels.cache.get(channelId) : message.channel;
+
+                    if (channel) {
+                        const msg = config.community.levels.message || await t('level.levelup_default', message.guild.id);
+                        const content = msg.replace(/{user}/g, message.author.toString()).replace(/{level}/g, userLevel.level);
+                        channel.send(content).catch(() => {});
+                    }
+                }
+                await Promise.race([
+                    userLevel.save(),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('Level.save timeout')), 4000).unref?.())
+                ]);
+            } catch (levelErr) {
+                logger.warn(`[messageCreate] Level system skippé (guild=${message.guild.id} user=${message.author.id}): ${levelErr.message}`);
             }
-            await userLevel.save();
         }
         // --- END LEVEL SYSTEM ---
 
@@ -230,7 +243,7 @@ module.exports = {
         const commandName = args.shift().toLowerCase();
 
         const command = client.commands.get(commandName) || client.commands.get(client.aliases.get(commandName));
-        
+
         // Check Subscription Helper
         const { checkSubscription } = require('../utils/subscription');
         const { isBotOwner } = require('../utils/ownerUtils');
@@ -240,7 +253,7 @@ module.exports = {
         // 1. Standard Command
         if (command) {
             if (!isOwner && !freeCommands.includes(command.name) && !checkSubscription(message.guild.id)) {
-                return message.channel.send({ embeds: [createEmbed(await t('common.license_required', message.guild.id), '', 'error')] });
+                return message.channel.send({ embeds: [createEmbed(await t('common.license_required', message.guild.id), '', 'error')] }).catch(() => {});
             }
 
             // --- PERMISSION LEVEL SYSTEM (1-5) ---
@@ -252,9 +265,9 @@ module.exports = {
 
             if (userLevel < requiredLevel) {
                 if (requiredLevel === 10) {
-                     return message.channel.send({ embeds: [createEmbed(await t('common.owner_only', message.guild.id), '', 'error')] });
+                     return message.channel.send({ embeds: [createEmbed(await t('common.owner_only', message.guild.id), '', 'error')] }).catch(() => {});
                 }
-                return message.channel.send({ embeds: [createEmbed(await t('common.permission_denied_level', message.guild.id, { required: requiredLevel, user: userLevel }), '', 'error')] });
+                return message.channel.send({ embeds: [createEmbed(await t('common.permission_denied_level', message.guild.id, { required: requiredLevel, user: userLevel }), '', 'error')] }).catch(() => {});
             }
             // --- END PERMISSION SYSTEM ---
 
@@ -274,17 +287,16 @@ module.exports = {
             // ----------------------------------
 
             try {
-                // Check whitelist if necessary (for sensitive commands)
                 // Custom Permission Check (SQLite)
                 const permSettings = db.prepare('SELECT permission FROM command_permissions WHERE guild_id = ? AND command_name = ?').get(message.guild.id, command.name);
-                
+
                 if (permSettings) {
                     const reqPerm = permSettings.permission;
-                    
+
                     // Disabled
                     if (reqPerm === '-1') {
                         if (message.author.id !== message.guild.ownerId && !isOwner) {
-                            return; 
+                            return;
                         }
                     }
                     // Everyone
@@ -294,7 +306,7 @@ module.exports = {
                     // Role ID
                     else {
                         if (!message.member.roles.cache.has(reqPerm) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !isOwner) {
-                             return message.channel.send({ embeds: [createEmbed(await t('common.custom_permission_denied', message.guild.id), '', 'error')] });
+                             return message.channel.send({ embeds: [createEmbed(await t('common.custom_permission_denied', message.guild.id), '', 'error')] }).catch(() => {});
                         }
                     }
                 }
@@ -306,18 +318,30 @@ module.exports = {
                 }
             } catch (error) {
                 logger.error(`Error executing command ${command.name}:`, error);
-                message.channel.send({ embeds: [createEmbed(await t('common.execution_error', message.guild.id), '', 'error')] });
+                message.channel.send({ embeds: [createEmbed(await t('common.execution_error', message.guild.id), '', 'error')] }).catch(() => {});
             }
-        } 
+        }
         // 2. Custom Command
         else {
-            const customCmd = await CustomCommand.findOne({ guildId: message.guild.id, trigger: commandName });
+            let customCmd = null;
+            try {
+                const { isMongoReady, ensureMongoReady } = require('../database/mongo');
+                const mongoOk = isMongoReady() || await ensureMongoReady(1500);
+                if (mongoOk) {
+                    customCmd = await Promise.race([
+                        CustomCommand.findOne({ guildId: message.guild.id, trigger: commandName }).maxTimeMS(2500).lean(),
+                        new Promise((_, rej) => setTimeout(() => rej(new Error('CustomCommand findOne timeout')), 3500).unref?.())
+                    ]);
+                }
+            } catch (e) {
+                logger.warn(`[messageCreate] CustomCommand lookup échoué (guild=${message.guild.id}, trigger=${commandName}): ${e.message}`);
+            }
+
             if (customCmd) {
                 if (!isOwner && !checkSubscription(message.guild.id)) {
-                    return message.channel.send({ embeds: [createEmbed(await t('common.custom_command_license', message.guild.id), '', 'error')] });
+                    return message.channel.send({ embeds: [createEmbed(await t('common.custom_command_license', message.guild.id), '', 'error')] }).catch(() => {});
                 }
-                // await message.channel.send(customCmd.response);
-                await message.channel.send({ embeds: [createEmbed(customCmd.response, '', 'info')] });
+                await message.channel.send({ embeds: [createEmbed(customCmd.response, '', 'info')] }).catch(() => {});
             }
         }
     },

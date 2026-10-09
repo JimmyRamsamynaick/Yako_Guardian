@@ -1,6 +1,16 @@
 // src/index.js
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const { loadEnv, getEnvStatus } = require('./utils/loadEnv');
+const envStatus = loadEnv();
+
+// D'abord : installer safeMongo (monkey-patch mongoose), AVANT tout require() qui
+// référence un modèle mongoose. Ça garantit que TOUS les modèles ont timeout + fallback
+// et ZERO "buffering timed out" en Uncaught Exception.
+try {
+    require('./database/safeMongo').install();
+    console.log('[Boot] safeMongo installé avant chargement des modules.');
+} catch (safeErr) {
+    console.warn('[Boot] Échec installation safeMongo (non critique):', safeErr.message);
+}
 
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const { initDatabase } = require('./database');
@@ -11,17 +21,26 @@ const logger = require('./utils/logger');
 async function bootstrap() {
     console.log('[Boot] Démarrage Yako Guardian...');
     console.log(`[Boot] cwd=${process.cwd()}`);
-    console.log(`[Boot] MONGO_URI définie=${Boolean(process.env.MONGO_URI || process.env.MONGODB_URI)}`);
+    console.log(`[Boot] .env MONGO_URI=${envStatus.hasMongoUri} MONGODB_URI=${envStatus.hasMongodbUri} (alias OK=${Boolean(envStatus.mongoUri)})`);
 
     initDatabase();
     startServer();
 
-    // MongoDB must be ready before Discord login
-    const mongoOk = await connectMongo();
-    if (!mongoOk || !isMongoReady()) {
-        console.error('[Boot] ABORT: MongoDB inaccessible. Le bot ne démarre pas.');
-        logger.error('Impossible de démarrer : MongoDB inaccessible. Vérifiez MONGO_URI et le réseau/Atlas.');
-        process.exit(1);
+    let mongoOk = false;
+    try {
+        mongoOk = await Promise.race([
+            connectMongo().then((ok) => Boolean(ok && isMongoReady())),
+            new Promise((resolve) => setTimeout(() => resolve(false), 20000).unref?.())
+        ]);
+    } catch (bootError) {
+        console.error('[Boot] Échec initialisation MongoDB:', bootError);
+        logger.error('Échec initialisation MongoDB:', bootError);
+        mongoOk = false;
+    }
+
+    if (!mongoOk) {
+        console.warn('[Boot] MongoDB inaccessible. Le bot démarre en mode dégradé (commandes + SQLite OK, Mongo modules fallback).');
+        logger.warn('MongoDB inaccessible au démarrage : démarrage en mode dégradé.');
     }
 
     const client = new Client({
@@ -70,14 +89,17 @@ async function bootstrap() {
         logger.info(`Logged in as ${client.user.tag}`);
         console.log(`[Boot] Discord OK | Mongo readyState=${require('mongoose').connection.readyState}`);
 
-        registerGlobalCommands(client);
+        registerGlobalCommands(client).catch((err) => {
+            console.warn('[Boot] registerGlobalCommands échoué (non critique):', err.message);
+            logger.warn(`registerGlobalCommands échoué: ${err.message}`);
+        });
 
-        setInterval(() => checkTempRoles(client), 60 * 1000);
-        setInterval(() => checkAutoBackups(client), 10 * 60 * 1000);
-        setInterval(() => checkReminders(client), 30 * 1000);
-        setInterval(() => checkTwitch(client), 60 * 1000);
-        setInterval(() => checkPfp(client), 60 * 60 * 1000);
-        setInterval(() => checkSanctions(client), 60 * 1000);
+        setInterval(() => checkTempRoles(client).catch(err => logger.warn(`checkTempRoles failed: ${err.message}`)), 60 * 1000);
+        setInterval(() => checkAutoBackups(client).catch(err => logger.warn(`checkAutoBackups failed: ${err.message}`)), 10 * 60 * 1000);
+        setInterval(() => checkReminders(client).catch(err => logger.warn(`checkReminders failed: ${err.message}`)), 30 * 1000);
+        setInterval(() => checkTwitch(client).catch(err => logger.warn(`checkTwitch failed: ${err.message}`)), 60 * 1000);
+        setInterval(() => checkPfp(client).catch(err => logger.warn(`checkPfp failed: ${err.message}`)), 60 * 60 * 1000);
+        setInterval(() => checkSanctions(client).catch(err => logger.warn(`checkSanctions failed: ${err.message}`)), 60 * 1000);
     };
 
     // Only clientReady — avoids DeprecationWarning on `ready`
@@ -96,10 +118,19 @@ bootstrap().catch(err => {
 
 process.on('unhandledRejection', (reason) => {
     console.error('[unhandledRejection]', reason);
-    logger.error('Unhandled Rejection', { reason: String(reason) });
+    try {
+        logger.error('Unhandled Rejection', { reason: String(reason), stack: reason?.stack });
+    } catch (_) { /* ignore */ }
 });
 
 process.on('uncaughtException', (err) => {
     console.error('[uncaughtException]', err);
-    logger.error('Uncaught Exception:', err);
+    try {
+        logger.error('Uncaught Exception:', { message: err?.message, stack: err?.stack });
+    } catch (_) { /* ignore */ }
+    // On laisse tourner quand c'est recoverable, mais exit(1) si erreur mémoire / réseau non rattrapable ? Non :
+    // on préfère garder le bot vivant pour les modules hors Mongo.
+    const recoverableErrors = ['buffering timed out', 'Operation ', 'MongoServerSelectionError', 'ETIMEDOUT', 'ENOTFOUND', 'ECONN'];
+    const isRecoverable = recoverableErrors.some(token => String(err?.message || '').includes(token));
+    if (!isRecoverable) process.exit(1);
 });

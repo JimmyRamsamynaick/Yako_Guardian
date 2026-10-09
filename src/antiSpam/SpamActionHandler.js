@@ -109,7 +109,41 @@ async function softWarn(message, reason, actionLabel) {
 }
 
 async function handleSpamAction(client, message, result, state, config, guildConfig) {
-    const effectiveScore = Math.max(result.score, Math.min(Math.round(state.currentScore), result.score + 20));
+    const benignDominantAttenuation =
+        result.score >= config.thresholds.activity &&
+        result.score < config.thresholds.suspicion &&
+        ((result.factors.duplicates || 0) +
+            (result.factors.repeatedLinks || 0) +
+            (result.factors.blockedDomain || 0) +
+            (result.factors.crossChannelSpam || 0) +
+            (result.factors.suspiciousContent || 0) +
+            (result.factors.suspiciousFiles || 0) +
+            (result.factors.similarMessages || 0) +
+            (result.factors.repeatedAttachments || 0)) <
+            config.thresholds.activity;
+    const preEffectiveScore = benignDominantAttenuation
+        ? Math.max(0, Math.round(result.score * 0.6))
+        : result.score;
+
+    const baseScore = Math.max(preEffectiveScore, Math.min(Math.round(state.currentScore), preEffectiveScore + 20));
+    const strongSignalsScore =
+        (result.factors.duplicates || 0) +
+        (result.factors.repeatedLinks || 0) +
+        (result.factors.blockedDomain || 0) +
+        (result.factors.crossChannelSpam || 0) +
+        (result.factors.suspiciousContent || 0) +
+        (result.factors.suspiciousFiles || 0) +
+        (result.factors.escalation || 0);
+    const recentStrongSignalsWindow = state.recentActions.filter(
+        (entry) => entry.level >= 2 && Date.now() - entry.at <= (config.actions?.escalationWindowMs || 900000)
+    ).length;
+    const benignDominant =
+        baseScore >= config.thresholds.severe &&
+        strongSignalsScore < config.thresholds.probable &&
+        recentStrongSignalsWindow === 0;
+    const effectiveScore = benignDominant
+        ? Math.min(baseScore, Math.max(config.thresholds.probable, strongSignalsScore + 15))
+        : baseScore;
     const action = decideAction(effectiveScore, state, config);
 
     if (action === 'none') return { triggered: false, effectiveScore };
